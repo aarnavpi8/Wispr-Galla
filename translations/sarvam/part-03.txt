@@ -1,0 +1,32 @@
+157. Opening stock
+158. {n} left
+159. Close
+160. Saved
+161. Scan bill
+162. A photo of the supplier's bill adds the stock for you
+163. Take photo
+164. Pick from gallery
+165. Reading the bill…
+166. The first scan takes a little longer
+167. Check and tick
+168. Not recognised
+169. Pick item
+170. Add {n} items to stock
+171. Stock updated for {n} items
+172. No items found. Take a straight, clear photo.
+173. Couldn't read the bill. Check the internet and try again.
+174. Scan again
+175. What is this?
+176. Listen
+177. Got it
+178. Money came in
+179. Money went out
+180. Still pending
+181. The cash that should be in your galla (cash box) right now: what you started with, plus cash that came in, minus cash that went out. Count your galla at night and compare.
+182. Tap the mic and say the entry the way you'd say it at the counter, e.g. “Sharma ji paid 500 by UPI”. You can also type. Nothing is saved until you tap.
+183. Money customers still have to give you (udhaar). Example: you gave Ramesh ₹350 of goods on credit and he paid ₹200, so ₹150 is still to collect.
+184. Money you still have to give your suppliers. Example: goods worth ₹3,200 came and you paid ₹1,000, so ₹2,200 is still to pay.
+185. A rough idea: sales minus the goods you bought minus expenses. It can be negative in a week you bought a lot of stock. It's not your exact profit.
+186. Cash = notes and coins in the galla. UPI = money that came to your phone or bank. Keeping them separate makes it easy to find a gap.
+187. How much of each item is on your shelves. Tap + when goods come and − when they are sold. Orange means it's running low: order more.
+188. At closing time, count the cash in the galla and type it. BolKhata shows if anything is short or extra, and which entries to check.

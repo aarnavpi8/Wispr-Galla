@@ -18,6 +18,8 @@ from datetime import date, datetime, timedelta
 from app.billscan import similarity
 from app.config import settings
 from app.models import Item, Party, Shop
+from app.commands import _has as has_words
+from app.commands import detect_command
 from app.numbers import replace_number_words
 from app.schemas import ExtractedEntry, LineItem, PartyOption, PartyRef
 
@@ -69,11 +71,46 @@ class ShopContext:
 
 
 def _has(text: str, words: list[str]) -> bool:
-    return any(re.search(rf"(?<![\wऀ-ॿ]){re.escape(w)}(?![\wऀ-ॿ])", text) for w in words)
+    # Same rule as commands: Latin whole words; Indian scripts anywhere (endings glue on).
+    return has_words(text, words)
+
+
+def _merge_translated_entry_words() -> None:
+    """Entry words added by translators (scripts/translations.py import -> voice_words.json)."""
+    import json
+    from pathlib import Path
+
+    path = Path(__file__).with_name("voice_words.json")
+    if not path.exists():
+        return
+    data = json.loads(path.read_text(encoding="utf-8"))
+    for kind, words in KEYWORDS.items():
+        words.extend(w for w in data.get(f"entry:{kind}", []) if w and w not in words)
+
+
+_merge_translated_entry_words()
+
+
+# The shop buying stock (strong enough to beat "udhaar": "Gupta se udhaar pe cheeni kharidi" is a purchase).
+BUYING = re.compile(
+    r"\b(i|we|maine|humne)\s+(bought|purchased|kharid\w*)\b|\bbought\b.*\bfrom\b|\bpurchased?\b"
+    r"|\bfrom (the |my )?(vendor|supplier|distributor|wholesaler|mandi)\b|\bse\s+(\w+\s+){0,7}kharid\w*\b"
+    r"|\bkharid\w*\b.*\bse\b|से\s+(\S+\s+){0,7}खरीद|माल आया|खरेदी केली|\bstock (aaya|aayi|liya)\b|\bmaal (aaya|liya|mangaya)\b"
+)
+# Bought now, paid later.
+LATER = ["udhaar", "udhar", "उधार", "उधारी", "credit", "baaki", "baki", "बाकी", "baad mein", "बाद में", "later", "pay later",
+         "nahi diya", "nahi diye", "nahin diya", "nahin diye", "नहीं दिया", "नहीं दिए", "abhi nahi", "not paid", "unpaid"]
+# Money handed over now ("1,000 cash diye", "500 de diye").
+PAID_NOW_WORDS = ["diye", "diya", "de diye", "paid", "gave", "दिए", "दिया", "दिले"]
+NOT_PAID = ["nahi diya", "nahi diye", "nahin diya", "nahin diye", "नहीं दिया", "नहीं दिए", "not paid", "unpaid"]
+# Goods coming in ("maal aaya", "liya"): with a supplier, "udhaar" means we bought on credit.
+GOODS_IN = ["aaya", "aayi", "aaye", "liya", "liye", "mangaya", "kharid", "maal", "आया", "लिया", "माल", "आला"]
 
 
 def detect_type(text: str, has_party: bool, has_items: bool) -> tuple[str, float]:
     t = text.lower()
+    if not _has(t, KEYWORDS["owner_withdrawal"]) and BUYING.search(t):
+        return "purchase", 0.9
     for kind in ("owner_withdrawal", "udhaar", "purchase", "expense", "payment", "sale"):
         if _has(t, KEYWORDS[kind]):
             # "X ne ... diye" with a party is a payment even if "maal" appears elsewhere
@@ -91,6 +128,8 @@ def detect_mode(text: str, type_: str) -> str | None:
     t = text.lower()
     if type_ == "udhaar":
         return "udhaar"
+    if type_ == "purchase" and _has(t, LATER) and not _has(t, UPI_WORDS + CASH_WORDS):
+        return "udhaar"  # bought on credit from the supplier
     if _has(t, UPI_WORDS):
         return "upi"
     if _has(t, CASH_WORDS):
@@ -132,8 +171,18 @@ def match_party(text: str, parties: list[Party], skip: set[str] | None = None) -
     return best, round(best_score, 2), alts
 
 
+ENGLISH_PARTY = re.compile(
+    r"\b(?:[Ff]rom|[Gg]ave|[Tt]o|[Pp]aid)\s+((?:[A-Z][\w.]*)(?:\s+(?:[A-Z][\w.]*|ji|bhai|traders|dairy|stores?|agency|distributors?)){0,2})"
+)
+
+
 def guess_new_party(text: str) -> str | None:
-    """A name we don't know yet: the words before ne/ko/se/ka, e.g. 'Verma ji ne 300 diye'."""
+    """A name we don't know yet: the words before ne/ko/se/ka, e.g. 'Verma ji ne 300 diye',
+    or after from/gave/to in English: 'from Gupta Traders', 'Gave Ramesh'."""
+    e = ENGLISH_PARTY.search(text)
+    if e and e.group(1).split()[0].lower() not in STOP | {"the", "my", "i", "upi", "cash"}:
+        words = e.group(1).split()
+        return " ".join(w if w.lower() in {"ji", "bhai"} else w[:1].upper() + w[1:] for w in words)
     m = re.search(r"^\s*([A-Za-zऀ-ॿ][\wऀ-ॿ]*(?:\s+[A-Za-zऀ-ॿ][\wऀ-ॿ]*){0,2}?)\s+(ne|ko|se|ka|ki|ने|को|से|का)\b", text)
     if not m:
         return None
@@ -141,6 +190,39 @@ def guess_new_party(text: str) -> str | None:
     if not name_words or name_words[0].lower() in KEYWORDS["udhaar"] + ["bijli", "maal", "ghar", "aaj", "kal"]:
         return None
     return " ".join(w if w.lower() in {"ji", "bhai", "didi", "kaka", "tai"} else w[:1].upper() + w[1:] for w in name_words)
+
+
+NOT_ITEM = STOP | set(UNIT_ALIASES) | {
+    "on", "of", "from", "at", "in", "and", "by", "with", "till", "until", "credit", "rupees", "rupee", "worth",
+    "for", "a", "an", "my", "i", "we", "bought", "purchased", "sold", "liye", "kharida", "kharidi", "kharide",
+    "aaya", "aayi", "mangaya", "becha", "bechi", "diya", "di", "wala", "wali", "ka", "ki", "ke", "se", "pe", "par",
+}
+
+
+def guess_new_items(text: str, known_words: set[str]) -> list[tuple[str, float, str]]:
+    """Items we don't stock yet, spoken with a unit: "10 kilo cheeni", "3 dozen eggs", "40 packet doodh".
+    -> (name, qty, unit). The shopkeeper can add them to stock from the card."""
+    tokens = [m.group().strip(".") for m in TOKEN.finditer(text)]
+    out: list[tuple[str, float, str]] = []
+    for i in range(len(tokens) - 2):
+        unit = UNIT_ALIASES.get(tokens[i + 1].lower())
+        if unit is None:
+            continue
+        try:
+            qty = float(tokens[i])
+        except ValueError:
+            continue
+        words: list[str] = []
+        for w in tokens[i + 2 : i + 4]:
+            lw = w.lower()
+            if lw in NOT_ITEM or lw in KEYWORDS["udhaar"] or not re.search(r"[^\W\d_]", w) or w.replace(".", "").isdigit():
+                break
+            words.append(w)
+        if not words or any(w.lower() in known_words for w in words):
+            continue
+        name = " ".join(words)
+        out.append((name[:1].upper() + name[1:], qty, unit))
+    return out
 
 
 def _bad_gram(words: list[str]) -> bool:
@@ -249,19 +331,38 @@ def extract_rules(text: str, ctx: ShopContext) -> ExtractedEntry:
     t = clean.lower()
 
     items = match_items(clean, ctx.items)
+    matched = [it for it, _, _ in items]
+    # A unit + name we don't stock; skip names that are just another spelling of a matched item (eggs = Anda).
+    new_items = [n for n in guess_new_items(clean, item_words(clean, items)) if not match_items(n[0], matched)]
     # Item names can look like person names (Parle / Patil): match people on the other words.
-    party, party_conf, alts = match_party(clean, ctx.parties, skip=item_words(clean, items))
-    type_, type_conf = detect_type(clean, party is not None, bool(items))
+    party, party_conf, alts = match_party(
+        clean, ctx.parties, skip=item_words(clean, items) | {w.lower() for n, _, _ in new_items for w in n.split()}
+    )
+    guessed = guess_new_party(clean)
+    type_, type_conf = detect_type(clean, party is not None or guessed is not None, bool(items or new_items))
+    if party is None and guessed and _has(t, SUPPLIER_HINTS) and type_ == "sale" and type_conf < 0.9:
+        type_, type_conf = "purchase", 0.8  # "Raju Dairy se 40 packet doodh aaya"
     if party is not None and party.kind == "supplier" and type_conf < 0.9 and type_ in {"sale", "payment"}:
         type_ = "purchase" if type_ == "sale" or _has(t, ["aaya", "aayi", "आया", "आला"]) else type_
         type_conf = 0.8
+    if type_ == "purchase" and party is not None and party.kind == "customer":
+        # Buying from someone: look among suppliers only ("Sharma Wholesale" is not customer "Sharma ji").
+        party, party_conf, alts = match_party(
+            clean, [p for p in ctx.parties if p.kind == "supplier"], skip=item_words(clean, items)
+        )
+    if type_ == "udhaar" and (
+        (party is not None and party.kind == "supplier")
+        or (party is None and _has(t, SUPPLIER_HINTS))
+    ) and (_has(t, GOODS_IN) or items or new_items):
+        # "Gupta se 20 packet Maggi aaya, udhaar pe": the shop bought on credit; we owe the supplier.
+        type_, type_conf = "purchase", 0.85
     if type_ in {"expense", "owner_withdrawal"}:
         party, party_conf, alts = None, 0.0, []
 
     amounts = find_amounts(clean)
     # Quantities spoken before an item ("5 maggi") are not money: take each one out once.
     money = list(amounts)
-    for _, q, _ in items:
+    for q in [q for _, q, _ in items] + [q for _, q, _ in new_items]:
         if q in money:
             money.remove(q)
     amount = int(round(money[0])) if money else None
@@ -269,11 +370,21 @@ def extract_rules(text: str, ctx: ShopContext) -> ExtractedEntry:
     paid_now = None
     if type_ == "purchase" and len(money) >= 2:
         amount, paid_now = int(round(max(money[0], money[1]))), int(round(min(money[0], money[1])))
-    if amount is None and items and all(it.price for it, _, _ in items):
+    priced_total = int(round(sum(it.price * q for it, q, _ in items))) if items and all(it.price for it, _, _ in items) and not new_items else 0
+    if type_ == "purchase" and len(money) == 1 and _has(t, PAID_NOW_WORDS) and _has(t, LATER) and not _has(t, NOT_PAID):
+        # "40 packet doodh aaya, 500 diye, baaki baad mein": the one number is what was paid now.
+        paid_now = amount
+        if priced_total > paid_now:
+            amount, amount_conf = priced_total, 0.85
+        else:
+            amount, amount_conf = None, 0.0  # bill total not said: ask
+    if amount is None and paid_now is None and items and all(it.price for it, _, _ in items):
         amount = int(round(sum(it.price * q for it, q, _ in items)))
         amount_conf = 0.85
 
     mode = detect_mode(clean, type_)
+    if type_ == "purchase" and paid_now and mode == "udhaar":
+        mode = "cash"  # part paid in cash now, the rest owed (paid_now says how much)
     due = find_due_date(clean, ctx.today) if type_ in {"udhaar", "purchase"} or (type_ == "sale" and mode == "udhaar") else None
 
     party_ref: PartyRef | None = None
@@ -306,6 +417,8 @@ def extract_rules(text: str, ctx: ShopContext) -> ExtractedEntry:
         confidence["party"] = party_conf
     if items:
         confidence["items"] = min(c for _, _, c in items)
+    if new_items:
+        confidence["items"] = min(confidence.get("items", 1.0), 0.5)  # not in stock yet: ask
     if due:
         confidence["due_date"] = 0.85
 
@@ -313,7 +426,8 @@ def extract_rules(text: str, ctx: ShopContext) -> ExtractedEntry:
         type=type_,
         party=party_ref,
         items=[LineItem(name=it.name if not it.variant else f"{it.name} {it.variant}", item_id=it.id, qty=q, unit=it.unit, price=it.price)
-               for it, q, _ in items],
+               for it, q, _ in items]
+        + [LineItem(name=n, item_id=None, qty=q, unit=u) for n, q, u in new_items],
         amount=amount,
         paid_now=paid_now,
         mode=mode,
@@ -327,9 +441,28 @@ def extract_rules(text: str, ctx: ShopContext) -> ExtractedEntry:
     )
 
 
-def extract(text: str, ctx: ShopContext) -> ExtractedEntry:
-    """LLM when configured (with rules as the safety net), rules otherwise."""
-    if settings.llm_configured:
+def as_command(text: str, ctx: ShopContext) -> ExtractedEntry | None:
+    found = detect_command(replace_number_words(text.strip()), ctx.parties, match_party)
+    if found is None:
+        return None
+    cmd, party, conf = found
+    return ExtractedEntry(
+        type="command",
+        command=cmd,
+        party=PartyRef(name=party.name, kind=party.kind, match_id=party.id) if party else None,
+        confidence={"type": 0.9, **({"party": round(conf, 2)} if party else {})},
+        raw_text=text.strip(),
+        source="rules",
+    )
+
+
+def extract(text: str, ctx: ShopContext, preview: bool = False) -> ExtractedEntry:
+    """Commands first. Then the LLM when configured (rules as the safety net), else rules.
+    `preview` (live suggestions while typing/speaking) always uses the free rules."""
+    command = as_command(text, ctx)
+    if command is not None:
+        return command
+    if settings.llm_configured and not preview:
         from app import llm  # local import: only needed with a key
 
         try:

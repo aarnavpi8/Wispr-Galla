@@ -12,6 +12,8 @@ COLUMNS = [
     ("shops", "kind", "VARCHAR(20) NOT NULL DEFAULT 'kirana'"),
     ("items", "stock", "INTEGER NOT NULL DEFAULT 0"),
     ("items", "low_stock_at", "INTEGER NOT NULL DEFAULT 5"),
+    ("items", "cost_price", "INTEGER NOT NULL DEFAULT 0"),
+    ("stock_moves", "unit_cost", "INTEGER"),
 ]
 
 

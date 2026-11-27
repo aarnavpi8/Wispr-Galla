@@ -3,15 +3,14 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-    <title>Galla</title>
+    <title>BolKhata</title>
     <style>
       :root { --bg: #faf6ee; --ink: #1d2a22; --forest: #103a29; --muted: #6b7568; --lime: #d7f08a; }
       * { box-sizing: border-box; }
       body { margin: 0; min-height: 100vh; display: grid; place-items: center; background: var(--bg); color: var(--ink);
         font-family: system-ui, "Noto Sans", "Noto Sans Devanagari", sans-serif; padding: 24px; }
       .card { max-width: 420px; text-align: center; }
-      .logo { width: 64px; height: 64px; margin: 0 auto 16px; border-radius: 20px; display: grid; place-items: center;
-        background: var(--forest); color: var(--lime); font-size: 32px; font-weight: 800; }
+      .logo { width: 72px; height: 72px; margin: 0 auto 16px; display: block; }
       h1 { margin: 0 0 8px; font-size: 26px; }
       p { margin: 0 0 12px; color: var(--muted); line-height: 1.5; }
       code { display: block; margin: 12px 0; padding: 12px; border-radius: 14px; background: #f3eee2; color: var(--ink);
@@ -20,11 +19,11 @@
   </head>
   <body>
     <main class="card">
-      <div class="logo">₹</div>
-      <h1>Galla</h1>
+      <svg class="logo" viewBox="0 0 64 64" aria-hidden="true"><defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#1f7a52"/><stop offset="1" stop-color="#0b2a1e"/></linearGradient></defs><rect width="64" height="64" rx="16" fill="url(#g)"/><path d="M20 12h24a10 10 0 0 1 10 10v16a10 10 0 0 1-10 10H27l-8.6 6.6a1.4 1.4 0 0 1-2.3-1.1V47.2A10 10 0 0 1 10 38V22a10 10 0 0 1 10-10Z" fill="#d7f08a"/><path d="M16.6 20.5v19M18.8 20.5v19" stroke="#d2553f" stroke-opacity="0.8" stroke-width="1.1" stroke-linecap="round"/><g stroke="#0b2a1e" stroke-width="3.6" stroke-linecap="round" fill="none"><path d="M23.5 27v6"/><path d="M29.5 22.5v15"/><path d="M35.5 25.5v9"/><path d="M40.5 31l3.2 3.2 6.3-8.4" stroke-linejoin="round"/></g></svg>
+      <h1>BolKhata</h1>
       <p>This app build has no server address yet.</p>
-      <p>Rebuild it pointing at your Galla server:</p>
-      <code>$env:CAP_SERVER_URL="https://your-galla-domain"<br />npx cap sync android</code>
+      <p>Rebuild it pointing at your BolKhata server:</p>
+      <code>$env:CAP_SERVER_URL="https://your-bolkhata-domain"<br />npx cap sync android</code>
       <p>Then press Run in Android Studio again.</p>
     </main>
   </body>

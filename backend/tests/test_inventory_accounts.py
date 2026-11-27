@@ -127,7 +127,7 @@ def test_migration_adds_stock_columns_to_old_database(tmp_path):
         conn.execute(text("CREATE TABLE items (id INTEGER PRIMARY KEY, name VARCHAR(120))"))
         conn.execute(text("INSERT INTO items (id, name) VALUES (1, 'Parle-G')"))
 
-    assert add_missing_columns(engine) == ["items.stock", "items.low_stock_at"]
+    assert add_missing_columns(engine) == ["items.stock", "items.low_stock_at", "items.cost_price"]
     assert {"stock", "low_stock_at"} <= {c["name"] for c in inspect(engine).get_columns("items")}
     with engine.connect() as conn:
         assert conn.execute(text("SELECT stock, low_stock_at FROM items")).one() == (0, 5)

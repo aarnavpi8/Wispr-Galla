@@ -9,6 +9,7 @@ from sqlalchemy.orm import Session
 
 from app import models
 from app.billscan import parse_bill
+from app.stockbook import record_move
 from app.db import get_db
 from app.deps import current_shop, iso
 
@@ -27,6 +28,8 @@ class ItemOut(BaseModel):
     low_stock_at: int
     low: bool
     value: int  # stock x price, at selling price
+    cost_price: int = 0  # weighted-average cost per unit (0 = not known yet)
+    margin: int | None = None  # price - cost, when the cost is known
 
 
 class NewItem(BaseModel):
@@ -36,6 +39,7 @@ class NewItem(BaseModel):
     price: int = Field(ge=0, le=10_00_000)
     stock: int = Field(default=0, ge=0, le=1_00_000)
     low_stock_at: int = Field(default=5, ge=0, le=1_00_000)
+    cost_price: int = Field(default=0, ge=0, le=10_00_000)
 
 
 class StockChange(BaseModel):
@@ -43,6 +47,7 @@ class StockChange(BaseModel):
 
     reason: MoveReason
     qty: int = Field(ge=0, le=1_00_000)
+    unit_cost: int | None = Field(default=None, ge=0, le=10_00_000)  # what was paid per unit (stock in)
 
 
 class MoveOut(BaseModel):
@@ -69,6 +74,8 @@ def item_out(i: models.Item) -> ItemOut:
         low_stock_at=i.low_stock_at,
         low=is_low(i),
         value=i.stock * i.price,
+        cost_price=i.cost_price,
+        margin=i.price - i.cost_price if i.cost_price else None,
     )
 
 
@@ -104,14 +111,14 @@ def add_item(body: NewItem, db: Session = Depends(get_db), shop: models.Shop = D
         unit=body.unit.strip(),
         price=body.price,
         aliases=[],
-        stock=body.stock,
+        stock=0,
         low_stock_at=body.low_stock_at,
+        cost_price=body.cost_price,
     )
     db.add(item)
     db.flush()
     if body.stock:
-        db.add(models.StockMove(shop_id=shop.id, item_id=item.id, delta=body.stock, reason="opening",
-                                stock_after=body.stock))
+        record_move(db, shop.id, item, body.stock, "opening", body.cost_price or None)
     db.commit()
     return item_out(item)
 
@@ -119,6 +126,7 @@ def add_item(body: NewItem, db: Session = Depends(get_db), shop: models.Shop = D
 class ItemUpdate(BaseModel):
     price: int | None = Field(default=None, ge=0, le=10_00_000)
     low_stock_at: int | None = Field(default=None, ge=0, le=1_00_000)
+    cost_price: int | None = Field(default=None, ge=0, le=10_00_000)
 
 
 @router.patch("/{item_id}", response_model=ItemOut)
@@ -134,6 +142,8 @@ def update_item(
         item.price = body.price
     if body.low_stock_at is not None:
         item.low_stock_at = body.low_stock_at
+    if body.cost_price is not None:
+        item.cost_price = body.cost_price
     db.commit()
     return item_out(item)
 
@@ -156,9 +166,7 @@ def change_stock(
         raise HTTPException(422, f"Stock sirf {item.stock} {item.unit} hai")
     if delta == 0 and body.reason != "count":
         raise HTTPException(422, "Kitna? Quantity 0 se zyada honi chahiye")
-    item.stock += delta
-    db.add(models.StockMove(shop_id=shop.id, item_id=item.id, delta=delta, reason=body.reason,
-                            stock_after=item.stock))
+    record_move(db, shop.id, item, delta, body.reason, body.unit_cost if body.reason == "purchase" else None)
     db.commit()
     return item_out(item)
 
@@ -173,11 +181,13 @@ class ScanLineOut(BaseModel):
     item_id: int | None
     confidence: float
     alternatives: list[int]
+    rate: int | None = None  # rupees per unit, from the bill's qty x rate = amount
 
 
 class BatchLine(BaseModel):
     item_id: int
     qty: int = Field(gt=0, le=1_00_000)
+    unit_cost: int | None = Field(default=None, ge=0, le=10_00_000)  # the bill's rate column
 
 
 class BatchIn(BaseModel):
@@ -202,9 +212,7 @@ def stock_batch(body: BatchIn, db: Session = Depends(get_db), shop: models.Shop 
     touched: dict[int, models.Item] = {}
     for line in body.lines:
         item = items[line.item_id]
-        item.stock += line.qty
-        db.add(models.StockMove(shop_id=shop.id, item_id=item.id, delta=line.qty, reason=body.reason,
-                                stock_after=item.stock))
+        record_move(db, shop.id, item, line.qty, body.reason, line.unit_cost)
         touched[item.id] = item
     db.commit()
     return [item_out(i) for i in touched.values()]

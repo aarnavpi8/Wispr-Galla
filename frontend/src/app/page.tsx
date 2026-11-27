@@ -2,6 +2,7 @@
 
 import { useAuth } from "@/components/auth";
 import { Dashboard } from "@/components/Dashboard";
+import { DesktopFrame } from "@/components/DesktopFrame";
 import { useLang } from "@/components/language";
 import { LanguagePicker } from "@/components/LanguagePicker";
 import { LoginScreen } from "@/components/LoginScreen";
@@ -26,11 +27,26 @@ export default function Home() {
   const setup = useApi<{ has_shop: boolean }>("/api/setup");
 
   if (!ready) return <Loading />;
-  if (!chosen) return <LanguagePicker />;
+  if (!chosen)
+    return (
+      <DesktopFrame>
+        <LanguagePicker />
+      </DesktopFrame>
+    );
   if (status === "loading") return <Loading />;
-  if (status === "signed-out") return <LoginScreen />;
+  if (status === "signed-out")
+    return (
+      <DesktopFrame>
+        <LoginScreen />
+      </DesktopFrame>
+    );
   if (setup.error) return <Dashboard />; // backend unreachable: the dashboard shows the error
   if (!setup.data) return <Loading />;
-  if (!setup.data.has_shop) return <SetupScreen onDone={() => setup.setData({ has_shop: true })} />;
+  if (!setup.data.has_shop)
+    return (
+      <DesktopFrame>
+        <SetupScreen onDone={() => setup.setData({ has_shop: true })} />
+      </DesktopFrame>
+    );
   return <Dashboard />;
 }

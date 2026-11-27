@@ -12,6 +12,7 @@ import { DayCloseSheet } from "./DayCloseSheet";
 import { InventoryCard } from "./InventoryCard";
 import { Reveal } from "./Reveal";
 import { StickySummary } from "./StickySummary";
+import { StockPlanCard } from "./StockPlanCard";
 
 type Handler = (url: string, init?: RequestInit) => unknown;
 
@@ -79,10 +80,28 @@ describe("InventoryCard", () => {
     expect(onChanged).toHaveBeenCalled();
   });
 
+  it("− sells one: records the money (cash) and lowers stock together", async () => {
+    const saleEntry = {
+      id: 77, type: "sale", party_id: null, party_name: null, amount: 10, paid_now: null, mode: "cash", due_date: null,
+      raw_text: "1 pc Parle-G chhota", source: "manual", reversed: false, created_at: new Date().toISOString(),
+    };
+    const calls = mockApi({
+      "/api/items": () => ITEMS,
+      "POST /api/items/2/sell": () => ({ item: { ...ITEMS[1], stock: 119, value: 1190 }, entry: saleEntry }),
+    });
+    const onSold = vi.fn();
+    const user = userEvent.setup();
+    render(<InventoryCard onSold={onSold} />);
+    await user.click(await screen.findByRole("button", { name: "Parle-G · chhota: Bika 1" }));
+    await waitFor(() => expect(screen.getByText("119")).toBeInTheDocument());
+    expect(calls.find((c) => c.method === "POST")).toMatchObject({ url: "/api/items/2/sell", body: { qty: 1, mode: "cash" } });
+    expect(onSold).toHaveBeenCalledWith(saleEntry);
+  });
+
   it("rolls back and explains when the server refuses", async () => {
     mockApi({
       "/api/items": () => ITEMS,
-      "POST /api/items/1/stock": () => Response.json({ detail: "Stock sirf 2 pc hai" }, { status: 422 }),
+      "POST /api/items/1/sell": () => Response.json({ detail: "Stock sirf 2 pc hai" }, { status: 422 }),
     });
     const user = userEvent.setup();
     render(<InventoryCard />);
@@ -223,5 +242,45 @@ describe("Scroll helpers", () => {
     expect(screen.getByText("3")).toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: "Bolo" }));
     expect(onSpeak).toHaveBeenCalled();
+  });
+});
+
+describe("StockPlanCard", () => {
+  const ACC = {
+    days: 30, opening: 1000, purchases: 2000, cogs: 500, wastage: 50, adjustments: 0, closing: 2450,
+    sales: 700, gross_profit: 200, margin_pct: 28.6, turnover: 0.29, no_cost_items: 2,
+  };
+  const PLAN = {
+    days: 3, lead_days: 3, order_now: 1, dead_value: 450, a_items: 1,
+    items: [
+      { item_id: 1, name: "Bread", variant: null, unit: "pc", stock: 2, low_stock_at: 6, sold: 9, per_day: 3, days_left: 0.7,
+        reorder_point: 11, order_qty: 18, eoq: 15, abc: "A", sales_value: 405, stock_cost: 70, status: "order_now" },
+      { item_id: 3, name: "Umbrella", variant: null, unit: "pc", stock: 3, low_stock_at: 1, sold: 0, per_day: 0, days_left: null,
+        reorder_point: 0, order_qty: 0, eoq: null, abc: "C", sales_value: 0, stock_cost: 450, status: "dead" },
+    ],
+  };
+
+  it("shows the stock account, profit, and what to order", async () => {
+    mockApi({ "/api/inventory/account": () => ACC, "/api/inventory/insights": () => PLAN });
+    render(<StockPlanCard />);
+    expect(await screen.findByText("₹2,450")).toBeInTheDocument();
+    expect(screen.getByText("₹200")).toBeInTheDocument();
+    expect(screen.getByText("Margin 28.6%")).toBeInTheDocument();
+    expect(await screen.findByText("Bread")).toBeInTheDocument();
+    expect(screen.getByText("18 pc mangao")).toBeInTheDocument();
+    expect(screen.getByText(/₹450 aise maal mein phansa/)).toBeInTheDocument();
+  });
+
+  it("sets alerts to reorder points", async () => {
+    const calls = mockApi({
+      "/api/inventory/account": () => ACC,
+      "/api/inventory/insights": () => PLAN,
+      "POST /api/inventory/apply-alerts": () => ({ updated: 1 }),
+    });
+    const user = userEvent.setup();
+    render(<StockPlanCard />);
+    await user.click(await screen.findByRole("button", { name: "Alert ko reorder point par set karo" }));
+    expect(await screen.findByRole("status")).toHaveTextContent("1 alert badle");
+    expect(calls.find((c) => c.method === "POST")?.body).toEqual({ days: 30, lead_days: 3 });
   });
 });

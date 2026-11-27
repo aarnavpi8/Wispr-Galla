@@ -10,6 +10,7 @@ import { useAuth } from "./auth";
 import { ListenButton } from "./HelpTip";
 import { Magnetic } from "./interactive";
 import { useLang } from "./language";
+import { Logo } from "./Logo";
 
 type Kind = "kirana" | "sabzi" | "medical" | "other";
 
@@ -76,8 +77,7 @@ export function SetupScreen({ onDone }: { onDone: () => void }) {
     <main className="mx-auto flex min-h-dvh w-full max-w-md flex-col gap-5 px-5 py-6">
       <div className="animate-rise flex items-center justify-between">
         <div className="flex items-center gap-2 text-forest-900">
-          <span className="grid size-10 place-items-center rounded-2xl bg-forest-900 text-xl text-lime-300">₹</span>
-          <span className="text-xl font-bold tracking-tight">Galla</span>
+          <Logo size={40} />
         </div>
         <span className="rounded-full bg-mint-100 px-3 py-1 text-xs font-bold text-forest-800">
           {t("setupStep", { i: step, n: STEPS })}

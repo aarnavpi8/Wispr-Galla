@@ -52,6 +52,63 @@ describe("HelpTip", () => {
   });
 });
 
+describe("read-aloud stops when you move on", () => {
+  function stubSpeech() {
+    const cancel = vi.fn();
+    const speak = vi.fn();
+    vi.stubGlobal("speechSynthesis", { speak, cancel, getVoices: () => [] });
+    vi.stubGlobal(
+      "SpeechSynthesisUtterance",
+      class {
+        lang = "";
+        rate = 1;
+        voice = null;
+        onend: (() => void) | null = null;
+        onerror: (() => void) | null = null;
+        constructor(public text: string) {}
+      },
+    );
+    return { cancel, speak };
+  }
+
+  it("closing a help card silences it", async () => {
+    const { cancel, speak } = stubSpeech();
+    const user = userEvent.setup();
+    inLang("en", <HelpTip title="payable" body="helpPayable" />);
+    await user.click(screen.getByRole("button", { name: /What is this/ }));
+    await user.click(screen.getByRole("button", { name: /Listen/ }));
+    expect(speak).toHaveBeenCalledOnce();
+    cancel.mockClear();
+    await user.click(screen.getByRole("button", { name: en.gotIt }));
+    expect(cancel).toHaveBeenCalled();
+  });
+
+  it("the next tour step silences the previous one", async () => {
+    const { cancel, speak } = stubSpeech();
+    const user = userEvent.setup();
+    inLang("en", <Tour onClose={() => {}} />);
+    await user.click(screen.getByRole("button", { name: /Listen/ }));
+    expect(speak).toHaveBeenCalledOnce();
+    cancel.mockClear();
+    await user.click(screen.getByRole("button", { name: `${en.tourNext} →` }));
+    expect(cancel).toHaveBeenCalled();
+  });
+
+  it("tapping Listen again stops it", async () => {
+    const { cancel } = stubSpeech();
+    const user = userEvent.setup();
+    inLang("en", <HelpTip title="payable" body="helpPayable" />);
+    await user.click(screen.getByRole("button", { name: /What is this/ }));
+    const listen = screen.getByRole("button", { name: /Listen/ });
+    await user.click(listen);
+    expect(listen).toHaveAttribute("aria-pressed", "true");
+    cancel.mockClear();
+    await user.click(listen);
+    expect(cancel).toHaveBeenCalled();
+    expect(listen).toHaveAttribute("aria-pressed", "false");
+  });
+});
+
 describe("ColorLegend", () => {
   it("names the three money colours", () => {
     inLang("en", <ColorLegend />);
@@ -142,7 +199,7 @@ describe("BillScanSheet", () => {
     await waitFor(() => expect(onDone).toHaveBeenCalled());
     expect(posted.at(-1)).toEqual({
       url: "/api/items/stock-batch",
-      body: { lines: [{ item_id: 1, qty: 24 }, { item_id: 2, qty: 10 }] },
+      body: { lines: [{ item_id: 1, qty: 24, unit_cost: null }, { item_id: 2, qty: 10, unit_cost: null }] },
     });
     expect(screen.getByText("Stock updated for 2 items")).toBeInTheDocument();
     expect(readBill).toHaveBeenCalledOnce();

@@ -99,3 +99,66 @@ def test_batch_is_all_or_nothing(client):
 def test_batch_rejects_zero_qty(client):
     maggi = next(i for i in client.get("/api/items").json() if i["name"] == "Maggi")
     assert client.post("/api/items/stock-batch", json={"lines": [{"item_id": maggi["id"], "qty": 0}]}).status_code == 422
+
+
+# Real OCR output (Tesseract.js 7, the app's settings) from a generated, deliberately messy
+# thermal-bill photo: tilted, creased, shadowed, faded column. Note the OCR slips: "7eg" for
+# 70g, "Qor Dal" for Toor Dal (on the crease).
+OCR_MESSY_BILL = """GUPTA DISTRIBUTORS
+Wholesale FMCG & Grocery
+Shop 14, Main Bazaar, Pune
+GSTIN 27ABCDE1234F175
+Inv No: 2381 Date: 27/11/26
+Party: Shree Ganesh Kirana
+Item Qty Rate Apt
+Parle G 10/- 24 9 216
+Maggi Noodles 7eg 48 13 624
+Surf Exl 1kg 6 128 768
+Tata Namak 1kg 10 25 250
+Kurkure Masala 20 18 360
+Qor Dal 15 148 2220
+Red Label Tea 250g 4 132 528
+Colgate 100g 12 52 624
+Sub Total 5590
+CGST 2.5% 140
+SGST 2.5% 140
+GRAND TOTAL 5870
+Paid: Cash 1000 Balance: udhaar
+Thank you! visit again
+"""
+
+
+def test_messy_real_ocr_bill_reads_every_item():
+    from sqlalchemy import create_engine, select
+    from sqlalchemy.orm import Session
+
+    from app.db import Base
+    from app.models import Item as ItemModel
+    from app.seed import seed
+
+    engine = create_engine("sqlite://")
+    Base.metadata.create_all(engine)
+    with Session(engine) as db:
+        seed(db)
+        items = {i.id: i for i in db.scalars(select(ItemModel))}
+        lines = parse_bill(OCR_MESSY_BILL, list(items.values()))
+        got = {(items[l.item_id].name, l.qty) for l in lines if l.item_id}
+    assert got == {
+        ("Parle-G", 24), ("Maggi", 48), ("Surf Excel", 6), ("Namak", 10),
+        ("Kurkure", 20), ("Toor dal", 15), ("Chai patti", 4), ("Colgate", 12),
+    }
+    # Headers, address, totals and footer don't show up as rows to review.
+    assert len(lines) == 8
+
+
+def test_pack_size_is_not_the_quantity():
+    assert quantity("Surf Excel 1kg 6 128 768") == 6
+    assert quantity("Tata Namak 1kg 10 25 250") == 10
+
+
+def test_bill_rate_becomes_the_unit_cost():
+    from app.billscan import unit_rate
+
+    assert unit_rate("Surf Excel 1kg 6 128 768") == 128
+    assert unit_rate("Parle G 10/- 24 9 216") == 9
+    assert unit_rate("Maggi 2 dozen") is None

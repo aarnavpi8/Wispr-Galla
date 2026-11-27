@@ -5,10 +5,14 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { postJSON, useApi } from "@/lib/api";
 import { formatINR } from "@/lib/format";
 import { greetingKey, LANGS } from "@/lib/i18n";
-import type { Accounts, EntryOut, ExtractedEntry, PartyBalance, ShopSummary, Summary } from "@/lib/types";
+import type { Accounts, Command, EntryOut, ExtractedEntry, Item, PartyBalance, ShopSummary, Summary } from "@/lib/types";
 
 import { AccountMenu } from "./AccountMenu";
 import { AccountsCard } from "./AccountsCard";
+import { AddItemSheet } from "./AddItemSheet";
+import { BillScanSheet } from "./BillScanSheet";
+import { DayCloseSheet } from "./DayCloseSheet";
+import { DesktopSidebar } from "./DesktopSidebar";
 import { useAuth } from "./auth";
 import { BottomNav, type NavId } from "./BottomNav";
 import { CaptureCard } from "./CaptureCard";
@@ -16,6 +20,7 @@ import { EntryCard } from "./EntryCard";
 import { EntryList } from "./EntryList";
 import { HeroCard } from "./HeroCard";
 import { InventoryCard } from "./InventoryCard";
+import { StockPlanCard } from "./StockPlanCard";
 import { KhataList } from "./KhataList";
 import { PartySheet } from "./PartySheet";
 import { Spotlight } from "./interactive";
@@ -42,6 +47,7 @@ export function Dashboard() {
   const accounts = useApi<Accounts>(`/api/accounts?days=7&r=${refresh}`);
   const entries = useApi<EntryOut[]>("/api/entries?limit=30");
   const khata = useApi<PartyBalance[]>("/api/khata");
+  const items = useApi<Item[]>(`/api/items?r=${refresh}`);
 
   const [tab, setTab] = useState<Tab>("hisaab");
   const [openParty, setOpenParty] = useState<PartyBalance | null>(null);
@@ -49,12 +55,65 @@ export function Dashboard() {
   const [card, setCard] = useState<ExtractedEntry | null>(null);
   const [captureKey, setCaptureKey] = useState(0);
   const [lastSaved, setLastSaved] = useState<EntryOut | null>(null);
+  const [voiceSheet, setVoiceSheet] = useState<"day_close" | "scan" | "add_item" | null>(null);
+  const [undoAsk, setUndoAsk] = useState<EntryOut | null>(null);
+
+  /** Voice control: everything you can tap, you can also say. */
+  const runCommand = (command: Command, partyId?: number | null) => {
+    const party = partyId ? khata.data?.find((p) => p.id === partyId) : undefined;
+    switch (command) {
+      case "day_close":
+        setVoiceSheet("day_close");
+        break;
+      case "show_khata":
+      case "send_reminder":
+        if (party) setOpenParty(party);
+        else go("khata");
+        break;
+      case "show_stock":
+        go("maal");
+        break;
+      case "scan_bill":
+        setVoiceSheet("scan");
+        break;
+      case "add_item":
+        setVoiceSheet("add_item");
+        break;
+      case "show_accounts":
+        go("hisaab");
+        break;
+      case "show_entries":
+        setTab("hisaab");
+        go("khata");
+        break;
+      case "change_language":
+        setPicking(true);
+        break;
+      case "help":
+        setTouring(true);
+        break;
+      case "undo_last": {
+        const latest = entries.data?.find((x) => !x.reversed);
+        if (latest) setUndoAsk(latest);
+        else setToast(t("nothingToUndo"));
+        break;
+      }
+      default:
+        go("aaj");
+    }
+  };
 
   const understand = async (text: string) => {
     setToast(t("understanding"));
     try {
-      setCard(await postJSON<ExtractedEntry>("/api/extract", { text }));
+      const entry = await postJSON<ExtractedEntry>("/api/extract", { text });
       setToast(null);
+      if (entry.type === "command" && entry.command) {
+        setCaptureKey((k) => k + 1); // clear the speak box
+        runCommand(entry.command, entry.party?.match_id ?? null);
+      } else {
+        setCard(entry);
+      }
     } catch (e) {
       setToast((e as Error).message);
     }
@@ -130,7 +189,20 @@ export function Dashboard() {
   };
 
   return (
-    <main className="mx-auto flex w-full max-w-md flex-1 flex-col gap-4 px-4 pb-36 pt-5">
+    <div className="flex w-full flex-1 lg:min-h-dvh">
+    <DesktopSidebar
+      shopName={shop.data?.name ?? ""}
+      expected={summary.data?.expected_cash_today ?? 0}
+      receivable={accounts.data?.receivable ?? summary.data?.udhaar_outstanding ?? 0}
+      lowStock={accounts.data?.low_stock ?? 0}
+      overdue={overdue.length}
+      onGo={go}
+      onSpeak={speak}
+      onLanguage={() => setPicking(true)}
+      onShowTour={() => setTouring(true)}
+    />
+    <main className="mx-auto flex w-full max-w-md flex-1 flex-col gap-4 px-4 pb-36 pt-5 lg:max-w-6xl lg:gap-6 lg:px-10 lg:pb-12 lg:pt-8">
+      <div className="lg:hidden">
       <StickySummary
         visible={heroGone}
         shopName={shop.data?.name ?? ""}
@@ -141,6 +213,7 @@ export function Dashboard() {
         onLowStock={() => go("maal")}
         account={<AccountMenu compact onShowTour={() => setTouring(true)} onLanguage={() => setPicking(true)} />}
       />
+      </div>
 
       <header id="aaj" className="animate-rise flex items-center justify-between gap-3">
         <div className="min-w-0">
@@ -148,11 +221,11 @@ export function Dashboard() {
             {t(greetingKey(new Date().getHours()))}
             {user ? `, ${user.name.split(" ")[0]}` : ""} 🙏
           </p>
-          <h1 className="truncate text-2xl font-extrabold tracking-tight text-forest-950">
+          <h1 className="truncate text-2xl font-extrabold tracking-tight text-forest-950 lg:text-4xl">
             {shop.data?.name ?? <span className="skeleton inline-block h-7 w-48 rounded-lg align-middle" />}
           </h1>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 lg:hidden">
           <button
             type="button"
             onClick={() => setPicking(true)}
@@ -178,21 +251,31 @@ export function Dashboard() {
         </p>
       )}
 
-      <div ref={hero} id="tour-hero" className="space-y-2">
+      {/* Phones: one column in this order (display: contents + order). Desktop: two columns. */}
+      <div className="contents lg:grid lg:grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)] lg:items-start lg:gap-6">
+        <div className="contents lg:flex lg:flex-col lg:gap-6">
+      <div ref={hero} id="tour-hero" className="order-1 space-y-2 lg:order-none">
         {summary.data ? <HeroCard summary={summary.data} /> : <div className="skeleton h-64 rounded-[28px]" />}
         <ColorLegend className="justify-center" />
       </div>
-
-      <div id="tour-capture">
-        <CaptureCard key={captureKey} onSubmit={(text) => void understand(text)} />
+      <div id="tour-capture" className="order-2 lg:order-none">
+        <CaptureCard
+          key={captureKey}
+          onSubmit={(text) => void understand(text)}
+          onCommand={(command, partyId) => {
+            setCaptureKey((k) => k + 1);
+            runCommand(command, partyId);
+          }}
+          parties={khata.data ?? []}
+          items={items.data ?? []}
+        />
       </div>
-
       {overdue.length > 0 && summary.data && (
         <Spotlight
           as="button"
           type="button"
           onClick={() => setOpenParty(overdue[0])}
-          className="animate-rise flex items-center gap-3 rounded-3xl border border-amber-200 bg-amber-50 p-4 text-left transition hover:-translate-y-0.5 hover:shadow-md [--spot:rgb(245_158_11/0.18)]"
+          className="animate-rise order-3 flex items-center gap-3 rounded-3xl lg:order-none border border-amber-200 bg-amber-50 p-4 text-left transition hover:-translate-y-0.5 hover:shadow-md [--spot:rgb(245_158_11/0.18)]"
         >
           <span className="text-2xl" aria-hidden>
             ⏰
@@ -208,22 +291,12 @@ export function Dashboard() {
           </span>
         </Spotlight>
       )}
-
-      <Reveal id="hisaab">
-        <AccountsCard refreshKey={refresh} onChanged={bump} />
-      </Reveal>
-
       {summary.data && (
-        <Reveal>
+        <Reveal className="order-5 lg:order-none">
           <WeekChart days={summary.data.days} />
         </Reveal>
       )}
-
-      <Reveal id="maal">
-        <InventoryCard onChanged={bump} />
-      </Reveal>
-
-      <Reveal id="khata">
+      <Reveal id="khata" className="order-7 lg:order-none">
         <section className="rounded-[28px] border border-line bg-surface p-4 shadow-sm">
           <div role="tablist" aria-label="Hisaab ya khata" className="relative mb-3 grid grid-cols-2 rounded-2xl bg-surface-2 p-1">
             <span
@@ -259,8 +332,30 @@ export function Dashboard() {
           {tab === "khata" && khata.data && <KhataList parties={khata.data} onOpen={setOpenParty} />}
         </section>
       </Reveal>
+        </div>
+        <div className="contents lg:flex lg:flex-col lg:gap-6">
+      <Reveal id="hisaab" className="order-4 lg:order-none">
+        <AccountsCard refreshKey={refresh} onChanged={bump} />
+      </Reveal>
+      <Reveal id="maal" className="order-6 lg:order-none">
+        <InventoryCard
+          onChanged={bump}
+          onSold={(entry) => {
+            setLastSaved(entry);
+            refreshAll();
+          }}
+          parties={khata.data ?? []}
+        />
+      </Reveal>
+      <Reveal className="order-7 lg:order-none">
+        <StockPlanCard refreshKey={refresh} onChanged={bump} />
+      </Reveal>
+        </div>
+      </div>
 
-      <BottomNav onGo={go} onSpeak={speak} lowStock={accounts.data?.low_stock ?? 0} overdue={overdue.length} />
+      <div className="lg:hidden">
+        <BottomNav onGo={go} onSpeak={speak} lowStock={accounts.data?.low_stock ?? 0} overdue={overdue.length} />
+      </div>
 
       {picking && (
         <div className="animate-pop fixed inset-0 z-[58] overflow-y-auto bg-background">
@@ -270,10 +365,40 @@ export function Dashboard() {
 
       {touring && <Tour onClose={() => setTouring(false)} />}
 
+      {voiceSheet === "day_close" && <DayCloseSheet onClose={() => setVoiceSheet(null)} onSaved={bump} />}
+      {voiceSheet === "scan" && items.data && (
+        <BillScanSheet items={items.data} onClose={() => setVoiceSheet(null)} onDone={refreshAll} />
+      )}
+      {voiceSheet === "add_item" && <AddItemSheet onClose={() => setVoiceSheet(null)} onAdded={refreshAll} />}
+
+      {undoAsk && (
+        <div role="alertdialog" aria-live="assertive" className="animate-pop fixed inset-x-4 bottom-28 z-50 mx-auto flex max-w-md items-center gap-3 rounded-2xl bg-forest-950 px-4 py-3 text-white shadow-2xl lg:inset-x-auto lg:bottom-8 lg:right-8 lg:mx-0 lg:w-[28rem]">
+          <span className="flex-1">
+            {t("undoLastAsk", { x: `${undoAsk.party_name ? `${undoAsk.party_name} ` : ""}${formatINR(undoAsk.amount)}` })}
+          </span>
+          <button type="button" onClick={() => setUndoAsk(null)} className="min-h-10 rounded-xl px-3 font-semibold text-white/80 hover:bg-white/10">
+            {t("cancel")}
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              const e = undoAsk;
+              setUndoAsk(null);
+              void undo(e);
+            }}
+            className="min-h-10 rounded-xl bg-lime-300 px-4 font-bold text-forest-950 active:scale-95"
+          >
+            {t("undo")}
+          </button>
+        </div>
+      )}
+
       {card && (
         <EntryCard
           entry={card}
           parties={khata.data ?? []}
+          stock={items.data ?? []}
+          onItemAdded={() => items.reload()}
           onClose={() => setCard(null)}
           onSaved={(saved) => {
             setCard(null);
@@ -285,7 +410,7 @@ export function Dashboard() {
       )}
 
       {lastSaved && (
-        <div role="status" className="animate-pop fixed inset-x-4 bottom-28 z-50 mx-auto flex max-w-md items-center gap-3 rounded-2xl bg-forest-950 px-4 py-3 text-white shadow-2xl">
+        <div role="status" className="animate-pop fixed inset-x-4 bottom-28 z-50 mx-auto lg:inset-x-auto lg:bottom-8 lg:right-8 lg:mx-0 lg:w-[28rem] flex max-w-md items-center gap-3 rounded-2xl bg-forest-950 px-4 py-3 text-white shadow-2xl">
           <span className="flex-1">{t("savedToast", { x: formatINR(lastSaved.amount) })}</span>
           <button type="button" onClick={() => void undo(lastSaved)} className="min-h-10 rounded-xl bg-lime-300 px-4 font-bold text-forest-950 active:scale-95">
             {t("undo")}
@@ -298,11 +423,12 @@ export function Dashboard() {
       {toast && (
         <div
           role="status"
-          className="animate-pop fixed inset-x-4 bottom-28 z-50 mx-auto max-w-md rounded-2xl bg-forest-950 px-4 py-3 text-white shadow-2xl"
+          className="animate-pop fixed inset-x-4 bottom-28 z-50 mx-auto lg:inset-x-auto lg:bottom-8 lg:right-8 lg:mx-0 lg:w-[28rem] max-w-md rounded-2xl bg-forest-950 px-4 py-3 text-white shadow-2xl"
         >
           {toast}
         </div>
       )}
     </main>
+    </div>
   );
 }

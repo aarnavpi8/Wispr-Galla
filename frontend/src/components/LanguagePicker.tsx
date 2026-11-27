@@ -7,6 +7,7 @@ import { revealFrom } from "@/lib/transition";
 
 import { Magnetic } from "./interactive";
 import { useLang } from "./language";
+import { Logo } from "./Logo";
 
 /** "पैसा → Money → पैसे → ਪੈਸਾ → …", rolling top to bottom like a split-flap sign. */
 function MoneyRoll() {
@@ -251,8 +252,7 @@ export function LanguagePicker({ onDone }: { onDone?: () => void }) {
   return (
     <main className="mx-auto flex min-h-dvh w-full max-w-md flex-col gap-3 px-5 py-6">
       <div className="animate-rise flex items-center gap-2 text-forest-900">
-        <span className="grid size-10 place-items-center rounded-2xl bg-forest-900 text-xl text-lime-300">₹</span>
-        <span className="text-xl font-bold tracking-tight">Galla</span>
+        <Logo size={40} />
       </div>
 
       <MoneyRoll />

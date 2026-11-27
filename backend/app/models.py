@@ -37,6 +37,8 @@ class Item(Base):
     # Inventory (D18). Older databases get these columns from app.migrate on start.
     stock: Mapped[int] = mapped_column(Integer, default=0, server_default="0")
     low_stock_at: Mapped[int] = mapped_column(Integer, default=5, server_default="5")
+    # Weighted-average cost per unit (what the shop paid), for the inventory account (D25).
+    cost_price: Mapped[int] = mapped_column(Integer, default=0, server_default="0")
 
 
 class StockMove(Base):
@@ -50,6 +52,8 @@ class StockMove(Base):
     delta: Mapped[int] = mapped_column(Integer)  # +in / -out
     reason: Mapped[str] = mapped_column(String(20))  # opening | purchase | sale | wastage | count
     stock_after: Mapped[int] = mapped_column(Integer)
+    # Cost per unit this move was valued at (purchase price for stock in, average cost for stock out).
+    unit_cost: Mapped[int | None] = mapped_column(Integer, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now)
 
 

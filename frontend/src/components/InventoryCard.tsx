@@ -4,7 +4,7 @@ import { useState } from "react";
 
 import { postJSON, useApi } from "@/lib/api";
 import { formatINR, itemLabel, stockLevel } from "@/lib/format";
-import type { Item, StockReason } from "@/lib/types";
+import type { EntryOut, Item, PartyBalance, SellOut, StockReason } from "@/lib/types";
 
 import { AddItemSheet } from "./AddItemSheet";
 import { BillScanSheet } from "./BillScanSheet";
@@ -16,7 +16,16 @@ import { HelpTip } from "./HelpTip";
 const PREVIEW = 6;
 
 /** Inventory: what's on the shelf, what's running low, quick in/out, and new items. */
-export function InventoryCard({ onChanged }: { onChanged?: () => void }) {
+export function InventoryCard({
+  onChanged,
+  onSold,
+  parties = [],
+}: {
+  onChanged?: () => void;
+  /** A sale was recorded from the stock screen (show "Saved ₹x · Undo"). */
+  onSold?: (entry: EntryOut) => void;
+  parties?: PartyBalance[];
+}) {
   const { t } = useLang();
   const { data: items, setData, reload } = useApi<Item[]>("/api/items");
   const [query, setQuery] = useState("");
@@ -40,7 +49,15 @@ export function InventoryCard({ onChanged }: { onChanged?: () => void }) {
     const guess = { ...item, stock: item.stock + delta, value: (item.stock + delta) * item.price, low: item.stock + delta <= item.low_stock_at };
     setData((list) => list?.map((i) => (i.id === item.id ? guess : i)) ?? list);
     try {
-      replace(await postJSON<Item>(`/api/items/${item.id}/stock`, { reason, qty: 1 }));
+      if (reason === "sale") {
+        // Sold one: money in and stock down together (a cash sale at the item's price).
+        const out = await postJSON<SellOut>(`/api/items/${item.id}/sell`, { qty: 1, mode: "cash" });
+        replace(out.item);
+        if (out.entry) onSold?.(out.entry);
+        else setError(t("noPriceSale"));
+      } else {
+        replace(await postJSON<Item>(`/api/items/${item.id}/stock`, { reason, qty: 1 }));
+      }
     } catch (e) {
       setData((list) => list?.map((i) => (i.id === item.id ? item : i)) ?? list);
       setError((e as Error).message);
@@ -205,6 +222,8 @@ export function InventoryCard({ onChanged }: { onChanged?: () => void }) {
           item={items?.find((i) => i.id === open.id) ?? open}
           onClose={() => setOpen(null)}
           onUpdated={replace}
+          onSold={(entry) => onSold?.(entry)}
+          parties={parties}
         />
       )}
       {scanning && items && (

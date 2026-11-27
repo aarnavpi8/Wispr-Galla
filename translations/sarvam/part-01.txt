@@ -1,0 +1,56 @@
+1. Good morning
+2. Good afternoon
+3. Good evening
+4. BolKhata · speak, and the accounts are written
+5. Language
+6. Choose your language
+7. You can change this any time.
+8. Get started
+9. Scroll, swipe or tap to turn
+10. Speak, and your
+11. accounts
+12. get written.
+13. Talk like you do at the counter. BolKhata keeps the khata, sales and the day's cash.
+14. You say
+15. Sign in with Google
+16. See the demo without signing in
+17. Google sign-in didn't work. Please try again.
+18. This website isn't allowed in Firebase yet (Authentication → Settings → Authorized domains).
+19. Google sign-in isn't turned on yet. In Firebase: Authentication → Sign-in method → Google → Enable.
+20. The sign-in window was blocked. Allow pop-ups for this site and try again.
+21. Account
+22. Guest
+23. Sign out
+24. Demo mode
+25. Sign in to keep your own shop's accounts.
+26. Sign in with Google
+27. Demo shop
+28. Google sign-in isn't set up (Firebase keys missing). Everything works without it.
+29. Should be in the galla
+30. Today
+31. 7 days
+32. Sales
+33. Collected
+34. Credit given
+35. Cash out
+36. Started with {x} · after today's cash entries
+37. No AI key: the built-in rules understand your entries.
+38. Speak or type
+39. Next
+40. Clear
+41. Tap and speak
+42. Stop
+43. Listening…
+44. Please speak again
+45. Please allow the microphone
+46. The mic didn't work
+47. Writing it down…
+48. Couldn't turn the voice into text. Please try again or type.
+49. Wispr Flow voice
+50. Sharma ji paid 500 by UPI
+51. Gave Ramesh 2 kg sugar on credit, till the 15th
+52. Goods from Gupta distributor 3,200, paid 1,000 cash
+53. Paid electricity bill 850
+54. The entry card (flow 1) is still being built. This entry was not saved.
+55. {n} customer(s) past their due date
+56. Total credit due {x} · tap to send a reminder

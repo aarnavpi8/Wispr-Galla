@@ -101,7 +101,7 @@ def add_to_day(day: DayTotals, e: Entry, party_kind: str | None) -> None:
     elif e.type == "purchase":
         day.purchases += e.amount
         if e.mode != "upi":
-            day.purchases_paid += e.paid_now if e.paid_now is not None else e.amount
+            day.purchases_paid += purchase_paid(e)
     elif e.type == "expense":
         if e.mode != "upi":
             day.expenses += e.amount
@@ -130,6 +130,13 @@ class Balance:
     _due_dates: list[date] = field(default_factory=list)
 
 
+def purchase_paid(e: Entry) -> int:
+    """What the shop paid at the time of a purchase. Not said: all of it, unless bought on credit."""
+    if e.paid_now is not None:
+        return e.paid_now
+    return 0 if e.mode == "udhaar" else e.amount
+
+
 def party_balances(entries: Iterable[Entry], party_kinds: dict[int, str], today: date) -> dict[int, Balance]:
     out: dict[int, Balance] = {pid: Balance(party_id=pid) for pid in party_kinds}
     for e in sorted(active(entries), key=lambda e: e.created_at):
@@ -146,7 +153,7 @@ def party_balances(entries: Iterable[Entry], party_kinds: dict[int, str], today:
                 b.balance -= e.amount
         else:
             if e.type == "purchase":
-                b.balance += e.amount - (e.paid_now or 0)
+                b.balance += e.amount - purchase_paid(e)
                 if e.due_date:
                     b._due_dates.append(e.due_date)
             elif e.type == "payment":

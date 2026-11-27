@@ -62,21 +62,6 @@ export const MONEY_WORDS: { text: string; lang: string }[] = [
   { text: "ଟଙ୍କା", lang: "or" },
 ];
 
-/** The same rupee amount in each script's digits, cycled alongside the greeting. */
-export const CURRENCY_SCRIPTS = ["deva", "latn", "deva", "latn", "guru", "gujr", "tamldec", "beng"] as const;
-
-export function formatINRScript(amount: number, numberingSystem: string): string {
-  try {
-    return new Intl.NumberFormat(`en-IN-u-nu-${numberingSystem}`, {
-      style: "currency",
-      currency: "INR",
-      maximumFractionDigits: 0,
-    }).format(amount);
-  } catch {
-    return new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", maximumFractionDigits: 0 }).format(amount);
-  }
-}
-
 export type { StringKey };
 
 /** Every language has every key; the `Locale` type makes a missing word a type error. */

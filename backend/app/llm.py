@@ -10,6 +10,7 @@ from datetime import date
 
 import httpx
 
+from app.commands import COMMANDS
 from app.config import settings
 from app.extract import MATCH_OK, ShopContext, match_items, match_party
 from app.schemas import ExtractedEntry, LineItem, PartyOption, PartyRef
@@ -21,14 +22,15 @@ TYPES = ["sale", "udhaar", "payment", "purchase", "expense", "owner_withdrawal"]
 SCHEMA = {
     "type": "OBJECT",
     "properties": {
-        "type": {"type": "STRING", "enum": TYPES},
+        "type": {"type": "STRING", "enum": [*TYPES, "command"]},
+        "command": {"type": "STRING", "enum": COMMANDS, "nullable": True},
         "party_name": {"type": "STRING", "nullable": True},
         "party_kind": {"type": "STRING", "enum": ["customer", "supplier"], "nullable": True},
         "items": {
             "type": "ARRAY",
             "items": {
                 "type": "OBJECT",
-                "properties": {"name": {"type": "STRING"}, "qty": {"type": "NUMBER"}},
+                "properties": {"name": {"type": "STRING"}, "qty": {"type": "NUMBER"}, "unit": {"type": "STRING", "nullable": True}},
                 "required": ["name", "qty"],
             },
         },
@@ -55,6 +57,11 @@ Types:
 - purchase: stock bought from a supplier ("maal aaya"); paid_now = part paid immediately
 - expense: shop expense (electricity, rent, salary, tea...)
 - owner_withdrawal: owner took money home
+- command: the shopkeeper wants the app to DO something, not record money. Then set "command":
+  day_close (close the day / count the cash box), show_khata (open a person's account; set party_name),
+  send_reminder (remind a person to pay; set party_name), show_stock, scan_bill (scan a supplier bill),
+  add_item (new item), show_accounts, show_entries, change_language, help, undo_last (undo the last entry).
+  A sentence with an amount of money is never a command (except undo).
 
 Known people: {parties}
 Known items: {items}
@@ -63,7 +70,10 @@ Rules: amounts are whole rupees. Convert spoken numbers ("dhai sau" = 250, "saad
 3500). Item quantities are not amounts. Use the known spelling of a person/item when it is clearly
 the same one; otherwise write the name as spoken. due_date only if a date/deadline is said
 ("15 tareekh tak", "parson", "agle hafte"), resolved against today. mode: upi for UPI/PhonePe/GPay/
-Paytm/online, cash for cash, udhaar for credit. Leave anything not said as null.
+Paytm/online, cash for cash, udhaar for credit. "purchase" is the SHOP buying stock from a
+supplier/vendor (mode udhaar if the shop will pay later; paid_now = what was paid now). "udhaar" is the
+shop giving goods/money to a CUSTOMER on credit. Name every item spoken, even if it is not a known item.
+Leave anything not said as null.
 
 Sentence: {text}"""
 
@@ -97,6 +107,20 @@ def extract_llm(text: str, ctx: ShopContext, fallback, client: httpx.Client | No
         return fallback(text, ctx)
     data = call_gemini(build_prompt(text, ctx), client)
     type_ = data.get("type")
+    if type_ == "command" and data.get("command") in COMMANDS:
+        party_ref, party_conf = None, None
+        if data.get("party_name"):
+            match, score, _ = match_party(data["party_name"], ctx.parties)
+            if match is not None:
+                party_ref, party_conf = PartyRef(name=match.name, kind=match.kind, match_id=match.id), score
+        return ExtractedEntry(
+            type="command",
+            command=data["command"],
+            party=party_ref,
+            confidence={"type": 0.85, **({"party": round(party_conf, 2)} if party_conf else {})},
+            raw_text=text.strip(),
+            source="llm",
+        )
     if type_ not in TYPES:
         return fallback(text, ctx)
 
@@ -104,7 +128,10 @@ def extract_llm(text: str, ctx: ShopContext, fallback, client: httpx.Client | No
     party_ref, party_conf, options = None, None, []
     name = (data.get("party_name") or "").strip()
     if name and type_ not in {"expense", "owner_withdrawal"}:
-        match, score, alts = match_party(name, ctx.parties)
+        # Buying: the seller is a supplier; credit and sales go to customers.
+        want = "supplier" if type_ == "purchase" else "customer" if type_ in {"udhaar", "sale"} else None
+        pool = [p for p in ctx.parties if want is None or p.kind == want]
+        match, score, alts = match_party(name, pool)
         if match is not None and score >= MATCH_OK:
             party_ref, party_conf = PartyRef(name=match.name, kind=match.kind, match_id=match.id), score
         else:
@@ -122,6 +149,15 @@ def extract_llm(text: str, ctx: ShopContext, fallback, client: httpx.Client | No
             line_items.append(LineItem(name=item.name if not item.variant else f"{item.name} {item.variant}",
                                        item_id=item.id, qty=float(it.get("qty") or qty), unit=item.unit, price=item.price))
             item_conf.append(conf)
+        elif it.get("name"):
+            # Not in stock yet: keep it, so the card can offer to add it.
+            unit = str(it.get("unit") or "pc").lower()
+            from app.extract import UNIT_ALIASES
+
+            spoken = str(it["name"]).strip()[:60]
+            line_items.append(LineItem(name=spoken[:1].upper() + spoken[1:], item_id=None, qty=float(it.get("qty") or 1),
+                                       unit=UNIT_ALIASES.get(unit, unit if unit in {"kg", "pc", "litre", "packet", "dozen", "box"} else "pc")))
+            item_conf.append(0.5)
 
     amount = data.get("amount")
     amount_conf = 0.9 if amount is not None else 0.0

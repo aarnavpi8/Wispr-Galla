@@ -1,0 +1,100 @@
+57. Sales, last 7 days
+58. Cash
+59. UPI
+60. Sun
+61. Mon
+62. Tue
+63. Wed
+64. Thu
+65. Fri
+66. Sat
+67. just now
+68. {n} min ago
+69. {n} hr ago
+70. yesterday
+71. {n} days ago
+72. Sale · Cash
+73. Sale · UPI
+74. Sale on credit
+75. Credit given
+76. Money received · Cash
+77. Money received · UPI
+78. Paid supplier
+79. Goods bought
+80. Expense
+81. Taken for home
+82. Bill item
+83. Command
+84. No entries yet. Speak above!
+85. Entries
+86. Khata
+87. Search a name
+88. Customers
+89. Suppliers
+90. Due {n} days ago
+91. All settled
+92. Paid in advance
+93. Still to pay
+94. Nobody found.
+95. Customer
+96. Supplier
+97. They owe you
+98. Their advance
+99. You owe them
+100. Due date passed: {d}
+101. Make WhatsApp reminder
+102. WhatsApp opens. Check the message, then you tap Send.
+103. No entries.
+104. History
+105. Namaste {name}, a reminder from {shop}: {x} is pending. If convenient, please pay by UPI: {upi} Thank you 🙏
+106. Today
+107. Accounts
+108. Stock
+109. Khata
+110. Speak
+111. Accounts
+112. Last {n} days
+113. To collect
+114. From customers
+115. To pay
+116. To suppliers
+117. Net (estimate)
+118. Sales − stock bought − expenses
+119. Stock on shelves
+120. {n} items
+121. Cash
+122. UPI
+123. In
+124. Out
+125. Stock bought
+126. Expenses
+127. Taken for home
+128. Close the day
+129. Count the galla and match it
+130. Expected
+131. How much is in the galla?
+132. Save
+133. All matched! 🎉
+134. {x} short
+135. {x} extra
+136. Check today's cash entries, one may be missing:
+137. No cash entries today.
+138. Counted today: {x}
+139. Stock
+140. {n} items · {x} worth
+141. Low stock
+142. {n} items running low
+143. All
+144. Search items
+145. New item
+146. Name
+147. Size / brand (optional)
+148. Unit
+149. Price (₹)
+150. In stock now
+151. Alert below
+152. Stock in
+153. Sold
+154. Wasted
+155. Recount
+156. Quantity

@@ -49,6 +49,10 @@ We build hands-free: prompts are dictated with Wispr Flow.
   (kirana / sabzi / medical / other), UPI and cash (optional); starter items at ₹0 with a price
   edit in the item sheet. "Try a demo shop" loads the sample data in one tap.
 - Docker path: verified on Ansh's machine (D13); CI checks it on every push.
+- Done: buying from a supplier on credit. "Gupta se maal aaya, udhaar pe", "kuch nahi diya" and
+  "500 diye, baaki baad mein" become purchases owed to the supplier; the API turns an udhaar saved
+  against a supplier into a credit purchase and rejects paid-now above the bill. Unknown items on a
+  card get "Not in stock · Add it"; from a purchase the new item takes its stock from that entry.
 
 ## Round 2 brief (official)
 

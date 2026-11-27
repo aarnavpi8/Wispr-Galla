@@ -17,7 +17,16 @@ export type Command =
   | "bill_total"
   | "day_close"
   | "show_khata"
-  | "send_reminder";
+  | "send_reminder"
+  // Voice control for the rest of the app (backend/app/commands.py)
+  | "show_stock"
+  | "scan_bill"
+  | "add_item"
+  | "show_accounts"
+  | "show_entries"
+  | "change_language"
+  | "help"
+  | "undo_last";
 
 export interface PartyRef {
   name: string;
@@ -144,6 +153,8 @@ export interface Item {
   low_stock_at: number;
   low: boolean;
   value: number;
+  cost_price?: number; // weighted-average cost per unit; 0 = not known
+  margin?: number | null;
 }
 
 export type StockReason = "purchase" | "sale" | "wastage" | "count";
@@ -202,4 +213,58 @@ export interface ScanLine {
   item_id: number | null;
   confidence: number;
   alternatives: number[];
+  rate?: number | null;
+}
+
+// Selling from the stock screen: POST /api/items/{id}/sell (backend/app/entries_api.py)
+export interface SellOut {
+  item: Item;
+  entry: EntryOut | null; // null when the item has no price yet (stock-only)
+}
+
+// Inventory as its own account: GET /api/inventory/account (backend/app/stockplan.py)
+export interface InventoryAccount {
+  days: number;
+  opening: number;
+  purchases: number;
+  cogs: number;
+  wastage: number;
+  adjustments: number;
+  closing: number;
+  sales: number;
+  gross_profit: number;
+  margin_pct: number | null;
+  turnover: number | null;
+  no_cost_items: number;
+}
+
+export type PlanStatus = "out" | "order_now" | "ok" | "dead" | "no_sales";
+
+// Reorder point, EOQ, ABC, dead stock: GET /api/inventory/insights
+export interface ItemPlan {
+  item_id: number;
+  name: string;
+  variant: string | null;
+  unit: string;
+  stock: number;
+  low_stock_at: number;
+  sold: number;
+  per_day: number;
+  days_left: number | null;
+  reorder_point: number;
+  order_qty: number;
+  eoq: number | null;
+  abc: "A" | "B" | "C";
+  sales_value: number;
+  stock_cost: number;
+  status: PlanStatus;
+}
+
+export interface Insights {
+  days: number;
+  lead_days: number;
+  items: ItemPlan[];
+  order_now: number;
+  dead_value: number;
+  a_items: number;
 }

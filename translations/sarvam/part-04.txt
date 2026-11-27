@@ -1,0 +1,56 @@
+189. Take a photo of the supplier's bill. BolKhata reads the items and amounts, you check them, and one tap adds everything to stock.
+190. How to use
+191. Skip
+192. Next
+193. Back
+194. Start using BolKhata
+195. {i} of {n}
+196. Your money, at a glance
+197. This big green card shows how much cash should be in your galla. Green numbers came in, red went out.
+198. Just speak
+199. Tap the mic and talk like at the counter: “Ramesh ko 200 udhaar”. BolKhata turns it into an entry. You check it, then save.
+200. Your accounts, made simple
+201. “To collect” is what customers owe you. “To pay” is what you owe suppliers. Tap any “?” to learn more.
+202. Your stock
+203. See what's on the shelf and what's running low. Scan a supplier's bill to add stock in one go.
+204. Customer khata
+205. Every customer's balance. Orange means the due date has passed: tap to send a polite WhatsApp reminder.
+206. Jump anywhere
+207. This bar stays at the bottom. The big round button lets you speak from anywhere.
+208. Set up your shop
+209. A few questions and you're ready. You can change everything later.
+210. What is your shop called?
+211. e.g. Sharma General Store
+212. What do you sell?
+213. Kirana / general store
+214. Sabzi / fruits
+215. Medical store
+216. Something else
+217. Payments
+218. Your UPI ID (for payment reminders)
+219. e.g. 9876543210@upi
+220. Cash in the galla right now (₹)
+221. Add common items for this kind of shop
+222. Open my shop
+223. Just look at a demo shop
+224. Step {i} of {n}
+225. optional
+226. Set price
+227. Check and save
+228. Sale
+229. Credit (udhaar)
+230. Money received
+231. Stock bought
+232. Expense
+233. Taken for home
+234. Amount
+235. Who?
+236. Paid by
+237. Cash
+238. UPI
+239. On credit
+240. Pay by
+241. Items
+242. Paid now
+243. How much?
+244. Who is this for?

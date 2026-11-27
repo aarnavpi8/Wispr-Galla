@@ -2,7 +2,7 @@ import { act, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import { formatINRScript, GREETINGS, greetingKey, LANGS, translate } from "@/lib/i18n";
+import { GREETINGS, greetingKey, LANGS, translate } from "@/lib/i18n";
 
 import { LanguagePicker, wrapDelta } from "./LanguagePicker";
 import { LanguageProvider, useLang } from "./language";
@@ -25,17 +25,6 @@ describe("translate", () => {
     expect(greetingKey(8)).toBe("morning");
     expect(greetingKey(14)).toBe("afternoon");
     expect(greetingKey(20)).toBe("evening");
-  });
-});
-
-describe("formatINRScript", () => {
-  it("writes the same rupee amount in different digit scripts", () => {
-    expect(formatINRScript(125000, "latn")).toBe("₹1,25,000");
-    expect(formatINRScript(125000, "deva")).toBe("₹१,२५,०००");
-  });
-
-  it("falls back to Latin digits for an unknown script", () => {
-    expect(formatINRScript(500, "not-a-script")).toBe("₹500");
   });
 });
 

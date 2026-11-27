@@ -5,7 +5,7 @@ from fastapi import Depends, FastAPI, Query
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
-from app import accounts, entries_api, inventory, ledger, models, setup, voice
+from app import accounts, entries_api, inventory, ledger, models, setup, stockplan, voice
 from app.config import settings
 from app.db import Base, SessionLocal, engine, get_db
 from app.deps import current_shop, iso
@@ -31,6 +31,7 @@ app.include_router(accounts.router)
 app.include_router(voice.router)
 app.include_router(setup.router)
 app.include_router(entries_api.router)
+app.include_router(stockplan.router)
 
 
 @app.get("/api/health")

@@ -18,6 +18,8 @@ interface AuthState {
   user: GallaUser | null;
   config: AppConfig | null;
   /** Dictionary key of the last sign-in problem (shown in the chosen language). */
+  /** Bumps after each successful sign-in (the welcome splash replays). */
+  loginCount: number;
   error: "loginFailed" | "domainNotAllowed" | "loginProviderOff" | "loginPopupBlocked" | null;
   signIn: () => Promise<void>;
   signOut: () => Promise<void>;
@@ -41,6 +43,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [status, setStatus] = useState<Status>("loading");
   const [user, setUser] = useState<GallaUser | null>(null);
   const [error, setError] = useState<AuthState["error"]>(null);
+  const [loginCount, setLoginCount] = useState(0);
 
   useEffect(() => {
     let unsub: (() => void) | undefined;
@@ -82,6 +85,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       const { signInWithGoogle } = await import("@/lib/firebase");
       await signInWithGoogle(config.firebase);
+      setLoginCount((n) => n + 1);
     } catch (e) {
       const code = (e as { code?: string }).code ?? "";
       if (code === "auth/popup-closed-by-user" || code === "auth/cancelled-popup-request") return;
@@ -114,7 +118,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   return (
-    <AuthContext.Provider value={{ status, user, config, error, signIn, signOut, continueAsGuest }}>
+    <AuthContext.Provider value={{ status, user, config, error, loginCount, signIn, signOut, continueAsGuest }}>
       {children}
     </AuthContext.Provider>
   );

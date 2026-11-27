@@ -1,0 +1,285 @@
+1. Good morning
+2. Good afternoon
+3. Good evening
+4. BolKhata · speak, and the accounts are written
+5. Language
+6. Choose your language
+7. You can change this any time.
+8. Get started
+9. Scroll, swipe or tap to turn
+10. Speak, and your
+11. accounts
+12. get written.
+13. Talk like you do at the counter. BolKhata keeps the khata, sales and the day's cash.
+14. You say
+15. Sign in with Google
+16. See the demo without signing in
+17. Google sign-in didn't work. Please try again.
+18. This website isn't allowed in Firebase yet (Authentication → Settings → Authorized domains).
+19. Google sign-in isn't turned on yet. In Firebase: Authentication → Sign-in method → Google → Enable.
+20. The sign-in window was blocked. Allow pop-ups for this site and try again.
+21. Account
+22. Guest
+23. Sign out
+24. Demo mode
+25. Sign in to keep your own shop's accounts.
+26. Sign in with Google
+27. Demo shop
+28. Google sign-in isn't set up (Firebase keys missing). Everything works without it.
+29. Should be in the galla
+30. Today
+31. 7 days
+32. Sales
+33. Collected
+34. Credit given
+35. Cash out
+36. Started with {x} · after today's cash entries
+37. No AI key: the built-in rules understand your entries.
+38. Speak or type
+39. Next
+40. Clear
+41. Tap and speak
+42. Stop
+43. Listening…
+44. Please speak again
+45. Please allow the microphone
+46. The mic didn't work
+47. Writing it down…
+48. Couldn't turn the voice into text. Please try again or type.
+49. Wispr Flow voice
+50. Sharma ji paid 500 by UPI
+51. Gave Ramesh 2 kg sugar on credit, till the 15th
+52. Goods from Gupta distributor 3,200, paid 1,000 cash
+53. Paid electricity bill 850
+54. The entry card (flow 1) is still being built. This entry was not saved.
+55. {n} customer(s) past their due date
+56. Total credit due {x} · tap to send a reminder
+57. Sales, last 7 days
+58. Cash
+59. UPI
+60. Sun
+61. Mon
+62. Tue
+63. Wed
+64. Thu
+65. Fri
+66. Sat
+67. just now
+68. {n} min ago
+69. {n} hr ago
+70. yesterday
+71. {n} days ago
+72. Sale · Cash
+73. Sale · UPI
+74. Sale on credit
+75. Credit given
+76. Money received · Cash
+77. Money received · UPI
+78. Paid supplier
+79. Goods bought
+80. Expense
+81. Taken for home
+82. Bill item
+83. Command
+84. No entries yet. Speak above!
+85. Entries
+86. Khata
+87. Search a name
+88. Customers
+89. Suppliers
+90. Due {n} days ago
+91. All settled
+92. Paid in advance
+93. Still to pay
+94. Nobody found.
+95. Customer
+96. Supplier
+97. They owe you
+98. Their advance
+99. You owe them
+100. Due date passed: {d}
+101. Make WhatsApp reminder
+102. WhatsApp opens. Check the message, then you tap Send.
+103. No entries.
+104. History
+105. Namaste {name}, a reminder from {shop}: {x} is pending. If convenient, please pay by UPI: {upi} Thank you 🙏
+106. Today
+107. Accounts
+108. Stock
+109. Khata
+110. Speak
+111. Accounts
+112. Last {n} days
+113. To collect
+114. From customers
+115. To pay
+116. To suppliers
+117. Net (estimate)
+118. Sales − stock bought − expenses
+119. Stock on shelves
+120. {n} items
+121. Cash
+122. UPI
+123. In
+124. Out
+125. Stock bought
+126. Expenses
+127. Taken for home
+128. Close the day
+129. Count the galla and match it
+130. Expected
+131. How much is in the galla?
+132. Save
+133. All matched! 🎉
+134. {x} short
+135. {x} extra
+136. Check today's cash entries, one may be missing:
+137. No cash entries today.
+138. Counted today: {x}
+139. Stock
+140. {n} items · {x} worth
+141. Low stock
+142. {n} items running low
+143. All
+144. Search items
+145. New item
+146. Name
+147. Size / brand (optional)
+148. Unit
+149. Price (₹)
+150. In stock now
+151. Alert below
+152. Stock in
+153. Sold
+154. Wasted
+155. Recount
+156. Quantity
+157. Opening stock
+158. {n} left
+159. Close
+160. Saved
+161. Scan bill
+162. A photo of the supplier's bill adds the stock for you
+163. Take photo
+164. Pick from gallery
+165. Reading the bill…
+166. The first scan takes a little longer
+167. Check and tick
+168. Not recognised
+169. Pick item
+170. Add {n} items to stock
+171. Stock updated for {n} items
+172. No items found. Take a straight, clear photo.
+173. Couldn't read the bill. Check the internet and try again.
+174. Scan again
+175. What is this?
+176. Listen
+177. Got it
+178. Money came in
+179. Money went out
+180. Still pending
+181. The cash that should be in your galla (cash box) right now: what you started with, plus cash that came in, minus cash that went out. Count your galla at night and compare.
+182. Tap the mic and say the entry the way you'd say it at the counter, e.g. “Sharma ji paid 500 by UPI”. You can also type. Nothing is saved until you tap.
+183. Money customers still have to give you (udhaar). Example: you gave Ramesh ₹350 of goods on credit and he paid ₹200, so ₹150 is still to collect.
+184. Money you still have to give your suppliers. Example: goods worth ₹3,200 came and you paid ₹1,000, so ₹2,200 is still to pay.
+185. A rough idea: sales minus the goods you bought minus expenses. It can be negative in a week you bought a lot of stock. It's not your exact profit.
+186. Cash = notes and coins in the galla. UPI = money that came to your phone or bank. Keeping them separate makes it easy to find a gap.
+187. How much of each item is on your shelves. Tap + when goods come and − when they are sold. Orange means it's running low: order more.
+188. At closing time, count the cash in the galla and type it. BolKhata shows if anything is short or extra, and which entries to check.
+189. Take a photo of the supplier's bill. BolKhata reads the items and amounts, you check them, and one tap adds everything to stock.
+190. How to use
+191. Skip
+192. Next
+193. Back
+194. Start using BolKhata
+195. {i} of {n}
+196. Your money, at a glance
+197. This big green card shows how much cash should be in your galla. Green numbers came in, red went out.
+198. Just speak
+199. Tap the mic and talk like at the counter: “Ramesh ko 200 udhaar”. BolKhata turns it into an entry. You check it, then save.
+200. Your accounts, made simple
+201. “To collect” is what customers owe you. “To pay” is what you owe suppliers. Tap any “?” to learn more.
+202. Your stock
+203. See what's on the shelf and what's running low. Scan a supplier's bill to add stock in one go.
+204. Customer khata
+205. Every customer's balance. Orange means the due date has passed: tap to send a polite WhatsApp reminder.
+206. Jump anywhere
+207. This bar stays at the bottom. The big round button lets you speak from anywhere.
+208. Set up your shop
+209. A few questions and you're ready. You can change everything later.
+210. What is your shop called?
+211. e.g. Sharma General Store
+212. What do you sell?
+213. Kirana / general store
+214. Sabzi / fruits
+215. Medical store
+216. Something else
+217. Payments
+218. Your UPI ID (for payment reminders)
+219. e.g. 9876543210@upi
+220. Cash in the galla right now (₹)
+221. Add common items for this kind of shop
+222. Open my shop
+223. Just look at a demo shop
+224. Step {i} of {n}
+225. optional
+226. Set price
+227. Check and save
+228. Sale
+229. Credit (udhaar)
+230. Money received
+231. Stock bought
+232. Expense
+233. Taken for home
+234. Amount
+235. Who?
+236. Paid by
+237. Cash
+238. UPI
+239. On credit
+240. Pay by
+241. Items
+242. Paid now
+243. How much?
+244. Who is this for?
+245. Did you mean?
+246. New: {name}
+247. Save
+248. Cancel
+249. Saved: {x}
+250. Undo
+251. Undone
+252. You saved the same entry just now. Save it again?
+253. Yes, save again
+254. Understanding…
+255. Undo
+256. Open {name}'s khata
+257. Remind {name}
+258. Undo last entry
+259. Try saying
+260. Undo: {x}?
+261. Nothing to undo
+262. {name} owes {x} · send a reminder
+263. {item} is running low · add stock
+264. Close the day
+265. Show stock
+266. Scan bill
+267. Help
+268. Close the day
+269. Close the shop for today
+270. Show the stock
+271. Scan the bill
+272. Add a new item
+273. Show the accounts
+274. Show today's entries
+275. Change the language
+276. Help me
+277. That was wrong, undo it
+278. Send a reminder
+279. Show the account
+280. Gave goods on credit
+281. Paid back the money
+282. Goods arrived from the supplier
+283. Paid the electricity bill
+284. Took money for home
+285. Sold for cash

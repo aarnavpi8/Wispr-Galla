@@ -1,14 +1,16 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { useSpeech } from "@/hooks/useSpeech";
 
 import { LANGS as APP_LANGS } from "@/lib/i18n";
+import type { Command, Item, PartyBalance } from "@/lib/types";
 
 import { Magnetic, Spotlight } from "./interactive";
 import { useLang } from "./language";
 import { useAppConfig } from "./auth";
+import { VoiceSuggestions } from "./VoiceSuggestions";
 import { HelpTip } from "./HelpTip";
 
 // Example sentences come from the chosen language (ex1..ex4).
@@ -24,7 +26,18 @@ const LANGS = [
  * The capture box (engine step 1). Wispr Flow types into it; the mic uses browser speech.
  * `onSubmit` receives the text; understanding it is flow 1's job.
  */
-export function CaptureCard({ onSubmit }: { onSubmit: (text: string) => void }) {
+export function CaptureCard({
+  onSubmit,
+  onCommand,
+  parties = [],
+  items = [],
+}: {
+  onSubmit: (text: string) => void;
+  /** Run a voice command directly (from a suggestion or "Try saying" chip). */
+  onCommand?: (command: Command, partyId?: number | null) => void;
+  parties?: PartyBalance[];
+  items?: Item[];
+}) {
   const { t, lang: appLang } = useLang();
   const config = useAppConfig();
   const [text, setText] = useState("");
@@ -33,6 +46,20 @@ export function CaptureCard({ onSubmit }: { onSubmit: (text: string) => void }) 
   const typing = useRef<number | null>(null);
   const area = useRef<HTMLTextAreaElement>(null);
   const speech = useSpeech(setText, lang, !!config?.wispr_configured);
+
+  // When the mic stops (and Wispr has finished writing), open the entry card by itself.
+  const busy = speech.listening || speech.transcribing;
+  const wasBusy = useRef(false);
+  const latest = useRef({ text, onSubmit });
+  useEffect(() => {
+    latest.current = { text, onSubmit };
+  });
+  useEffect(() => {
+    if (wasBusy.current && !busy && latest.current.text.trim() && !speech.error) {
+      latest.current.onSubmit(latest.current.text.trim());
+    }
+    wasBusy.current = busy;
+  }, [busy, speech.error]);
 
   // Tapping an example "types" it in, so it feels like dictation.
   const typeIn = (sample: string) => {
@@ -113,7 +140,7 @@ export function CaptureCard({ onSubmit }: { onSubmit: (text: string) => void }) 
         )}
       </div>
 
-      <div className="no-scrollbar -mx-4 mt-2 flex gap-2 overflow-x-auto px-4 pb-1">
+      <div className="mt-2 flex flex-wrap gap-2">
         {EXAMPLE_KEYS.map((k) => t(k)).map((ex) => (
           <button
             key={ex}
@@ -125,6 +152,8 @@ export function CaptureCard({ onSubmit }: { onSubmit: (text: string) => void }) 
           </button>
         ))}
       </div>
+
+      {onCommand && <VoiceSuggestions text={text} parties={parties} items={items} onCommand={onCommand} />}
 
       <div className="mt-3 flex items-center gap-3">
         {speech.supported && (

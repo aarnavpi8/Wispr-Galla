@@ -17,7 +17,7 @@ MATCH_MIN = 0.55  # below this we don't guess at all
 # Lines on a bill that are never items.
 SKIP = re.compile(
     r"\b(total|sub ?total|grand|gst|cgst|sgst|igst|tax|invoice|bill|date|phone|mob|gstin|"
-    r"thank|amount|balance|cash|upi|paid|discount|round)\b",
+    r"thank|amount|balance|cash|upi|paid|discount|round|qty|rate|party|inv|wholesale|distributors?)\b",
     re.I,
 )
 NUMBER = re.compile(r"\d+(?:[.,]\d+)?")
@@ -52,19 +52,40 @@ def candidates(item: Item) -> list[str]:
     return [n for n in (normalise(x) for x in names) if n]
 
 
+def qty_rate_amount(line: str) -> int | None:
+    """Qty from the classic three columns, when qty x rate = amount checks out."""
+    found = _triple(line)
+    return max(1, round(found[0])) if found else None
+
+
+def unit_rate(line: str) -> int | None:
+    """The rate column (what one unit cost), when qty x rate = amount checks out."""
+    found = _triple(line)
+    return round(found[1]) if found and found[1] >= 1 else None
+
+
+def _triple(line: str) -> tuple[float, float, float] | None:
+    nums = [float(n.replace(",", "")) for n in NUMBER.findall(line)]
+    for i in range(len(nums) - 2):
+        a, b, c = nums[i], nums[i + 1], nums[i + 2]
+        if a and b and abs(a * b - c) <= max(1, 0.02 * c):
+            return a, b, c
+    return None
+
+
 def quantity(line: str) -> int:
-    """Best guess at how many units a bill line is for. Defaults to 1."""
+    """Best guess at how many units a bill line is for. Defaults to 1.
+
+    The qty x rate = amount columns are checked first, so a pack size in the item name
+    ("Surf Excel 1kg  6  128  768") is not mistaken for the quantity.
+    """
+    if (q := qty_rate_amount(line)) is not None:
+        return q
     if m := DOZEN.search(line):
         return max(1, round(float(m.group(1)) * 12))
     if m := UNIT_QTY.search(line):
         return max(1, round(float(m.group(1))))
     nums = [float(n.replace(",", "")) for n in NUMBER.findall(line)]
-    # Qty x rate = amount: the classic three columns.
-    if len(nums) >= 3:
-        for i in range(len(nums) - 2):
-            a, b, c = nums[i], nums[i + 1], nums[i + 2]
-            if a and b and abs(a * b - c) <= max(1, 0.02 * c):
-                return max(1, round(a))
     if nums:
         return max(1, round(nums[0])) if nums[0] <= 1000 else 1
     return 1
@@ -77,6 +98,7 @@ class ScanLine:
     item_id: int | None
     confidence: float
     alternatives: list[int]  # other likely item ids, best first
+    rate: int | None = None  # cost per unit from the bill, only when it is per the same unit as qty
 
 
 def match_line(text: str, items: list[Item]) -> tuple[Item | None, float, list[Item]]:
@@ -102,14 +124,19 @@ def parse_bill(text: str, items: list[Item]) -> list[ScanLine]:
         if len(line) < 3 or SKIP.search(line) or not re.search(r"[^\W\d_]", line):
             continue
         item, score, alts = match_line(line, items)
+        # Unknown lines are kept (for the shopkeeper to pick an item) only when they look like
+        # an item row: qty x rate = amount. Headers, addresses and footers are dropped.
+        if item is None and qty_rate_amount(line) is None:
+            continue
+        qty = quantity(line)
         out.append(
             ScanLine(
                 raw=line,
-                qty=quantity(line),
+                qty=qty,
                 item_id=item.id if item else None,
                 confidence=round(score, 2),
                 alternatives=[a.id for a in alts],
+                rate=unit_rate(line) if qty == qty_rate_amount(line) else None,
             )
         )
-    # Unmatched lines are often headers or addresses; keep them only if something matched.
     return out if any(line.item_id for line in out) else out[:0]

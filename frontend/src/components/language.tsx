@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, type ReactNode, useCallback, useContext, useMemo, useSyncExternalStore } from "react";
+import { createContext, type ReactNode, useCallback, useContext, useEffect, useMemo, useSyncExternalStore } from "react";
 
 import { type Lang, LANGS, type StringKey, translate } from "@/lib/i18n";
 
@@ -63,6 +63,11 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
   const lang = chosen ?? "hinglish";
 
   const setLang = useCallback((l: Lang) => saveLang(l), []);
+
+  // Screen readers and the browser's own text-to-speech read the page in this language.
+  useEffect(() => {
+    document.documentElement.lang = lang === "hinglish" ? "hi-Latn" : `${lang}-IN`;
+  }, [lang]);
   const value = useMemo<LangState>(
     () => ({ chosen, lang, setLang, ready, t: (key, vars) => translate(lang, key, vars) }),
     [chosen, lang, setLang, ready],

@@ -1,6 +1,6 @@
-# Galla Android app (Capacitor)
+# BolKhata Android app (Capacitor)
 
-The Android app is a native shell around the **same Next.js frontend**: it loads your Galla
+The Android app is a native shell around the **same Next.js frontend**: it loads your BolKhata
 server, so every screen, language and feature matches the website. Inside the app:
 
 - **Mic:** Wispr Flow when `WISPR_API_KEY` is set on the server; otherwise Android's own speech

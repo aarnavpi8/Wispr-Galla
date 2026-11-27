@@ -133,3 +133,155 @@ def test_amount_must_be_positive(client):
 
 def test_undo_unknown_entry(client):
     assert client.post("/api/entries/99999/undo").status_code == 404
+
+
+def item_named(client, name):
+    return next(i for i in client.get("/api/items").json() if i["name"] == name)
+
+
+def test_selling_from_stock_records_the_money(client):
+    maggi = item_named(client, "Maggi")  # ₹15
+    cash_before = client.get("/api/day-close").json()["cash_in"]
+    res = client.post(f"/api/items/{maggi['id']}/sell", json={"qty": 3, "mode": "cash"})
+    assert res.status_code == 201
+    body = res.json()
+    assert body["item"]["stock"] == maggi["stock"] - 3
+    assert body["entry"]["type"] == "sale" and body["entry"]["amount"] == 45 and body["entry"]["mode"] == "cash"
+    assert client.get("/api/day-close").json()["cash_in"] == cash_before + 45
+    # The stock history shows the sale.
+    assert client.get(f"/api/items/{maggi['id']}/moves").json()[0]["reason"] == "sale"
+
+
+def test_undoing_the_sale_puts_back_money_and_stock(client):
+    maggi = item_named(client, "Maggi")
+    cash_before = client.get("/api/day-close").json()["cash_in"]
+    sale = client.post(f"/api/items/{maggi['id']}/sell", json={"qty": 2}).json()["entry"]
+    assert client.post(f"/api/entries/{sale['id']}/undo").status_code == 201
+    assert item_named(client, "Maggi")["stock"] == maggi["stock"]
+    assert client.get("/api/day-close").json()["cash_in"] == cash_before
+
+
+def test_upi_sale_from_stock_counts_as_upi(client):
+    bread = item_named(client, "Bread")  # ₹45, stock 2
+    entry = client.post(f"/api/items/{bread['id']}/sell", json={"qty": 1, "mode": "upi"}).json()["entry"]
+    assert entry["mode"] == "upi" and entry["amount"] == 45
+
+
+def test_udhaar_sale_needs_a_customer_and_adds_to_their_balance(client):
+    maggi = item_named(client, "Maggi")
+    assert client.post(f"/api/items/{maggi['id']}/sell", json={"qty": 1, "mode": "udhaar"}).status_code == 422
+    ramesh = next(p for p in client.get("/api/khata").json() if p["name"] == "Ramesh")
+    res = client.post(f"/api/items/{maggi['id']}/sell", json={"qty": 2, "mode": "udhaar", "party_id": ramesh["id"]})
+    assert res.status_code == 201
+    assert next(p for p in client.get("/api/khata").json() if p["name"] == "Ramesh")["balance"] == ramesh["balance"] + 30
+
+
+def test_cannot_sell_more_than_in_stock(client):
+    bread = item_named(client, "Bread")
+    assert client.post(f"/api/items/{bread['id']}/sell", json={"qty": bread["stock"] + 1}).status_code == 422
+
+
+def test_item_without_price_moves_stock_only(client):
+    item = client.post("/api/items", json={"name": "Agarbatti", "unit": "box", "price": 0, "stock": 5}).json()
+    body = client.post(f"/api/items/{item['id']}/sell", json={"qty": 1}).json()
+    assert body["entry"] is None and body["item"]["stock"] == 4
+
+
+def test_goods_on_udhaar_leave_the_shelf(client):
+    cheeni = item_named(client, "Cheeni")
+    e = card(client, "Ramesh ko 2 kilo cheeni udhaar")
+    assert save_card(client, e).status_code == 201
+    assert item_named(client, "Cheeni")["stock"] == cheeni["stock"] - 2
+
+
+def test_items_attached_on_the_card_move_stock(client):
+    # "500 ki bikri" names no item; the shopkeeper attaches 4 Kurkure on the card.
+    kurkure = item_named(client, "Kurkure")
+    e = card(client, "80 ki bikri cash")
+    e["items"] = [{"item_id": kurkure["id"], "name": "Kurkure", "qty": 4, "unit": "pc", "price": 20}]
+    assert save_card(client, e, edited=True).status_code == 201
+    assert item_named(client, "Kurkure")["stock"] == kurkure["stock"] - 4
+
+
+# --- Buying from a supplier ------------------------------------------------------------------
+
+
+@pytest.mark.parametrize(
+    "text, mode, party",
+    [
+        ("Bought 10 kg sugar from Gupta traders on credit for 450", "udhaar", "Gupta Distributors"),
+        ("Gupta se 10 kilo cheeni udhaar pe kharidi 450", "udhaar", "Gupta Distributors"),
+        ("I bought 3 dozen eggs from the vendor 180 cash", "cash", None),
+    ],
+)
+def test_buying_stock_is_a_purchase(client, text, mode, party):
+    e = card(client, text)
+    assert e["type"] == "purchase" and e["mode"] == mode
+    assert (e["party"] or {}).get("name") == party
+    assert len(e["items"]) == 1 and e["items"][0]["qty"] in (10, 36)  # 3 dozen eggs = 36 Anda
+
+
+def test_item_not_in_stock_is_named_on_the_card(client):
+    e = card(client, "Bought 5 kg kesar from Gupta traders 600 cash")
+    line = next(li for li in e["items"] if li["item_id"] is None)
+    assert line["name"].lower().startswith("kesar") and line["qty"] == 5 and line["unit"] == "kg"
+    assert e["amount"] == 600  # the 5 is a quantity, not money
+    assert save_card(client, e).status_code == 201  # saves; no stock move for an unknown item
+
+
+def test_purchase_on_credit_is_owed_to_the_supplier(client):
+    payable = client.get("/api/accounts").json()["payable"]
+    cash_out = client.get("/api/day-close").json()["cash_out"]
+    e = card(client, "Gupta se 10 kilo cheeni udhaar pe kharidi 450")
+    assert save_card(client, e).status_code == 201
+    assert client.get("/api/accounts").json()["payable"] == payable + 450
+    assert client.get("/api/day-close").json()["cash_out"] == cash_out  # nothing left the galla
+
+
+def test_cash_purchase_is_not_owed(client):
+    payable = client.get("/api/accounts").json()["payable"]
+    e = card(client, "I bought 3 dozen eggs from the vendor 180 cash")
+    assert save_card(client, e, party_name="Vendor").status_code == 201
+    assert client.get("/api/accounts").json()["payable"] == payable
+
+
+@pytest.mark.parametrize(
+    "text, amount, paid_now, owed",
+    [
+        ("Gupta se 20 packet Maggi aaya 2400 ka udhaar pe", 2400, None, 2400),  # "udhaar" with a supplier
+        ("Gupta Distributors ka maal aaya 5000 ka, kuch nahi diya", 5000, None, 5000),
+        ("Raju dairy se 40 packet doodh aaya, 500 diye baaki baad mein", 1120, 500, 620),  # total from prices
+    ],
+)
+def test_buying_from_a_supplier_on_credit(client, text, amount, paid_now, owed):
+    e = card(client, text)
+    assert e["type"] == "purchase" and e["amount"] == amount and e["paid_now"] == paid_now
+    name = e["party"]["name"]
+    before = balance(client, name)
+    assert save_card(client, e).status_code == 201
+    assert balance(client, name) == before + owed
+
+
+def test_udhaar_saved_against_a_supplier_is_a_credit_purchase(client):
+    supplier = next(p for p in client.get("/api/khata").json() if p["kind"] == "supplier")
+    before = supplier["balance"]
+    res = client.post("/api/entries", json={"type": "udhaar", "amount": 700, "party_id": supplier["id"], "raw_text": "x"})
+    assert res.status_code == 201 and res.json()["type"] == "purchase" and res.json()["mode"] == "udhaar"
+    assert balance(client, supplier["name"]) == before + 700
+
+
+def test_paid_now_cannot_exceed_the_bill(client):
+    res = client.post("/api/entries", json={"type": "purchase", "amount": 500, "paid_now": 900, "raw_text": "x"})
+    assert res.status_code == 422
+
+
+def test_unknown_item_added_from_the_card_gets_the_purchase_stock(client):
+    e = card(client, "Gupta se 12 bottle Harpic liya 1080 udhaar")
+    line = next(li for li in e["items"] if li["item_id"] is None)
+    assert line["name"].lower().startswith("harpic") and line["qty"] == 12
+    # The card's "Not in stock · Add it" creates the item, then the line points at it.
+    item = client.post("/api/items", json={"name": "Harpic", "unit": "bottle", "price": 99, "stock": 0}).json()
+    line.update(item_id=item["id"], price=item["price"])
+    assert save_card(client, e).status_code == 201
+    stock = next(i for i in client.get("/api/items").json() if i["id"] == item["id"])["stock"]
+    assert stock == 12

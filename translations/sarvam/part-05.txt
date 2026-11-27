@@ -1,0 +1,41 @@
+245. Did you mean?
+246. New: {name}
+247. Save
+248. Cancel
+249. Saved: {x}
+250. Undo
+251. Undone
+252. You saved the same entry just now. Save it again?
+253. Yes, save again
+254. Understanding…
+255. Undo
+256. Open {name}'s khata
+257. Remind {name}
+258. Undo last entry
+259. Try saying
+260. Undo: {x}?
+261. Nothing to undo
+262. {name} owes {x} · send a reminder
+263. {item} is running low · add stock
+264. Close the day
+265. Show stock
+266. Scan bill
+267. Help
+268. Close the day
+269. Close the shop for today
+270. Show the stock
+271. Scan the bill
+272. Add a new item
+273. Show the accounts
+274. Show today's entries
+275. Change the language
+276. Help me
+277. That was wrong, undo it
+278. Send a reminder
+279. Show the account
+280. Gave goods on credit
+281. Paid back the money
+282. Goods arrived from the supplier
+283. Paid the electricity bill
+284. Took money for home
+285. Sold for cash

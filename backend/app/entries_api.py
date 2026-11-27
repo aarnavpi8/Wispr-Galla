@@ -13,10 +13,11 @@ from pydantic import BaseModel, Field
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
-from app import models
+from app import inventory, models
 from app.db import get_db
 from app.deps import current_shop, iso
 from app.extract import ShopContext, extract, today_in_shop
+from app.stockbook import record_move
 from app.schemas import EntryOut, ExtractedEntry
 
 router = APIRouter(prefix="/api", tags=["entries"])
@@ -27,6 +28,8 @@ SAVEABLE = Literal["sale", "udhaar", "payment", "purchase", "expense", "owner_wi
 
 class ExtractIn(BaseModel):
     text: str = Field(min_length=1, max_length=500)
+    # Live preview while speaking/typing: rules only (free, instant), never the LLM.
+    preview: bool = False
 
 
 class EntryItemIn(BaseModel):
@@ -78,7 +81,7 @@ def entry_out(db: Session, e: models.Entry) -> EntryOut:
 @router.post("/extract", response_model=ExtractedEntry)
 def extract_entry(body: ExtractIn, db: Session = Depends(get_db), shop: models.Shop = Depends(current_shop)) -> ExtractedEntry:
     """Understand a sentence. Saves nothing: the card is shown for the shopkeeper to confirm."""
-    return extract(body.text, shop_context(db, shop))
+    return extract(body.text, shop_context(db, shop), preview=body.preview)
 
 
 def _resolve_party(db: Session, shop: models.Shop, body: EntryIn) -> models.Party | None:
@@ -106,8 +109,9 @@ def _resolve_party(db: Session, shop: models.Shop, body: EntryIn) -> models.Part
 
 
 def _move_stock(db: Session, shop: models.Shop, entry_type: str, items: list[dict], undo: bool = False) -> None:
-    """Sales take known items off the shelf, purchases put them on. Undo does the opposite."""
-    sign = {"sale": -1, "purchase": 1}.get(entry_type)
+    """Sales (and goods given on udhaar) take known items off the shelf, purchases put them on.
+    Undo does the opposite."""
+    sign = {"sale": -1, "udhaar": -1, "purchase": 1}.get(entry_type)
     if sign is None:
         return
     if undo:
@@ -121,9 +125,8 @@ def _move_stock(db: Session, shop: models.Shop, entry_type: str, items: list[dic
             delta = -min(-delta, item.stock)  # never below zero; the recount fixes the rest
         if delta == 0:
             continue
-        item.stock += delta
-        reason = "undo" if undo else ("sale" if entry_type == "sale" else "purchase")
-        db.add(models.StockMove(shop_id=shop.id, item_id=item.id, delta=delta, reason=reason, stock_after=item.stock))
+        reason = "undo" if undo else ("purchase" if entry_type == "purchase" else "sale")
+        record_move(db, shop.id, item, delta, reason)
 
 
 @router.post("/entries", response_model=EntryOut, status_code=201)
@@ -131,6 +134,12 @@ def save_entry(body: EntryIn, db: Session = Depends(get_db), shop: models.Shop =
     if body.type in {"udhaar", "payment"} and body.party_id is None and not (body.party_name or "").strip():
         raise HTTPException(422, "Kiska hai? Naam batayiye.")
     party = _resolve_party(db, shop, body)
+    if body.type == "udhaar" and party is not None and party.kind == "supplier":
+        # Udhaar with a supplier means we bought on credit: we owe them, not the other way round.
+        body.type, body.mode = "purchase", "udhaar"
+    if body.type == "purchase" and body.paid_now is not None and body.paid_now > body.amount:
+        db.rollback()
+        raise HTTPException(422, "Abhi diye paise bill se zyada hain.")
 
     if not body.force:
         since = datetime.now(UTC) - DUPLICATE_WINDOW
@@ -194,3 +203,46 @@ def undo_entry(entry_id: int, db: Session = Depends(get_db), shop: models.Shop =
     _move_stock(db, shop, original.type, list(original.items or []), undo=True)
     db.commit()
     return entry_out(db, original)
+
+
+# --- Selling from the stock screen: money and stock move together ------------------------------
+
+
+class SellIn(BaseModel):
+    qty: int = Field(gt=0, le=100_000)
+    mode: Literal["cash", "upi", "udhaar"] = "cash"
+    party_id: int | None = None  # who took it on credit (udhaar)
+
+
+class SellOut(BaseModel):
+    item: inventory.ItemOut
+    entry: EntryOut | None  # None when the item has no price yet (stock-only)
+
+
+@router.post("/items/{item_id}/sell", response_model=SellOut, status_code=201)
+def sell_from_stock(
+    item_id: int, body: SellIn, db: Session = Depends(get_db), shop: models.Shop = Depends(current_shop)
+) -> SellOut:
+    """Sold N of an item: one sale entry (money in) + the stock goes down, as a pair.
+    Undoing the entry (POST /api/entries/{id}/undo) puts back both the money and the stock."""
+    item = db.get(models.Item, item_id)
+    if item is None or item.shop_id != shop.id:
+        raise HTTPException(404, "Item nahi mila")
+    if body.qty > item.stock:
+        raise HTTPException(422, f"Stock sirf {item.stock} {item.unit} hai")
+    if body.mode == "udhaar" and body.party_id is None:
+        raise HTTPException(422, "Kiska udhaar? Naam batayiye.")
+    line = {"item_id": item.id, "name": item.name if not item.variant else f"{item.name} {item.variant}",
+            "qty": body.qty, "unit": item.unit, "price": item.price}
+    entry = None
+    if item.price > 0:
+        entry = models.Entry(
+            shop_id=shop.id, type="sale", party_id=body.party_id if body.mode == "udhaar" else None,
+            items=[line], amount=item.price * body.qty, mode=body.mode,
+            raw_text=f"{body.qty} {item.unit} {line['name']}", confidence={}, source="manual",
+        )
+        db.add(entry)
+        db.flush()
+    _move_stock(db, shop, "sale", [line])
+    db.commit()
+    return SellOut(item=inventory.item_out(item), entry=entry_out(db, entry) if entry else None)

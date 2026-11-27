@@ -14,11 +14,26 @@ const field =
   "mt-1 min-h-12 w-full rounded-2xl border-2 border-line bg-background px-4 text-base transition focus:border-leaf-500 focus:outline-none focus:ring-4 focus:ring-leaf-500/15";
 
 /** Add an item to the price list with its opening stock. Saves only on the button tap. */
-export function AddItemSheet({ onClose, onAdded }: { onClose: () => void; onAdded: (i: Item) => void }) {
+export function AddItemSheet({
+  onClose,
+  onAdded,
+  initialName = "",
+  initialUnit = "pc",
+  stockFromEntry = false,
+}: {
+  onClose: () => void;
+  onAdded: (i: Item) => void;
+  initialName?: string;
+  initialUnit?: string;
+  /** Opened from a purchase card: that entry brings the stock in, so no opening stock here (it would count twice). */
+  stockFromEntry?: boolean;
+}) {
   const { t } = useLang();
-  const [name, setName] = useState("");
+  const [name, setName] = useState(initialName);
   const [variant, setVariant] = useState("");
-  const [unit, setUnit] = useState("pc");
+  // A spoken unit we don't list ("bottle") stays a choice instead of turning into "pc".
+  const units = initialUnit && !UNITS.includes(initialUnit) ? [...UNITS, initialUnit] : UNITS;
+  const [unit, setUnit] = useState(initialUnit || "pc");
   const [price, setPrice] = useState("");
   const [stock, setStock] = useState("");
   const [lowAt, setLowAt] = useState("5");
@@ -39,7 +54,7 @@ export function AddItemSheet({ onClose, onAdded }: { onClose: () => void; onAdde
         variant: variant.trim() || null,
         unit,
         price: Number(price),
-        stock: Number(stock || 0),
+        stock: stockFromEntry ? 0 : Number(stock || 0),
         low_stock_at: Number(lowAt || 0),
       });
       onAdded(item);
@@ -66,7 +81,7 @@ export function AddItemSheet({ onClose, onAdded }: { onClose: () => void; onAdde
         <fieldset>
           <legend className="text-sm font-semibold text-forest-950">{t("unit")}</legend>
           <div className="mt-1 flex flex-wrap gap-2">
-            {UNITS.map((u) => (
+            {units.map((u) => (
               <button
                 key={u}
                 type="button"
@@ -82,15 +97,23 @@ export function AddItemSheet({ onClose, onAdded }: { onClose: () => void; onAdde
           </div>
         </fieldset>
 
-        <div className="grid grid-cols-3 gap-2">
+        <div className={`grid gap-2 ${stockFromEntry ? "grid-cols-2" : "grid-cols-3"}`}>
           <label className="block text-sm font-semibold text-forest-950">
             {t("price")}
             <input inputMode="numeric" value={price} onChange={(e) => setPrice(digits(e.target.value))} className={field} required />
           </label>
-          <label className="block text-sm font-semibold text-forest-950">
-            {t("inStock")}
-            <input inputMode="numeric" value={stock} onChange={(e) => setStock(digits(e.target.value))} placeholder="0" className={field} />
-          </label>
+          {!stockFromEntry && (
+            <label className="block text-sm font-semibold text-forest-950">
+              {t("inStock")}
+              <input
+                inputMode="numeric"
+                value={stock}
+                onChange={(e) => setStock(digits(e.target.value))}
+                placeholder="0"
+                className={field}
+              />
+            </label>
+          )}
           <label className="block text-sm font-semibold text-forest-950">
             {t("alertAt")}
             <input inputMode="numeric" value={lowAt} onChange={(e) => setLowAt(digits(e.target.value))} className={field} />

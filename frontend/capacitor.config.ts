@@ -17,7 +17,7 @@ const serverUrl = process.env.CAP_SERVER_URL?.trim();
 
 const config: CapacitorConfig = {
   appId: "in.galla.app",
-  appName: "Galla",
+  appName: "BolKhata",
   // Small local pages bundled in the APK: shown if no server is set or it can't be reached.
   webDir: "mobile/www",
   backgroundColor: "#faf6ee",

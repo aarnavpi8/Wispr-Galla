@@ -13,6 +13,7 @@ from sqlalchemy.orm import Session
 from app.config import settings
 from app.db import Base, SessionLocal, engine
 from app.models import Entry, Item, Party, Shop, StockMove
+from app.stockbook import record_move
 
 SHOP = {"name": "Shree Ganesh Kirana", "vpa": "shreeganesh.kirana@upi", "language": "hi", "opening_cash": 2000}
 
@@ -149,10 +150,11 @@ def seed_stock_if_missing(db: Session, shop: Shop | None = None) -> bool:
     opening_at = datetime.combine(datetime.now(settings.tz).date() - timedelta(days=4), time(8), tzinfo=settings.tz)
     for item in items:
         stock, low_at = STOCK.get((item.name, item.variant), DEFAULT_STOCK)
-        item.stock = stock
+        item.stock = 0
         item.low_stock_at = low_at
-        db.add(StockMove(shop_id=shop.id, item_id=item.id, delta=stock, reason="opening",
-                         stock_after=stock, created_at=opening_at))
+        # Demo cost: roughly what a kirana pays the distributor (about 82% of the selling price).
+        move = record_move(db, shop.id, item, stock, "opening", max(1, round(item.price * 0.82)))
+        move.created_at = opening_at
     db.commit()
     return True
 

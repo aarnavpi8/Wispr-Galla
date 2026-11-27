@@ -20,6 +20,7 @@ interface Row {
   on: boolean;
   confidence: number;
   alternatives: number[];
+  rate: number | null;
 }
 
 /**
@@ -75,6 +76,7 @@ export function BillScanSheet({
           on: l.item_id !== null,
           confidence: l.confidence,
           alternatives: l.alternatives,
+          rate: l.rate ?? null,
         })),
       );
       setStep("review");
@@ -94,7 +96,7 @@ export function BillScanSheet({
     setError(null);
     try {
       const updated = await postJSON<Item[]>("/api/items/stock-batch", {
-        lines: chosen.map((r) => ({ item_id: r.itemId, qty: r.qty })),
+        lines: chosen.map((r) => ({ item_id: r.itemId, qty: r.qty, unit_cost: r.rate })),
       });
       setDoneCount(updated.length);
       setStep("done");

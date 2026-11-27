@@ -3,7 +3,7 @@ import { Noto_Sans, Noto_Sans_Devanagari } from "next/font/google";
 import { AuthProvider } from "@/components/auth";
 import { CursorGlow } from "@/components/interactive";
 import { LanguageProvider } from "@/components/language";
-import { Splash } from "@/components/Splash";
+import { SplashGate } from "@/components/Splash";
 
 import "./globals.css";
 
@@ -18,8 +18,8 @@ const notoDevanagari = Noto_Sans_Devanagari({
 });
 
 export const metadata: Metadata = {
-  title: "Galla",
-  description: "Bolo aur hisaab likho: a voice khata for shopkeepers.",
+  title: "BolKhata",
+  description: "BolKhata: bolo aur hisaab likho. A voice khata for Indian shopkeepers.",
 };
 
 export const viewport: Viewport = {
@@ -37,8 +37,10 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       <body className="min-h-full flex flex-col">
         <CursorGlow />
         <LanguageProvider>
-          <Splash />
-          <AuthProvider>{children}</AuthProvider>
+          <AuthProvider>
+            <SplashGate />
+            {children}
+          </AuthProvider>
         </LanguageProvider>
       </body>
     </html>

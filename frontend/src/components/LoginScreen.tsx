@@ -3,6 +3,7 @@
 import { GoogleIcon, useAuth } from "./auth";
 import { Magnetic, Spotlight, TiltCard } from "./interactive";
 import { useLang } from "./language";
+import { Logo } from "./Logo";
 
 /** Shown only when Google login is configured and nobody is signed in. */
 export function LoginScreen() {
@@ -13,8 +14,7 @@ export function LoginScreen() {
   return (
     <main className="mx-auto flex min-h-dvh w-full max-w-md flex-col justify-between gap-8 px-5 py-8">
       <div className="animate-rise flex items-center gap-2 text-forest-900">
-        <span className="grid size-10 place-items-center rounded-2xl bg-forest-900 text-xl text-lime-300">₹</span>
-        <span className="text-xl font-bold tracking-tight">Galla</span>
+        <Logo size={40} />
       </div>
 
       <section className="animate-rise [animation-delay:80ms]">

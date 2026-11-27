@@ -162,3 +162,84 @@ def test_unknown_provider_uses_rules(ctx, monkeypatch):
     monkeypatch.setattr(settings, "llm_provider", "someone-else")
     monkeypatch.setattr(settings, "llm_api_key", "test")
     assert extract("Bijli bill 850 bhara", ctx).source == "rules"
+
+
+# --- Voice commands ---------------------------------------------------------------------------
+
+
+@pytest.mark.parametrize(
+    "said, command",
+    [
+        ("Din band karo", "day_close"),
+        ("dukaan band, galla milao", "day_close"),
+        ("दिन बंद करो", "day_close"),
+        ("Stock dikhao", "show_stock"),
+        ("bill scan karo", "scan_bill"),
+        ("naya item jodna hai", "add_item"),
+        ("hisaab kitaab dikhao", "show_accounts"),
+        ("aaj ki entries dikhao", "show_entries"),
+        ("bhasha badlo", "change_language"),
+        ("madad chahiye", "help"),
+        ("galat ho gaya", "undo_last"),
+        ("गलत हो गया", "undo_last"),
+    ],
+)
+def test_voice_commands(ctx, said, command):
+    e = extract(said, ctx)
+    assert e.type == "command" and e.command == command
+
+
+def test_khata_command_finds_the_person(ctx):
+    e = extract("Ramesh ka hisaab dikhao", ctx)
+    assert (e.type, e.command, e.party.name) == ("command", "show_khata", "Ramesh")
+
+
+def test_reminder_command_finds_the_person(ctx):
+    e = extract("Sarma ji ko reminder bhejo", ctx)
+    assert (e.command, e.party.name) == ("send_reminder", "Sharma ji")
+
+
+def test_a_sentence_with_an_amount_is_an_entry_not_a_command(ctx):
+    assert extract("Ramesh ko 200 udhaar", ctx).type == "udhaar"
+    assert extract("dukaan ka kiraya 5000 bhara", ctx).type == "expense"
+
+
+def test_preview_never_calls_the_llm(ctx, monkeypatch):
+    monkeypatch.setattr(settings, "llm_provider", "gemini")
+    monkeypatch.setattr(settings, "llm_api_key", "test")
+    monkeypatch.setattr(llm, "call_gemini", lambda *a, **k: (_ for _ in ()).throw(AssertionError("LLM called")))
+    assert extract("Sharma ji ne 500 UPI se diye", ctx, preview=True).source == "rules"
+
+
+@pytest.mark.parametrize(
+    "said, command",
+    [
+        # Gujarati, Punjabi, Bengali, Odia, Tamil, Telugu, Kannada, Malayalam
+        ("દિવસ બંધ કરો", "day_close"), ("સ્ટોક બતાવો", "show_stock"), ("બિલ સ્કેન કરો", "scan_bill"), ("મદદ", "help"),
+        ("ਦਿਨ ਬੰਦ ਕਰੋ", "day_close"), ("ਸਟਾਕ ਵਿਖਾਓ", "show_stock"), ("ਬਿੱਲ ਸਕੈਨ ਕਰੋ", "scan_bill"), ("ਮਦਦ", "help"),
+        ("দিন বন্ধ করো", "day_close"), ("স্টক দেখাও", "show_stock"), ("বিল স্ক্যান করো", "scan_bill"), ("সাহায্য", "help"),
+        ("ଦିନ ବନ୍ଦ କରନ୍ତୁ", "day_close"), ("ଷ୍ଟକ ଦେଖାନ୍ତୁ", "show_stock"), ("ବିଲ ସ୍କାନ କରନ୍ତୁ", "scan_bill"), ("ସାହାଯ୍ୟ", "help"),
+        ("நாளை முடி", "day_close"), ("ஸ்டாக்கைக் காட்டு", "show_stock"), ("பில் ஸ்கேன் செய்", "scan_bill"), ("உதவி", "help"),
+        ("రోజు ముగించు", "day_close"), ("స్టాక్ చూపించు", "show_stock"), ("బిల్ స్కాన్ చేయి", "scan_bill"), ("సహాయం", "help"),
+        ("ದಿನ ಮುಗಿಸಿ", "day_close"), ("ಸ್ಟಾಕ್ ತೋರಿಸಿ", "show_stock"), ("ಬಿಲ್ ಸ್ಕ್ಯಾನ್ ಮಾಡಿ", "scan_bill"), ("ಸಹಾಯ", "help"),
+        ("ദിവസം അവസാനിപ്പിക്കുക", "day_close"), ("സ്റ്റോക്ക് കാണിക്കുക", "show_stock"), ("ബിൽ സ്കാൻ ചെയ്യുക", "scan_bill"), ("സഹായം", "help"),
+        ("తప్పు అయింది", "undo_last"), ("ভাষা বদলাও", "change_language"), ("ಹೊಸ ವಸ್ತು ಸೇರಿಸಿ", "add_item"),
+    ],
+)
+def test_voice_commands_in_every_language(ctx, said, command):
+    e = extract(said, ctx)
+    assert e.type == "command" and e.command == command, (said, e.type, e.command)
+
+
+def test_native_amount_is_still_an_entry(ctx):
+    # Tamil digits / a number in the sentence keep it an entry, even with a command-ish word.
+    assert extract("ஸ்டாக் வந்தது 500", ctx).type != "command"
+
+
+def test_llm_can_recognise_a_command_the_rules_miss(ctx, monkeypatch):
+    monkeypatch.setattr(settings, "llm_provider", "gemini")
+    monkeypatch.setattr(settings, "llm_api_key", "test")
+    payload = {"type": "command", "command": "send_reminder", "party_name": "Ramesh", "items": []}
+    monkeypatch.setattr(llm, "call_gemini", lambda prompt, client=None: payload)
+    e = extract("ரமேஷுக்கு பணம் கேட்டு மெசேஜ் அனுப்பு", ctx)  # "send Ramesh a message asking for money"
+    assert (e.type, e.command, e.party.name, e.source) == ("command", "send_reminder", "Ramesh", "llm")

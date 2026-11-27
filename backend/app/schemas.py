@@ -10,7 +10,11 @@ EntryType = Literal[
 ]
 PartyKind = Literal["customer", "supplier"]
 Mode = Literal["cash", "upi", "udhaar"]
-Command = Literal["bill_start", "bill_total", "day_close", "show_khata", "send_reminder"]
+Command = Literal[
+    "bill_start", "bill_total", "day_close", "show_khata", "send_reminder",
+    # Voice control for the rest of the app (app/commands.py)
+    "show_stock", "scan_bill", "add_item", "show_accounts", "show_entries", "change_language", "help", "undo_last",
+]
 
 
 class PartyRef(BaseModel):

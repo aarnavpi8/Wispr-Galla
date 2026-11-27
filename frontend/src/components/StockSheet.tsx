@@ -5,7 +5,7 @@ import { useState } from "react";
 import { patchJSON, postJSON, useApi } from "@/lib/api";
 import { formatINR, itemLabel, stockLevel, timeAgo } from "@/lib/format";
 import type { StringKey } from "@/lib/i18n";
-import type { Item, StockMove, StockReason } from "@/lib/types";
+import type { EntryOut, Item, Mode, PartyBalance, SellOut, StockMove, StockReason } from "@/lib/types";
 
 import { useLang } from "./language";
 import { Sheet } from "./Sheet";
@@ -31,10 +31,14 @@ export function StockSheet({
   item,
   onClose,
   onUpdated,
+  onSold,
+  parties = [],
 }: {
   item: Item;
   onClose: () => void;
   onUpdated: (i: Item) => void;
+  onSold?: (entry: EntryOut) => void;
+  parties?: PartyBalance[];
 }) {
   const { t } = useLang();
   const [qty, setQty] = useState("");
@@ -42,6 +46,10 @@ export function StockSheet({
   const [error, setError] = useState<string | null>(null);
   const [tick, setTick] = useState(0);
   const [price, setPrice] = useState(String(item.price));
+  const [cost, setCost] = useState(item.cost_price ? String(item.cost_price) : "");
+  const [costIn, setCostIn] = useState("");
+  const [saleMode, setSaleMode] = useState<Mode>("cash");
+  const [buyer, setBuyer] = useState<number | null>(null);
 
   const savePrice = async () => {
     const n = Number(price);
@@ -49,6 +57,16 @@ export function StockSheet({
     setError(null);
     try {
       onUpdated(await patchJSON<Item>(`/api/items/${item.id}`, { price: n }));
+    } catch (e) {
+      setError((e as Error).message);
+    }
+  };
+  const saveCost = async () => {
+    const n = Number(cost);
+    if (cost === "" || n === (item.cost_price ?? 0)) return;
+    setError(null);
+    try {
+      onUpdated(await patchJSON<Item>(`/api/items/${item.id}`, { cost_price: n }));
     } catch (e) {
       setError((e as Error).message);
     }
@@ -61,7 +79,26 @@ export function StockSheet({
     setBusy(true);
     setError(null);
     try {
-      onUpdated(await postJSON<Item>(`/api/items/${item.id}/stock`, { reason, qty: n }));
+      if (reason === "sale") {
+        // Sold: record the money and take it off the shelf in one go.
+        const out = await postJSON<SellOut>(`/api/items/${item.id}/sell`, {
+          qty: n,
+          mode: saleMode,
+          party_id: saleMode === "udhaar" ? buyer : null,
+        });
+        onUpdated(out.item);
+        if (out.entry) onSold?.(out.entry);
+        else setError(t("noPriceSale"));
+      } else {
+        const after = await postJSON<Item>(`/api/items/${item.id}/stock`, {
+          reason,
+          qty: n,
+          unit_cost: reason === "purchase" && costIn ? Number(costIn) : null,
+        });
+        onUpdated(after);
+        if (reason === "purchase" && after.cost_price) setCost(String(after.cost_price));
+        setCostIn("");
+      }
       setQty("");
       setTick((x) => x + 1);
     } catch (e) {
@@ -116,6 +153,34 @@ export function StockSheet({
         </button>
       </div>
 
+      {/* Cost: what one unit cost to buy (weighted average after each stock-in). */}
+      <div className={`mt-2 flex items-end gap-2 rounded-2xl p-3 ${item.cost_price ? "bg-surface-2" : "bg-amber-50 ring-1 ring-amber-200"}`}>
+        <label className="flex-1 text-sm font-semibold text-forest-950">
+          {t("costPrice")} / {item.unit}
+          <input
+            inputMode="numeric"
+            value={cost}
+            placeholder="0"
+            onChange={(e) => setCost(e.target.value.replace(/[^\d]/g, ""))}
+            onKeyDown={(e) => e.key === "Enter" && void saveCost()}
+            className="mt-1 min-h-12 w-full rounded-xl border-2 border-line bg-surface px-3 text-xl font-bold tabular-nums focus:border-leaf-500 focus:outline-none"
+          />
+        </label>
+        <button
+          type="button"
+          onClick={() => void saveCost()}
+          disabled={cost === "" || Number(cost) === (item.cost_price ?? 0)}
+          className="min-h-12 rounded-xl bg-forest-900 px-4 font-semibold text-white transition hover:bg-forest-800 active:scale-95 disabled:opacity-40"
+        >
+          {t("setCost")}
+        </button>
+      </div>
+      {item.cost_price && item.margin != null ? (
+        <p className={`mt-1 text-sm font-semibold ${item.margin >= 0 ? "text-money-in" : "text-money-out"}`}>
+          {t("marginEach", { x: formatINR(item.margin), u: item.unit })}
+        </p>
+      ) : null}
+
       <label htmlFor="qty" className="mt-4 block font-semibold text-forest-950">
         {t("quantity")}
       </label>
@@ -128,12 +193,74 @@ export function StockSheet({
         placeholder="0"
         className="mt-2 min-h-14 w-full rounded-2xl border-2 border-line bg-background px-4 text-2xl font-bold tabular-nums transition focus:border-leaf-500 focus:outline-none focus:ring-4 focus:ring-leaf-500/15"
       />
+      {/* Selling: how the money came, and what it adds to sales. */}
+      <div className="mt-3 rounded-2xl bg-surface-2 p-3">
+        <p className="text-xs font-semibold uppercase tracking-wide text-muted">
+          {t("stockSold")} · {t("fMode")}
+        </p>
+        <div className="mt-1.5 flex flex-wrap gap-2" role="radiogroup" aria-label={t("fMode")}>
+          {(["cash", "upi", "udhaar"] as const).map((m) => (
+            <button
+              key={m}
+              type="button"
+              role="radio"
+              aria-checked={saleMode === m}
+              onClick={() => setSaleMode(m)}
+              className={`min-h-10 rounded-full px-4 text-sm font-semibold transition active:scale-95 ${
+                saleMode === m ? "bg-forest-900 text-white" : "bg-surface text-forest-900 hover:bg-mint-100"
+              }`}
+            >
+              {t(m === "cash" ? "mCash" : m === "upi" ? "mUpi" : "mUdhaar")}
+            </button>
+          ))}
+        </div>
+        {saleMode === "udhaar" && (
+          <label className="mt-2 block text-sm font-semibold text-forest-950">
+            {t("fWho")}
+            <select
+              value={buyer ?? ""}
+              onChange={(e) => setBuyer(Number(e.target.value) || null)}
+              className="mt-1 min-h-11 w-full rounded-xl border-2 border-line bg-surface px-3 text-base"
+            >
+              <option value="">{t("askWho")}</option>
+              {parties
+                .filter((p) => p.kind === "customer")
+                .map((p) => (
+                  <option key={p.id} value={p.id}>
+                    {p.name}
+                  </option>
+                ))}
+            </select>
+          </label>
+        )}
+        {Number(qty) > 0 && (
+          <p className="mt-2 text-sm font-semibold text-money-in">
+            {item.price > 0
+              ? t("saleWorth", { q: qty, p: formatINR(item.price), x: formatINR(item.price * Number(qty)) })
+              : t("noPriceSale")}
+          </p>
+        )}
+      </div>
+
+      {Number(qty) > 0 && (
+        <label className="mt-3 block text-sm font-semibold text-forest-950">
+          {t("stockIn")} · {t("costPrice")} / {item.unit} ({t("optional")})
+          <input
+            inputMode="numeric"
+            value={costIn}
+            placeholder={item.cost_price ? String(item.cost_price) : "0"}
+            onChange={(e) => setCostIn(e.target.value.replace(/[^\d]/g, ""))}
+            className="mt-1 min-h-11 w-full rounded-xl border-2 border-line bg-surface px-3 text-base tabular-nums focus:border-leaf-500 focus:outline-none"
+          />
+        </label>
+      )}
+
       <div className="mt-3 grid grid-cols-2 gap-2">
         {ACTIONS.map((a) => (
           <button
             key={a.reason}
             type="button"
-            disabled={!qty || busy}
+            disabled={!qty || busy || (a.reason === "sale" && saleMode === "udhaar" && !buyer)}
             onClick={() => void apply(a.reason)}
             className={`min-h-12 rounded-2xl font-semibold transition active:scale-95 disabled:opacity-40 ${a.style}`}
           >

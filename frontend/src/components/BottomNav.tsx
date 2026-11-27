@@ -8,7 +8,7 @@ import { useLang } from "./language";
 
 export type NavId = "aaj" | "hisaab" | "maal" | "khata";
 
-const ITEMS: { id: NavId; key: StringKey; icon: ReactNode }[] = [
+export const NAV_ITEMS: { id: NavId; key: StringKey; icon: ReactNode }[] = [
   {
     id: "aaj",
     key: "navHome",
@@ -42,7 +42,7 @@ const ITEMS: { id: NavId; key: StringKey; icon: ReactNode }[] = [
 ];
 
 /** Which section is in the middle of the screen right now (scroll spy). */
-function useActiveSection(): NavId {
+export function useActiveSection(): NavId {
   const [active, setActive] = useState<NavId>("aaj");
   useEffect(() => {
     if (typeof IntersectionObserver === "undefined") return;
@@ -53,7 +53,7 @@ function useActiveSection(): NavId {
       },
       { rootMargin: "-40% 0px -50% 0px", threshold: [0, 0.25, 0.5] },
     );
-    ITEMS.forEach(({ id }) => {
+    NAV_ITEMS.forEach(({ id }) => {
       const el = document.getElementById(id);
       if (el) io.observe(el);
     });
@@ -83,7 +83,7 @@ export function BottomNav({
   const active = useActiveSection();
   const badge: Partial<Record<NavId, number>> = { maal: lowStock, khata: overdue };
 
-  const button = (item: (typeof ITEMS)[number]) => {
+  const button = (item: (typeof NAV_ITEMS)[number]) => {
     const on = active === item.id;
     return (
       <button
@@ -91,7 +91,7 @@ export function BottomNav({
         type="button"
         onClick={() => onGo(item.id)}
         aria-current={on ? "true" : undefined}
-        className={`group relative flex flex-1 flex-col items-center gap-0.5 rounded-2xl py-1.5 text-[11px] font-semibold transition ${
+        className={`group relative flex flex-1 flex-col items-center gap-0.5 rounded-2xl py-1.5 text-xs font-semibold transition ${
           on ? "text-forest-900" : "text-muted hover:text-forest-800"
         }`}
       >
@@ -130,7 +130,7 @@ export function BottomNav({
       className="fixed inset-x-0 bottom-0 z-30 flex justify-center px-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]"
     >
       <div className="relative flex w-full max-w-md items-end gap-1 rounded-[26px] border border-line bg-surface/90 px-2 pb-1.5 pt-1.5 shadow-[0_-8px_30px_-12px_rgb(16_58_41/0.25)] backdrop-blur-md">
-        {ITEMS.slice(0, 2).map(button)}
+        {NAV_ITEMS.slice(0, 2).map(button)}
         <div className="relative flex flex-1 justify-center">
           {/* Slow "breathing" ring: a visual cue that this is the main button. */}
           <span aria-hidden className="pointer-events-none absolute -top-7 size-16 animate-[ring_2.8s_ease-out_infinite] rounded-full bg-leaf-500/40" />
@@ -146,7 +146,7 @@ export function BottomNav({
             </svg>
           </button>
         </div>
-        {ITEMS.slice(2).map(button)}
+        {NAV_ITEMS.slice(2).map(button)}
       </div>
     </nav>
   );
