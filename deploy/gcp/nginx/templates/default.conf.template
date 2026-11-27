@@ -1,0 +1,106 @@
+# Galla edge proxy. ${SITE_DOMAIN} is filled in by the nginx image's envsubst at start.
+# Rate limits are per client IP (the VM has a public IP, no load balancer in front).
+
+# --- Rate limit zones ---------------------------------------------------------------------
+# Pages and assets: generous; a page load pulls ~20-40 files.
+limit_req_zone $binary_remote_addr zone=pages:10m rate=20r/s;
+# JSON API: the dashboard makes a handful of calls per screen.
+limit_req_zone $binary_remote_addr zone=api:10m rate=10r/s;
+# Speech-to-text costs money per request (Wispr Flow): a person speaks a few entries a minute.
+limit_req_zone $binary_remote_addr zone=voice:10m rate=12r/m;
+# Open connections per IP.
+limit_conn_zone $binary_remote_addr zone=conn:10m;
+
+limit_req_status 429;
+limit_conn_status 429;
+limit_req_log_level warn;
+
+upstream galla_web {
+    server web:3000;
+    keepalive 16;
+}
+
+# --- HTTP: Let's Encrypt challenges, everything else to HTTPS --------------------------------
+server {
+    listen 80 default_server;
+    listen [::]:80 default_server;
+    server_name _;
+    server_tokens off;
+
+    location /.well-known/acme-challenge/ {
+        root /var/www/certbot;
+    }
+
+    location / {
+        return 301 https://${SITE_DOMAIN}$request_uri;
+    }
+}
+
+# --- HTTPS --------------------------------------------------------------------------------------
+server {
+    listen 443 ssl default_server;
+    listen [::]:443 ssl default_server;
+    http2 on;
+    server_name ${SITE_DOMAIN};
+    server_tokens off;
+
+    # Linked by 40-galla-certs.sh: Let's Encrypt when issued, a self-signed stand-in until then.
+    ssl_certificate     /etc/nginx/certs/fullchain.pem;
+    ssl_certificate_key /etc/nginx/certs/privkey.pem;
+    ssl_protocols TLSv1.2 TLSv1.3;
+    ssl_prefer_server_ciphers off;
+    ssl_session_cache shared:TLS:10m;
+    ssl_session_timeout 1d;
+    ssl_session_tickets off;
+
+    # Slow-client and oversized-request protection. Bill-scan text and a 60 s voice clip
+    # (16 kHz WAV, base64) are both well under 4 MB.
+    client_max_body_size 6m;
+    client_body_timeout 20s;
+    client_header_timeout 15s;
+    send_timeout 30s;
+    keepalive_timeout 30s;
+    limit_conn conn 40;
+
+    # Upstream timeouts (a location may override, e.g. speech-to-text).
+    proxy_connect_timeout 5s;
+    proxy_read_timeout 30s;
+    proxy_send_timeout 30s;
+
+    gzip on;
+    gzip_vary on;
+    gzip_min_length 1024;
+    gzip_types text/plain text/css application/json application/javascript text/javascript image/svg+xml;
+
+    include /etc/nginx/snippets/security-headers.conf;
+
+    # Paid speech-to-text: strictest limit.
+    location = /api/transcribe {
+        limit_req zone=voice burst=6 nodelay;
+        include /etc/nginx/snippets/proxy.conf;
+        proxy_read_timeout 60s;
+    }
+
+    location /api/ {
+        limit_req zone=api burst=40 nodelay;
+        include /etc/nginx/snippets/proxy.conf;
+    }
+
+    # Next.js build assets (content-hashed; Next.js itself sends the year-long Cache-Control).
+    location /_next/static/ {
+        limit_req zone=pages burst=120 nodelay;
+        include /etc/nginx/snippets/proxy.conf;
+    }
+
+    location / {
+        limit_req zone=pages burst=80 nodelay;
+        include /etc/nginx/snippets/proxy.conf;
+    }
+
+    # Friendly JSON for rate-limited API callers (the app shows its own message).
+    error_page 429 = @too_many;
+    location @too_many {
+        default_type application/json;
+        return 429 '{"detail":"Too many requests. Please wait a moment and try again."}';
+    }
+}

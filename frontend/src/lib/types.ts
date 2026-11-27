@@ -33,6 +33,12 @@ export interface LineItem {
   price: number | null;
 }
 
+export interface PartyOption {
+  id: number;
+  name: string;
+  kind: "customer" | "supplier";
+}
+
 export interface ExtractedEntry {
   type: EntryType;
   party: PartyRef | null;
@@ -46,6 +52,7 @@ export interface ExtractedEntry {
   missing: string[];
   raw_text: string;
   source: "rules" | "llm";
+  party_options: PartyOption[];
 }
 
 export interface ShopSummary {
@@ -71,6 +78,7 @@ export interface FirebaseWebConfig {
 
 export interface AppConfig {
   llm_configured: boolean;
+  wispr_configured: boolean;
   firebase: FirebaseWebConfig | null; // null: Google login not set up
 }
 
@@ -143,7 +151,7 @@ export type StockReason = "purchase" | "sale" | "wastage" | "count";
 export interface StockMove {
   id: number;
   delta: number;
-  reason: StockReason | "opening";
+  reason: StockReason | "opening" | "undo";
   stock_after: number;
   created_at: string;
 }

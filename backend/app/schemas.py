@@ -27,6 +27,12 @@ class LineItem(BaseModel):
     price: int | None = None
 
 
+class PartyOption(BaseModel):
+    id: int
+    name: str
+    kind: PartyKind
+
+
 class ExtractedEntry(BaseModel):
     """What extract(text, shop_context) returns. Amounts are integer rupees."""
 
@@ -42,6 +48,8 @@ class ExtractedEntry(BaseModel):
     missing: list[str] = Field(default_factory=list)
     raw_text: str = ""
     source: Literal["rules", "llm"] = "rules"
+    # Up to 3 tap-to-pick alternatives when the party match is below 0.8 (robustness rules).
+    party_options: list[PartyOption] = Field(default_factory=list)
 
 
 class ShopSummary(BaseModel):
@@ -49,6 +57,7 @@ class ShopSummary(BaseModel):
     name: str
     vpa: str
     language: str
+    kind: str = "kirana"
     items: int
     customers: int
     suppliers: int
@@ -67,6 +76,7 @@ class FirebaseWebConfig(BaseModel):
 
 class AppConfig(BaseModel):
     llm_configured: bool
+    wispr_configured: bool = False
     firebase: FirebaseWebConfig | None  # None means Google login is not set up
 
 

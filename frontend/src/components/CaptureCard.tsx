@@ -8,6 +8,7 @@ import { LANGS as APP_LANGS } from "@/lib/i18n";
 
 import { Magnetic, Spotlight } from "./interactive";
 import { useLang } from "./language";
+import { useAppConfig } from "./auth";
 import { HelpTip } from "./HelpTip";
 
 // Example sentences come from the chosen language (ex1..ex4).
@@ -25,12 +26,13 @@ const LANGS = [
  */
 export function CaptureCard({ onSubmit }: { onSubmit: (text: string) => void }) {
   const { t, lang: appLang } = useLang();
+  const config = useAppConfig();
   const [text, setText] = useState("");
   // Mic language starts from the app language; the chips below can switch it per entry.
   const [lang, setLang] = useState(APP_LANGS.find((l) => l.code === appLang)?.speech ?? "hi-IN");
   const typing = useRef<number | null>(null);
   const area = useRef<HTMLTextAreaElement>(null);
-  const speech = useSpeech(setText, lang);
+  const speech = useSpeech(setText, lang, !!config?.wispr_configured);
 
   // Tapping an example "types" it in, so it feels like dictation.
   const typeIn = (sample: string) => {
@@ -132,6 +134,7 @@ export function CaptureCard({ onSubmit }: { onSubmit: (text: string) => void }) 
               aria-label={speech.listening ? t("stopListening") : t("holdToSpeak")}
               aria-pressed={speech.listening}
               onClick={speech.listening ? speech.stop : speech.start}
+              disabled={speech.transcribing}
               className={`relative grid size-14 place-items-center rounded-full text-2xl transition active:scale-95 ${
                 speech.listening
                   ? "bg-money-out text-white"
@@ -158,6 +161,17 @@ export function CaptureCard({ onSubmit }: { onSubmit: (text: string) => void }) 
       </div>
       {speech.error && <p className="mt-2 text-sm text-pending">{t(speech.error)}</p>}
       {speech.listening && <p className="mt-2 text-sm text-forest-700">{t("listening")}</p>}
+      {speech.transcribing && (
+        <p role="status" className="mt-2 flex items-center gap-2 text-sm text-forest-700">
+          <span aria-hidden className="size-3 animate-spin rounded-full border-2 border-leaf-500 border-t-transparent" />
+          {t("transcribing")}
+        </p>
+      )}
+      {speech.engine === "wispr" && !speech.listening && !speech.transcribing && (
+        <p className="mt-2 flex items-center gap-1.5 text-xs font-semibold text-leaf-500">
+          <span aria-hidden className="size-1.5 rounded-full bg-leaf-500" /> {t("wisprOn")}
+        </p>
+      )}
     </Spotlight>
   );
 }

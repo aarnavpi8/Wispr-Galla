@@ -1,5 +1,5 @@
-# Production overlay for the GCP VM: Caddy in front of the web container with automatic
-# HTTPS (Let's Encrypt). The firewall only opens 80/443, so port 3000 stays private.
+# Production overlay for the GCP VM: nginx in front (rate limits, security headers, TLS)
+# and certbot for the Let's Encrypt certificate. The firewall opens only 80/443.
 #   docker compose -f docker-compose.yml -f deploy/gcp/docker-compose.gcp.yml up -d --build
 
 services:
@@ -10,8 +10,8 @@ services:
   web:
     restart: unless-stopped
 
-  caddy:
-    image: caddy:2-alpine
+  nginx:
+    image: nginx:1.27-alpine
     restart: unless-stopped
     environment:
       SITE_DOMAIN: ${SITE_DOMAIN:?SITE_DOMAIN is set by redeploy.sh}
@@ -19,12 +19,39 @@ services:
       - "80:80"
       - "443:443"
     volumes:
-      - ./deploy/gcp/Caddyfile:/etc/caddy/Caddyfile:ro
-      - caddy-data:/data
-      - caddy-config:/config
+      - ./deploy/gcp/nginx/templates:/etc/nginx/templates:ro
+      - ./deploy/gcp/nginx/snippets:/etc/nginx/snippets:ro
+      - ./deploy/gcp/nginx/entrypoint/40-galla-certs.sh:/docker-entrypoint.d/40-galla-certs.sh:ro
+      - ${SELFSIGNED_DIR:-/opt/galla-selfsigned}:/etc/galla-selfsigned:ro
+      - certbot-etc:/etc/letsencrypt:ro
+      - certbot-www:/var/www/certbot:ro
     depends_on:
       - web
 
+  # Issues the certificate on first start, then checks for renewal twice a day.
+  certbot:
+    image: certbot/certbot:v2.11.0
+    restart: unless-stopped
+    environment:
+      SITE_DOMAIN: ${SITE_DOMAIN}
+    volumes:
+      - certbot-etc:/etc/letsencrypt
+      - certbot-www:/var/www/certbot
+    entrypoint:
+      - sh
+      - -c
+      - |
+        trap exit TERM
+        sleep 20
+        while :; do
+          certbot certonly --webroot -w /var/www/certbot -d "$$SITE_DOMAIN" \
+            --agree-tos --register-unsafely-without-email --non-interactive --keep-until-expiring \
+            || echo "certbot: will retry"
+          sleep 12h & wait $$!
+        done
+    depends_on:
+      - nginx
+
 volumes:
-  caddy-data:
-  caddy-config:
+  certbot-etc:
+  certbot-www:

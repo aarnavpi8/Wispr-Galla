@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="hi">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>Galla</title>
+    <style>
+      :root { --bg: #faf6ee; --ink: #1d2a22; --forest: #103a29; --muted: #6b7568; --lime: #d7f08a; }
+      * { box-sizing: border-box; }
+      body { margin: 0; min-height: 100vh; display: grid; place-items: center; background: var(--bg); color: var(--ink);
+        font-family: system-ui, "Noto Sans", "Noto Sans Devanagari", sans-serif; padding: 24px; }
+      .card { max-width: 380px; text-align: center; }
+      .icon { width: 72px; height: 72px; margin: 0 auto 16px; border-radius: 50%; display: grid; place-items: center;
+        background: #fff4e0; font-size: 36px; }
+      h1 { margin: 0 0 6px; font-size: 24px; }
+      p { margin: 0 0 6px; color: var(--muted); line-height: 1.5; }
+      button { margin-top: 18px; width: 100%; min-height: 56px; border: 0; border-radius: 18px; background: var(--forest);
+        color: #fff; font-size: 18px; font-weight: 700; }
+      button:active { transform: scale(0.98); }
+    </style>
+  </head>
+  <body>
+    <main class="card">
+      <div class="icon" aria-hidden="true">📶</div>
+      <h1>इंटरनेट नहीं मिला</h1>
+      <p>Galla can't reach the server. Check your internet and try again.</p>
+      <p>Internet check karke phir try kariye.</p>
+      <button type="button" onclick="history.length > 1 ? history.back() : location.reload()">फिर से कोशिश करें · Try again</button>
+    </main>
+  </body>
+</html>

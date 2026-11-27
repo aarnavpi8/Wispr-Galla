@@ -1,13 +1,14 @@
 # Deploy Galla on GCP Compute Engine
 
-One small VM runs the same Docker Compose stack the judges run, plus Caddy for HTTPS.
+One small VM runs the same Docker Compose stack the judges run, plus nginx (rate limits,
+security headers, HTTPS) and certbot (Let's Encrypt).
 API keys live in **Secret Manager**, never in git or Terraform state.
 
 ```
-Internet ──443/80──▶ Caddy ──▶ web (Next.js :3000) ──▶ api (FastAPI :8000) ──▶ db (Postgres)
-                       │
-                       └─ free domain <ip>.sslip.io with a Let's Encrypt certificate
-VM identity ──reads──▶ Secret Manager: galla-llm-api-key, galla-firebase-api-key, …
+Internet ──443/80──▶ nginx ──▶ web (Next.js :3000) ──▶ api (FastAPI :8000) ──▶ db (Postgres)
+                      │  rate limits · headers · gzip · TLS
+                      └─ certbot: free domain <ip>.sslip.io, Let's Encrypt cert, auto-renew
+VM identity ──reads──▶ Secret Manager: galla-wispr-api-key, galla-firebase-api-key, …
 ```
 
 ## 1. Create it (once)
@@ -32,13 +33,13 @@ Cost: roughly e2-medium + 30 GB disk + a static IP, about US$30/month in asia-so
 Terraform creates empty secrets. Add a value to any of them (PowerShell):
 
 ```powershell
-"sk-your-key" | gcloud secrets versions add galla-llm-api-key --data-file=- --project YOUR_PROJECT
-"anthropic"   | gcloud secrets versions add galla-llm-provider --data-file=- --project YOUR_PROJECT
+"fl-your-wispr-key" | gcloud secrets versions add galla-wispr-api-key --data-file=- --project YOUR_PROJECT
 ```
 
 | Secret | What it turns on |
 |---|---|
-| `galla-llm-provider`, `galla-llm-api-key` | LLM upgrade for understanding entries (D2/D3) |
+| `galla-wispr-api-key` | In-app mic via Wispr Flow speech-to-text |
+| `galla-llm-provider`, `galla-llm-api-key` | LLM upgrade for understanding entries (D2/D3; not used until flow 1 lands) |
 | `galla-firebase-api-key`, `-auth-domain`, `-project-id`, `-app-id` | Google login (D14) |
 
 Then apply them (pulls the latest `main` too):
@@ -60,4 +61,21 @@ Push to `main`, then run the redeploy command above. Rebooting the VM does the s
 ## Your own domain
 
 Point an A record at the `ip` output, then `terraform apply -var project_id=… -var domain=galla.example.com`
-(this changes VM metadata only) and redeploy. Caddy fetches the certificate itself.
+(this changes VM metadata only) and redeploy. certbot fetches the certificate itself.
+
+## nginx: rate limits and protection
+
+`deploy/gcp/nginx/templates/default.conf.template` (per client IP):
+
+| Path | Limit | Why |
+|---|---|---|
+| `/api/transcribe` | 12/min, burst 6 | Wispr Flow is billed per use |
+| `/api/*` | 10/s, burst 40 | dashboard API calls |
+| pages, `/_next/static` | 20/s, burst 80–120 | a page load pulls many files |
+| connections | 40 open per IP | |
+
+Over the limit: HTTP 429 with `{"detail": "Too many requests…"}`. Also: request bodies capped
+at 6 MB, slow-client timeouts, HSTS / nosniff / frame / referrer headers, and a
+Permissions-Policy that allows the mic and camera for this site only. HTTP redirects to HTTPS.
+Until Let's Encrypt has issued the certificate (about a minute after first boot) nginx serves a
+self-signed one; it switches to the real one by itself within 5 minutes.

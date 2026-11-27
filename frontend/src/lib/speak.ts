@@ -1,16 +1,25 @@
-// Read-aloud (D7 option A): the browser's own speech synthesis. No key, works offline on
-// most phones. For people who find reading hard, every help text and tour step can be heard.
+// Read-aloud (D7 option A): the browser's own speech synthesis, or the native Android voice
+// inside the Capacitor app (Android's WebView has no speechSynthesis). No key.
+// For people who find reading hard, every help text and tour step can be heard.
+
+import { nativeSpeak, nativeStopSpeaking, nativeTtsAvailable } from "./native";
 
 export function canSpeak(): boolean {
-  return typeof window !== "undefined" && "speechSynthesis" in window;
+  if (typeof window === "undefined") return false;
+  return nativeTtsAvailable() || "speechSynthesis" in window;
 }
 
 /** Speak `text` in `lang` (BCP-47, e.g. "hi-IN"). Stops anything already speaking. */
 export function readAloud(text: string, lang: string): boolean {
   if (!canSpeak()) return false;
+  const clean = text.replace(/[“”"]/g, "");
+  if (nativeTtsAvailable()) {
+    void nativeSpeak(clean, lang).catch(() => {});
+    return true;
+  }
   const synth = window.speechSynthesis;
   synth.cancel();
-  const u = new SpeechSynthesisUtterance(text.replace(/[“”"]/g, ""));
+  const u = new SpeechSynthesisUtterance(clean);
   u.lang = lang;
   u.rate = 0.95;
   // Prefer a voice for this exact language, then the same language anywhere.
@@ -22,5 +31,6 @@ export function readAloud(text: string, lang: string): boolean {
 }
 
 export function stopSpeaking(): void {
-  if (canSpeak()) window.speechSynthesis.cancel();
+  if (nativeTtsAvailable()) void nativeStopSpeaking();
+  else if (typeof window !== "undefined" && "speechSynthesis" in window) window.speechSynthesis.cancel();
 }

@@ -7,7 +7,7 @@ from pydantic import BaseModel, Field
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app import ledger, models
+from app import inventory, ledger, models
 from app.config import settings
 from app.db import get_db
 from app.deps import current_shop, iso
@@ -107,7 +107,7 @@ def accounts(
         upi_in=total("upi_in"),
         stock_value=sum(i.stock * i.price for i in items),
         stock_items=len(items),
-        low_stock=sum(1 for i in items if i.stock <= i.low_stock_at),
+        low_stock=sum(1 for i in items if inventory.is_low(i)),
     )
 
 

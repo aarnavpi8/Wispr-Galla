@@ -1,5 +1,7 @@
 "use client";
 
+import type { ReactNode } from "react";
+
 import { formatINR } from "@/lib/format";
 
 import { useLang } from "./language";
@@ -16,6 +18,7 @@ export function StickySummary({
   lowStock,
   onTap,
   onLowStock,
+  account,
 }: {
   visible: boolean;
   shopName: string;
@@ -24,6 +27,8 @@ export function StickySummary({
   lowStock: number;
   onTap: () => void;
   onLowStock: () => void;
+  /** Profile button, so Logout stays one tap away while scrolled down. */
+  account?: ReactNode;
 }) {
   const { t } = useLang();
   return (
@@ -55,6 +60,7 @@ export function StickySummary({
             <span className="block text-sm font-extrabold">{lowStock}</span>
           </button>
         )}
+        {visible && account}
       </div>
     </div>
   );

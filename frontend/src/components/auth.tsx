@@ -18,7 +18,7 @@ interface AuthState {
   user: GallaUser | null;
   config: AppConfig | null;
   /** Dictionary key of the last sign-in problem (shown in the chosen language). */
-  error: "loginFailed" | "domainNotAllowed" | null;
+  error: "loginFailed" | "domainNotAllowed" | "loginProviderOff" | "loginPopupBlocked" | null;
   signIn: () => Promise<void>;
   signOut: () => Promise<void>;
   continueAsGuest: () => void;
@@ -85,11 +85,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } catch (e) {
       const code = (e as { code?: string }).code ?? "";
       if (code === "auth/popup-closed-by-user" || code === "auth/cancelled-popup-request") return;
-      if (code === "auth/unauthorized-domain") {
-        setError("domainNotAllowed");
-      } else {
-        setError("loginFailed");
-      }
+      console.warn("Google sign-in failed:", code || e);
+      if (code === "auth/unauthorized-domain") setError("domainNotAllowed");
+      else if (code === "auth/operation-not-allowed" || code === "auth/configuration-not-found") setError("loginProviderOff");
+      else if (code === "auth/popup-blocked") setError("loginPopupBlocked");
+      else setError("loginFailed");
     }
   }, [config]);
 
@@ -118,6 +118,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       {children}
     </AuthContext.Provider>
   );
+}
+
+/** Server config (which optional keys are set), or null outside the provider / before it loads. */
+export function useAppConfig(): AppConfig | null {
+  return useContext(AuthContext)?.config ?? null;
 }
 
 export function useAuth(): AuthState {

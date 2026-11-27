@@ -14,8 +14,9 @@ Needs Docker. No keys and no `.env` file required.
 docker compose up --build
 ```
 
-Open http://localhost:3000. A demo shop with items, customers and 3 days of history loads
-automatically.
+Open http://localhost:3000. Pick a language, then either set up your own shop (name, what you
+sell, optional UPI and cash) or tap **"Just look at a demo shop"** to load sample items,
+customers and 3 days of history.
 
 Optional extras go in a `.env` file (copy `.env.example`). Without them the app still runs:
 
@@ -31,6 +32,20 @@ Optional extras go in a `.env` file (copy `.env.example`). Without them the app 
 - Stock with low-stock alerts and history. **Scan a supplier's bill** to add stock: the photo
   is read on the phone (Tesseract.js, no key; it downloads a few MB the first time).
 - 12 Indian languages, a guided tour, "?" help and read-aloud for first-time users.
+
+## Keys for testing everything
+
+All optional, in `.env` at the repo root (for the backend without Docker: `backend/.env`):
+
+| Variable | Turns on |
+|---|---|
+| `WISPR_API_KEY` | In-app mic via the Wispr Flow API (platform.wisprflow.ai; approval via enterprise@wisprflow.ai) |
+| `FIREBASE_API_KEY`, `FIREBASE_AUTH_DOMAIN`, `FIREBASE_PROJECT_ID`, `FIREBASE_APP_ID` | Google sign-in |
+| `LLM_PROVIDER`, `LLM_API_KEY` | Reserved for the entry extractor (flow 1); not used yet |
+
+## Android app
+
+Same frontend in a Capacitor shell: see [frontend/mobile/README.md](frontend/mobile/README.md).
 
 ## Turning on Google login (Firebase)
 

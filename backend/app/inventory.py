@@ -53,6 +53,11 @@ class MoveOut(BaseModel):
     created_at: str
 
 
+def is_low(i: models.Item) -> bool:
+    """Alert level 0 means "no alert" (e.g. starter items before the shopkeeper sets them)."""
+    return i.low_stock_at > 0 and i.stock <= i.low_stock_at
+
+
 def item_out(i: models.Item) -> ItemOut:
     return ItemOut(
         id=i.id,
@@ -62,7 +67,7 @@ def item_out(i: models.Item) -> ItemOut:
         price=i.price,
         stock=i.stock,
         low_stock_at=i.low_stock_at,
-        low=i.stock <= i.low_stock_at,
+        low=is_low(i),
         value=i.stock * i.price,
     )
 
@@ -107,6 +112,28 @@ def add_item(body: NewItem, db: Session = Depends(get_db), shop: models.Shop = D
     if body.stock:
         db.add(models.StockMove(shop_id=shop.id, item_id=item.id, delta=body.stock, reason="opening",
                                 stock_after=body.stock))
+    db.commit()
+    return item_out(item)
+
+
+class ItemUpdate(BaseModel):
+    price: int | None = Field(default=None, ge=0, le=10_00_000)
+    low_stock_at: int | None = Field(default=None, ge=0, le=1_00_000)
+
+
+@router.patch("/{item_id}", response_model=ItemOut)
+def update_item(
+    item_id: int,
+    body: ItemUpdate,
+    db: Session = Depends(get_db),
+    shop: models.Shop = Depends(current_shop),
+) -> ItemOut:
+    """Change an item's price or alert level (stock changes go through /stock, with history)."""
+    item = _item(db, shop, item_id)
+    if body.price is not None:
+        item.price = body.price
+    if body.low_stock_at is not None:
+        item.low_stock_at = body.low_stock_at
     db.commit()
     return item_out(item)
 

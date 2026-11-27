@@ -1,4 +1,4 @@
-# Galla on one Compute Engine VM: Docker Compose (db + api + web) behind Caddy (HTTPS).
+# Galla on one Compute Engine VM: Docker Compose (db + api + web) behind nginx (rate limits, HTTPS via certbot).
 # Keys live in Secret Manager; the VM reads them into .env on every (re)deploy.
 #
 #   cd deploy/gcp
@@ -25,7 +25,7 @@ provider "google" {
 
 locals {
   name = "galla"
-  # Free wildcard DNS: 34-93-1-2.sslip.io -> 34.93.1.2. Caddy gets a Let's Encrypt cert for it.
+  # Free wildcard DNS: 34-93-1-2.sslip.io -> 34.93.1.2. certbot gets a Let's Encrypt cert for it.
   domain = var.domain != "" ? var.domain : "${replace(google_compute_address.galla.address, ".", "-")}.sslip.io"
 
   # Every key the app understands (see .env.example). Values are added outside Terraform,
@@ -33,6 +33,7 @@ locals {
   secrets = toset([
     "LLM_PROVIDER",
     "LLM_API_KEY",
+    "WISPR_API_KEY",
     "FIREBASE_API_KEY",
     "FIREBASE_AUTH_DOMAIN",
     "FIREBASE_PROJECT_ID",

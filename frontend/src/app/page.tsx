@@ -5,6 +5,8 @@ import { Dashboard } from "@/components/Dashboard";
 import { useLang } from "@/components/language";
 import { LanguagePicker } from "@/components/LanguagePicker";
 import { LoginScreen } from "@/components/LoginScreen";
+import { SetupScreen } from "@/components/SetupScreen";
+import { useApi } from "@/lib/api";
 
 function Loading() {
   return (
@@ -16,15 +18,19 @@ function Loading() {
   );
 }
 
-// First open: pick a language. Then login (only if Firebase keys are set), then the dashboard.
-// Without Firebase keys (judges' path) login is "disabled" and the dashboard opens directly.
+// First open: pick a language -> sign in (only if Firebase keys are set) -> set up the shop
+// (only on a new install) -> the dashboard.
 export default function Home() {
   const { status } = useAuth();
   const { ready, chosen } = useLang();
+  const setup = useApi<{ has_shop: boolean }>("/api/setup");
 
   if (!ready) return <Loading />;
   if (!chosen) return <LanguagePicker />;
   if (status === "loading") return <Loading />;
   if (status === "signed-out") return <LoginScreen />;
+  if (setup.error) return <Dashboard />; // backend unreachable: the dashboard shows the error
+  if (!setup.data) return <Loading />;
+  if (!setup.data.has_shop) return <SetupScreen onDone={() => setup.setData({ has_shop: true })} />;
   return <Dashboard />;
 }

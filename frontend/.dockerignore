@@ -2,3 +2,6 @@ node_modules
 .next
 .env*
 npm-debug.log*
+# Native Android shell (Capacitor) is not part of the web image.
+android
+mobile

@@ -67,6 +67,10 @@ jobs:
         run: |
           curl -fsS http://localhost:3000/api/health | grep -q '"llm_configured":false'
           curl -fsS http://localhost:3000/api/config | grep -q '"firebase":null'
+          # A fresh install has no shop: the app shows the setup screen.
+          curl -fsS http://localhost:3000/api/setup | grep -q '"has_shop":false'
+          # Judges' one tap: load the demo shop.
+          curl -fsS -X POST http://localhost:3000/api/setup/demo | grep -q "Shree Ganesh Kirana"
           curl -fsS http://localhost:3000/api/shop | grep -q "Shree Ganesh Kirana"
           curl -fsS "http://localhost:3000/api/summary?days=7" | grep -q '"udhaar_outstanding"'
           curl -fsS "http://localhost:3000/api/accounts?days=7" | grep -q '"low_stock"'

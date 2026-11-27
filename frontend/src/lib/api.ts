@@ -16,9 +16,13 @@ export async function getJSON<T>(path: string): Promise<T> {
   return res.json() as Promise<T>;
 }
 
-export async function postJSON<T>(path: string, body: unknown): Promise<T> {
+export function patchJSON<T>(path: string, body: unknown): Promise<T> {
+  return postJSON<T>(path, body, "PATCH");
+}
+
+export async function postJSON<T>(path: string, body: unknown, method: "POST" | "PATCH" = "POST"): Promise<T> {
   const res = await fetch(path, {
-    method: "POST",
+    method,
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body),
   });

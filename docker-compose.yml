@@ -23,6 +23,8 @@ services:
       DATABASE_URL: postgresql+psycopg://galla:galla@db:5432/galla
       LLM_PROVIDER: ${LLM_PROVIDER:-}
       LLM_API_KEY: ${LLM_API_KEY:-}
+      # Optional Wispr Flow speech-to-text for the in-app mic.
+      WISPR_API_KEY: ${WISPR_API_KEY:-}
       # Optional Google login. Empty = login off, app opens straight to the demo shop.
       FIREBASE_API_KEY: ${FIREBASE_API_KEY:-}
       FIREBASE_AUTH_DOMAIN: ${FIREBASE_AUTH_DOMAIN:-}

@@ -33,6 +33,14 @@ umask 077
   done
 } > .env
 
+# Self-signed stand-in so nginx can serve HTTPS before Let's Encrypt has issued the real cert.
+SELF=/opt/galla-selfsigned
+if [ ! -s "$SELF/fullchain.pem" ]; then
+  mkdir -p "$SELF"
+  openssl req -x509 -nodes -newkey rsa:2048 -days 30 -subj "/CN=$DOMAIN" \
+    -keyout "$SELF/privkey.pem" -out "$SELF/fullchain.pem" 2>/dev/null
+fi
+
 docker compose -f docker-compose.yml -f deploy/gcp/docker-compose.gcp.yml up -d --build --remove-orphans
 docker image prune -f >/dev/null
 echo "=== up: https://$DOMAIN ==="

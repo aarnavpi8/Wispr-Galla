@@ -5,7 +5,7 @@ from fastapi import Depends, FastAPI, Query
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
-from app import accounts, inventory, ledger, models
+from app import accounts, entries_api, inventory, ledger, models, setup, voice
 from app.config import settings
 from app.db import Base, SessionLocal, engine, get_db
 from app.deps import current_shop, iso
@@ -18,16 +18,19 @@ from app.seed import seed_if_empty, seed_stock_if_missing
 async def lifespan(_: FastAPI):
     Base.metadata.create_all(engine)
     add_missing_columns(engine)
-    if settings.seed_on_start:
-        with SessionLocal() as db:
+    with SessionLocal() as db:
+        if settings.seed_on_start:
             seed_if_empty(db)
-            seed_stock_if_missing(db)
+        seed_stock_if_missing(db)  # only touches the demo shop, if there is one
     yield
 
 
 app = FastAPI(title="Galla API", lifespan=lifespan)
 app.include_router(inventory.router)
 app.include_router(accounts.router)
+app.include_router(voice.router)
+app.include_router(setup.router)
+app.include_router(entries_api.router)
 
 
 @app.get("/api/health")
@@ -46,7 +49,7 @@ def config() -> AppConfig:
             projectId=settings.firebase_project_id,
             appId=settings.firebase_app_id,
         )
-    return AppConfig(llm_configured=settings.llm_configured, firebase=firebase)
+    return AppConfig(llm_configured=settings.llm_configured, wispr_configured=settings.wispr_configured, firebase=firebase)
 
 
 @app.get("/api/shop", response_model=ShopSummary)
@@ -59,6 +62,7 @@ def shop(db: Session = Depends(get_db), shop: models.Shop = Depends(current_shop
         name=shop.name,
         vpa=shop.vpa,
         language=shop.language,
+        kind=shop.kind,
         items=count(models.Item),
         customers=count(models.Party, models.Party.kind == "customer"),
         suppliers=count(models.Party, models.Party.kind == "supplier"),
@@ -83,7 +87,8 @@ def entries(
     shop: models.Shop = Depends(current_shop),
 ) -> list[EntryOut]:
     names = {p.id: p.name for p in _parties(db, shop.id)}
-    q = select(models.Entry).where(models.Entry.shop_id == shop.id)
+    # Reversal rows are bookkeeping for undo; the original shows as struck through instead.
+    q = select(models.Entry).where(models.Entry.shop_id == shop.id, models.Entry.reverses_id.is_(None))
     if party_id is not None:
         q = q.where(models.Entry.party_id == party_id)
     rows = list(db.scalars(q.order_by(models.Entry.created_at.desc(), models.Entry.id.desc()).limit(limit)))

@@ -9,6 +9,7 @@ from sqlalchemy import Engine, inspect, text
 
 # (table, column, SQL type + default) — portable across SQLite and Postgres.
 COLUMNS = [
+    ("shops", "kind", "VARCHAR(20) NOT NULL DEFAULT 'kirana'"),
     ("items", "stock", "INTEGER NOT NULL DEFAULT 0"),
     ("items", "low_stock_at", "INTEGER NOT NULL DEFAULT 5"),
 ]

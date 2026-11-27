@@ -23,7 +23,7 @@ def test_starts_without_keys_and_seeds_demo_shop(client):
 
 
 def test_config_without_keys_turns_login_off(client):
-    assert client.get("/api/config").json() == {"llm_configured": False, "firebase": None}
+    assert client.get("/api/config").json() == {"llm_configured": False, "wispr_configured": False, "firebase": None}
 
 
 def test_config_with_firebase_keys(client, monkeypatch):

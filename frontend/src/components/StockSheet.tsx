@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 
-import { postJSON, useApi } from "@/lib/api";
+import { patchJSON, postJSON, useApi } from "@/lib/api";
 import { formatINR, itemLabel, stockLevel, timeAgo } from "@/lib/format";
 import type { StringKey } from "@/lib/i18n";
 import type { Item, StockMove, StockReason } from "@/lib/types";
@@ -23,6 +23,7 @@ const REASON_KEY: Record<StockMove["reason"], StringKey> = {
   sale: "stockSold",
   wastage: "stockWasted",
   count: "stockCount",
+  undo: "undoMove",
 };
 
 /** One item: stock level, move stock in/out by any quantity, and its history. */
@@ -40,6 +41,18 @@ export function StockSheet({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [tick, setTick] = useState(0);
+  const [price, setPrice] = useState(String(item.price));
+
+  const savePrice = async () => {
+    const n = Number(price);
+    if (price === "" || n === item.price) return;
+    setError(null);
+    try {
+      onUpdated(await patchJSON<Item>(`/api/items/${item.id}`, { price: n }));
+    } catch (e) {
+      setError((e as Error).message);
+    }
+  };
   const { data: moves } = useApi<StockMove[]>(`/api/items/${item.id}/moves?r=${tick}`);
 
   const apply = async (reason: StockReason) => {
@@ -79,6 +92,28 @@ export function StockSheet({
         <p className="mt-1 text-xs text-muted">
           {t("alertAt")}: {item.low_stock_at} {item.unit}
         </p>
+      </div>
+
+      {/* Price: starter items come in at ₹0, so make setting it obvious. */}
+      <div className={`mt-4 flex items-end gap-2 rounded-2xl p-3 ${item.price === 0 ? "bg-amber-50 ring-1 ring-amber-200" : "bg-surface-2"}`}>
+        <label className="flex-1 text-sm font-semibold text-forest-950">
+          {t("price")} / {item.unit}
+          <input
+            inputMode="numeric"
+            value={price}
+            onChange={(e) => setPrice(e.target.value.replace(/[^\d]/g, ""))}
+            onKeyDown={(e) => e.key === "Enter" && void savePrice()}
+            className="mt-1 min-h-12 w-full rounded-xl border-2 border-line bg-surface px-3 text-xl font-bold tabular-nums focus:border-leaf-500 focus:outline-none"
+          />
+        </label>
+        <button
+          type="button"
+          onClick={() => void savePrice()}
+          disabled={price === "" || Number(price) === item.price}
+          className="min-h-12 rounded-xl bg-forest-900 px-4 font-semibold text-white transition hover:bg-forest-800 active:scale-95 disabled:opacity-40"
+        >
+          {t("setPrice")}
+        </button>
       </div>
 
       <label htmlFor="qty" className="mt-4 block font-semibold text-forest-950">

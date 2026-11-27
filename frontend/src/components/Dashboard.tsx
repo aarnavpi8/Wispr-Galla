@@ -2,16 +2,17 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 
-import { useApi } from "@/lib/api";
+import { postJSON, useApi } from "@/lib/api";
 import { formatINR } from "@/lib/format";
 import { greetingKey, LANGS } from "@/lib/i18n";
-import type { Accounts, EntryOut, PartyBalance, ShopSummary, Summary } from "@/lib/types";
+import type { Accounts, EntryOut, ExtractedEntry, PartyBalance, ShopSummary, Summary } from "@/lib/types";
 
 import { AccountMenu } from "./AccountMenu";
 import { AccountsCard } from "./AccountsCard";
 import { useAuth } from "./auth";
 import { BottomNav, type NavId } from "./BottomNav";
 import { CaptureCard } from "./CaptureCard";
+import { EntryCard } from "./EntryCard";
 import { EntryList } from "./EntryList";
 import { HeroCard } from "./HeroCard";
 import { InventoryCard } from "./InventoryCard";
@@ -45,6 +46,36 @@ export function Dashboard() {
   const [tab, setTab] = useState<Tab>("hisaab");
   const [openParty, setOpenParty] = useState<PartyBalance | null>(null);
   const [toast, setToast] = useState<string | null>(null);
+  const [card, setCard] = useState<ExtractedEntry | null>(null);
+  const [captureKey, setCaptureKey] = useState(0);
+  const [lastSaved, setLastSaved] = useState<EntryOut | null>(null);
+
+  const understand = async (text: string) => {
+    setToast(t("understanding"));
+    try {
+      setCard(await postJSON<ExtractedEntry>("/api/extract", { text }));
+      setToast(null);
+    } catch (e) {
+      setToast((e as Error).message);
+    }
+  };
+
+  const refreshAll = () => {
+    bump();
+    entries.reload();
+    khata.reload();
+  };
+
+  const undo = async (saved: EntryOut) => {
+    try {
+      await postJSON(`/api/entries/${saved.id}/undo`, {});
+      setLastSaved(null);
+      setToast(t("undone"));
+      refreshAll();
+    } catch (e) {
+      setToast((e as Error).message);
+    }
+  };
   const [heroGone, setHeroGone] = useState(false);
   const hero = useRef<HTMLDivElement>(null);
   const hasSummary = !!summary.data;
@@ -62,6 +93,13 @@ export function Dashboard() {
     const id = window.setTimeout(() => setToast(null), 3500);
     return () => window.clearTimeout(id);
   }, [toast]);
+
+  // 10-second undo after every save.
+  useEffect(() => {
+    if (!lastSaved) return;
+    const id = window.setTimeout(() => setLastSaved(null), 10_000);
+    return () => window.clearTimeout(id);
+  }, [lastSaved]);
 
   // Show the compact summary bar once the big money card has scrolled off the top.
   useEffect(() => {
@@ -101,6 +139,7 @@ export function Dashboard() {
         lowStock={accounts.data?.low_stock ?? 0}
         onTap={() => go("aaj")}
         onLowStock={() => go("maal")}
+        account={<AccountMenu compact onShowTour={() => setTouring(true)} onLanguage={() => setPicking(true)} />}
       />
 
       <header id="aaj" className="animate-rise flex items-center justify-between gap-3">
@@ -123,7 +162,7 @@ export function Dashboard() {
             <span aria-hidden>अ/A</span>
             <span className="hidden sm:inline">{LANGS.find((l) => l.code === lang)?.name}</span>
           </button>
-          <AccountMenu onShowTour={() => setTouring(true)} />
+          <AccountMenu onShowTour={() => setTouring(true)} onLanguage={() => setPicking(true)} />
         </div>
       </header>
 
@@ -145,7 +184,7 @@ export function Dashboard() {
       </div>
 
       <div id="tour-capture">
-        <CaptureCard onSubmit={() => setToast(t("notSaved"))} />
+        <CaptureCard key={captureKey} onSubmit={(text) => void understand(text)} />
       </div>
 
       {overdue.length > 0 && summary.data && (
@@ -230,6 +269,29 @@ export function Dashboard() {
       )}
 
       {touring && <Tour onClose={() => setTouring(false)} />}
+
+      {card && (
+        <EntryCard
+          entry={card}
+          parties={khata.data ?? []}
+          onClose={() => setCard(null)}
+          onSaved={(saved) => {
+            setCard(null);
+            setCaptureKey((k) => k + 1); // clear the speak box
+            setLastSaved(saved);
+            refreshAll();
+          }}
+        />
+      )}
+
+      {lastSaved && (
+        <div role="status" className="animate-pop fixed inset-x-4 bottom-28 z-50 mx-auto flex max-w-md items-center gap-3 rounded-2xl bg-forest-950 px-4 py-3 text-white shadow-2xl">
+          <span className="flex-1">{t("savedToast", { x: formatINR(lastSaved.amount) })}</span>
+          <button type="button" onClick={() => void undo(lastSaved)} className="min-h-10 rounded-xl bg-lime-300 px-4 font-bold text-forest-950 active:scale-95">
+            {t("undo")}
+          </button>
+        </div>
+      )}
 
       {openParty && <PartySheet party={openParty} shop={shop.data} onClose={closeSheet} />}
 

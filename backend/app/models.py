@@ -20,6 +20,8 @@ class Shop(Base):
     vpa: Mapped[str] = mapped_column(String(120))  # UPI ID, e.g. shop@upi
     language: Mapped[str] = mapped_column(String(10), default="hi")
     opening_cash: Mapped[int] = mapped_column(Integer, default=0)
+    # kirana | sabzi | medical | other (chosen at setup; decides the starter item list)
+    kind: Mapped[str] = mapped_column(String(20), default="kirana", server_default="kirana")
 
 
 class Item(Base):

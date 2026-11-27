@@ -39,6 +39,15 @@ We build hands-free: prompts are dictated with Wispr Flow.
 - Done: tests (pytest 45, Vitest 80) and GitHub Actions CI incl. a Docker Compose smoke test (D16).
 - Next: flow 1 (one-line entries), starting with the rule-based extractor (D2). "Aage" on the
   capture box currently shows "not saved yet".
+- Done: in-app mic via Wispr Flow API when `WISPR_API_KEY` is set (D23); browser speech
+  otherwise; native Android speech inside the app.
+- Done: GCP deploy (Terraform, Secret Manager keys) with nginx rate limits + certbot HTTPS (D21).
+  Written and validated, not applied yet.
+- Done: Android app shell with Capacitor around the same frontend (D22). Generated project in
+  `frontend/android/`; not built here (no Android SDK on this machine).
+- Done: first-run shop setup (D24). New installs start empty and ask: shop name, what you sell
+  (kirana / sabzi / medical / other), UPI and cash (optional); starter items at ₹0 with a price
+  edit in the item sheet. "Try a demo shop" loads the sample data in one tap.
 - Docker path: verified on Ansh's machine (D13); CI checks it on every push.
 
 ## Round 2 brief (official)
@@ -221,7 +230,7 @@ Samarth's machine has Python 3.15 (default) and 3.14.
   build time in standalone output, so the Docker build needs `API_URL` as a build arg.
 - **Option C: browser calls FastAPI directly** with CORS. Needs port 8000 exposed too.
 
-### D12. Demo shop data — `RECOMMENDED: A`
+### D12. Demo shop data — superseded by D24 (sample data now loads on request)
 Seeded in `backend/app/seed.py`: "Shree Ganesh Kirana", 25 items with Hindi/Marathi/misspelt
 aliases, 8 customers, 2 suppliers, 14 history entries over the last 3 days (one overdue udhaar
 for the reminder demo, one owner withdrawal).
@@ -298,6 +307,43 @@ Users may never have used an app or kept accounts. Tour (`components/Tour.tsx`, 
 auto-starts once, "How to use" in the account menu reopens it), `HelpTip` "?" buttons with a
 plain-language example per term, `ListenButton` read-aloud via browser speech (D7 A), colour
 key under the money card, numbered steps in the bill scan, breathing ring on the mic button.
+
+### D21. Edge proxy on the VM — `BUILT: B`
+- **Option A: Caddy** (first version). Automatic HTTPS in 5 lines, but rate limiting needs a plugin.
+- **Option B (built): nginx + certbot.** Per-IP `limit_req` zones (pages 20/s, API 10/s,
+  `/api/transcribe` 12/min because Wispr is paid), connection cap, body/timeouts, security
+  headers incl. Permissions-Policy for mic/camera, gzip, HTTP→HTTPS. certbot issues/renews; nginx
+  starts on a self-signed stand-in and swaps by itself. Config: `deploy/gcp/nginx/`.
+  Verified locally: redirects, headers, 429 after the burst, 413 on a 7 MB body.
+
+### D22. Mobile app — `BUILT: A`
+- **Option A (built): Capacitor shell loading the server URL** (`frontend/capacitor.config.ts`,
+  `CAP_SERVER_URL` at sync time; `mobile/www/offline.html` when unreachable). Same frontend,
+  live reload from a laptop on Wi-Fi, no second codebase. Native plugins: speech recognition and
+  text-to-speech (WebView has no Web Speech API). Needs network (data is on the server anyway).
+- **Option B: static export bundled in the APK.** Works offline for the UI, but needs
+  `output: "export"`, the `/api` proxy route removed, an absolute API URL and CORS. Do this only
+  with offline queueing (robustness rule "baad mein").
+- **Option C: Trusted Web Activity / PWA install.** Lightest, but no native speech plugins.
+- Known gap: Google sign-in popup is blocked in WebViews; needs a native sign-in plugin.
+
+### D23. In-app speech-to-text — `BUILT: A` (replaces D6 order)
+- **Option A (built): Wispr Flow API** behind `transcribe()` (`backend/app/speech.py`,
+  `POST /api/transcribe`). The browser records, converts to 16 kHz mono WAV itself
+  (`frontend/src/lib/recorder.ts`), the key stays on the server. Shop item/party names go as
+  `dictionary_context`. Without a key: browser speech (web) / native speech (app).
+  Wispr API access needs approval (enterprise@wisprflow.ai); Indian-language support isn't
+  documented, so confirm Hindi/Marathi with them.
+- **Option B: Wispr client tokens** (`/generate_access_token` + browser calls `/client_api`):
+  lower latency, but more moving parts. Switch if latency hurts the demo.
+
+### D24. First run: real shop, not sample data — `BUILT`
+`SEED_ON_START` now defaults to false. `GET /api/setup` says whether a shop exists; the app shows
+`SetupScreen` (3 steps, in the chosen language, read-aloud) and `POST /api/setup` creates the shop
+with optional starter items for its kind (`backend/app/setup.py`; price 0 and no stock alert, so
+nothing is guessed). `POST /api/setup/demo` loads the D12 sample shop for judges ("never an
+empty screen" is kept through that button). No location question: language comes from the
+picker. Still one shop per server (multi-shop per Google account is D14 option B).
 
 ## The engine (every feature goes through it)
 
@@ -445,6 +491,8 @@ Kept here so they aren't lost; mention as finale work in the deck.
 | Quality | Backend smoke test | D16: pytest + Vitest + CI with Docker smoke test | Catch breakage before submission |
 | Scope | Flows 1, 3, 4 (D1 A) | + inventory and bill scan (D18, D19); flow 3 built | Team request |
 | Users | Assumed app-literate | D20: tour, "?" help, read-aloud, colour key | Team request: first-time app users |
+| Speech-to-text | Indian STT API (Sarvam/Bhashini) | D23: Wispr Flow API, browser/native fallback | Hackathon partner; team request |
+| Hosting | Optional live link | D21/D22: GCP VM with nginx, Android app shell | Team request |
 
 ## Working agreements
 
@@ -469,6 +517,8 @@ on macOS/Linux use `.venv/bin/`.
 - Backend tests: `cd backend && .venv/Scripts/python -m pytest`
 - Frontend checks: `cd frontend && npm run lint && npm run typecheck && npm test && npm run build`
 - Frontend tests in watch mode: `cd frontend && npm run test:watch`
+- Android app: see `frontend/mobile/README.md` (`CAP_SERVER_URL=… npm run cap:sync`, then `npm run android:open`)
+- Deploy to GCP: see `deploy/gcp/README.md` (`terraform apply -var project_id=…`)
 - Show the first-run screens again: in the browser console, `localStorage.removeItem("galla.lang")`
 
 ## Repo layout
