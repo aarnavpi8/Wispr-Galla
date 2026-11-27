@@ -1,5 +1,10 @@
 import type { Metadata, Viewport } from "next";
 import { Noto_Sans, Noto_Sans_Devanagari } from "next/font/google";
+import { AuthProvider } from "@/components/auth";
+import { CursorGlow } from "@/components/interactive";
+import { LanguageProvider } from "@/components/language";
+import { Splash } from "@/components/Splash";
+
 import "./globals.css";
 
 const notoSans = Noto_Sans({
@@ -20,7 +25,7 @@ export const metadata: Metadata = {
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
-  themeColor: "#14532d",
+  themeColor: "#103a29",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
@@ -29,7 +34,13 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       lang="hi"
       className={`${notoSans.variable} ${notoDevanagari.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col">{children}</body>
+      <body className="min-h-full flex flex-col">
+        <CursorGlow />
+        <LanguageProvider>
+          <Splash />
+          <AuthProvider>{children}</AuthProvider>
+        </LanguageProvider>
+      </body>
     </html>
   );
 }

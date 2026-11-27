@@ -1,0 +1,102 @@
+"use client";
+
+import { useState } from "react";
+
+import { daysBetween, formatINR, initials } from "@/lib/format";
+import type { PartyBalance } from "@/lib/types";
+
+import { Spotlight } from "./interactive";
+import { useLang } from "./language";
+
+type Filter = "customer" | "supplier";
+
+export function KhataList({
+  parties,
+  onOpen,
+}: {
+  parties: PartyBalance[];
+  onOpen: (p: PartyBalance) => void;
+}) {
+  const { t } = useLang();
+  const [filter, setFilter] = useState<Filter>("customer");
+  const [query, setQuery] = useState("");
+  const shown = parties.filter(
+    (p) => p.kind === filter && p.name.toLowerCase().includes(query.trim().toLowerCase()),
+  );
+
+  return (
+    <div>
+      <div className="flex gap-2">
+        <input
+          type="search"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          placeholder={t("searchName")}
+          aria-label={t("searchName")}
+          className="min-h-12 min-w-0 flex-1 rounded-2xl border border-line bg-background px-4 text-base transition focus:border-leaf-500 focus:outline-none focus:ring-4 focus:ring-leaf-500/15"
+        />
+        <div className="flex rounded-2xl bg-surface-2 p-1 text-sm font-semibold">
+          {(["customer", "supplier"] as const).map((f) => (
+            <button
+              key={f}
+              type="button"
+              aria-pressed={filter === f}
+              onClick={() => setFilter(f)}
+              className={`rounded-xl px-3 transition ${
+                filter === f ? "bg-surface text-forest-950 shadow-sm" : "text-muted hover:text-forest-900"
+              }`}
+            >
+              {f === "customer" ? t("customers") : t("suppliers")}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <ul className="mt-3 grid gap-2">
+        {shown.map((p, i) => {
+          const overdueDays = p.overdue_since ? daysBetween(new Date(p.overdue_since), new Date()) : 0;
+          const owes = p.balance > 0;
+          return (
+            <li key={p.id} className="animate-rise" style={{ animationDelay: `${i * 40}ms` }}>
+              <Spotlight
+                as="button"
+                type="button"
+                onClick={() => onOpen(p)}
+                className={`group flex w-full items-center gap-3 rounded-2xl border bg-surface p-3 text-left transition hover:-translate-y-0.5 hover:shadow-md active:translate-y-0 ${
+                  p.overdue_since ? "border-amber-300" : "border-line"
+                }`}
+              >
+                <span className="grid size-11 shrink-0 place-items-center rounded-full bg-forest-900 text-sm font-bold text-lime-300">
+                  {initials(p.name)}
+                </span>
+                <span className="min-w-0 flex-1">
+                  <span className="block truncate font-semibold text-forest-950">{p.name}</span>
+                  {p.overdue_since ? (
+                    <span className="mt-0.5 inline-block rounded-full bg-amber-100 px-2 py-0.5 text-xs font-semibold text-pending">
+                      {t("overdueDays", { n: overdueDays })}
+                    </span>
+                  ) : (
+                    <span className="text-sm text-muted">
+                      {p.balance === 0 ? t("settled") : p.balance < 0 ? t("advance") : t("due")}
+                    </span>
+                  )}
+                </span>
+                <span
+                  className={`font-bold tabular-nums ${
+                    owes ? (p.kind === "customer" ? "text-pending" : "text-money-out") : "text-money-in"
+                  }`}
+                >
+                  {formatINR(Math.abs(p.balance))}
+                </span>
+                <span aria-hidden className="text-muted transition group-hover:translate-x-1">
+                  ›
+                </span>
+              </Spotlight>
+            </li>
+          );
+        })}
+        {shown.length === 0 && <li className="p-6 text-center text-muted">{t("nobody")}</li>}
+      </ul>
+    </div>
+  );
+}

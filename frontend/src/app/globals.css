@@ -1,22 +1,225 @@
 @import "tailwindcss";
 
+/*
+ * Galla theme: warm white paper + forest greens.
+ * Inspiration: Cash App's bold single-colour hero, Linear's cursor spotlight cards,
+ * Khatabook's money-in / money-out clarity.
+ */
 :root {
-  --background: #f7f5ef;
-  --foreground: #1c1917;
+  --background: #faf6ee; /* warm white */
+  --foreground: #1d2a22;
+  --surface: #fffdf8;
+  --surface-2: #f3eee2;
+  --line: #e8e0cf;
+  --muted: #6b7568;
+
+  --forest-950: #0b2a1e;
+  --forest-900: #103a29;
+  --forest-800: #155238;
+  --forest-700: #1b6a48;
+  --leaf-500: #3fa56b;
+  --leaf-300: #9fd8b3;
+  --mint-100: #e3f3e8;
+  --lime-300: #d7f08a;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-line: var(--line);
+  --color-muted: var(--muted);
+  --color-forest-950: var(--forest-950);
+  --color-forest-900: var(--forest-900);
+  --color-forest-800: var(--forest-800);
+  --color-forest-700: var(--forest-700);
+  --color-leaf-500: var(--leaf-500);
+  --color-leaf-300: var(--leaf-300);
+  --color-mint-100: var(--mint-100);
+  --color-lime-300: var(--lime-300);
   /* Money colours used everywhere: in, out, pending. */
   --color-money-in: #15803d;
   --color-money-out: #b91c1c;
   --color-pending: #b45309;
   --font-sans: var(--font-noto-sans), var(--font-noto-devanagari), sans-serif;
+
+  --animate-rise: rise 0.5s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+  --animate-pop: pop 0.35s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+  --animate-sheet: sheet 0.35s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+  --animate-ring: ring 1.4s ease-out infinite;
+  --animate-shimmer: shimmer 1.4s linear infinite;
+}
+
+@keyframes rise {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes pop {
+  from { opacity: 0; transform: scale(0.94); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes sheet {
+  from { transform: translateY(100%); }
+  to { transform: none; }
+}
+@keyframes ring {
+  from { transform: scale(1); opacity: 0.55; }
+  to { transform: scale(1.9); opacity: 0; }
+}
+@keyframes shimmer {
+  from { background-position: -200% 0; }
+  to { background-position: 200% 0; }
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
   font-family: var(--font-noto-sans), var(--font-noto-devanagari), sans-serif;
+}
+
+/* Soft page glow that follows the cursor (set by <CursorGlow />). */
+.page-glow {
+  background:
+    radial-gradient(600px circle at var(--gx, 50%) var(--gy, -10%), rgb(63 165 107 / 0.13), transparent 60%),
+    radial-gradient(900px circle at 100% 0%, rgb(215 240 138 / 0.18), transparent 55%);
+}
+
+/*
+ * Cursor spotlight on cards (Linear-style). <Spotlight> writes --mx/--my on pointer move.
+ * Only on devices with a real pointer; touch phones get the plain card.
+ */
+.spotlight {
+  position: relative;
+  isolation: isolate;
+}
+@media (hover: hover) and (pointer: fine) {
+  .spotlight::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.3s;
+    background: radial-gradient(
+      320px circle at var(--mx, 50%) var(--my, 50%),
+      var(--spot, rgb(63 165 107 / 0.14)),
+      transparent 65%
+    );
+    z-index: -1;
+  }
+  .spotlight:hover::before {
+    opacity: 1;
+  }
+  /* A brighter rim that follows the cursor along the border. */
+  .spotlight-rim::after {
+    content: "";
+    position: absolute;
+    inset: -1px;
+    border-radius: inherit;
+    padding: 1px;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.3s;
+    background: radial-gradient(
+      220px circle at var(--mx, 50%) var(--my, 50%),
+      rgb(63 165 107 / 0.7),
+      transparent 70%
+    );
+    mask: linear-gradient(#000 0 0) content-box exclude, linear-gradient(#000 0 0);
+  }
+  .spotlight-rim:hover::after {
+    opacity: 1;
+  }
+}
+
+.skeleton {
+  background: linear-gradient(90deg, var(--surface-2) 25%, #fbf8f1 50%, var(--surface-2) 75%);
+  background-size: 200% 100%;
+  animation: var(--animate-shimmer);
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  scrollbar-width: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* Opening greeting: each word blurs and slides in, Google-style. */
+@keyframes word-in {
+  0% { opacity: 0; transform: translateY(45%); filter: blur(10px); }
+  100% { opacity: 1; transform: none; filter: blur(0); }
+}
+@keyframes splash-out {
+  to { opacity: 0; transform: scale(1.04); visibility: hidden; }
+}
+@keyframes grow {
+  from { transform: scaleX(0); }
+  to { transform: scaleX(1); }
+}
+.word-in {
+  animation: word-in 0.38s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+.splash-out {
+  animation: splash-out 0.5s ease-in forwards;
+}
+
+/* "Money" word roll: new word drops in from above, old one falls out below. */
+@keyframes roll-in {
+  from { transform: translateY(-90%); opacity: 0; filter: blur(4px); }
+  to { transform: none; opacity: 1; filter: blur(0); }
+}
+@keyframes roll-out {
+  from { transform: none; opacity: 1; filter: blur(0); }
+  to { transform: translateY(90%); opacity: 0; filter: blur(4px); }
+}
+.roll-in {
+  animation: roll-in 0.38s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+.roll-out {
+  animation: roll-out 0.38s cubic-bezier(0.4, 0, 0.6, 1) both;
+}
+
+/* "Get started": the next screen grows out of the tapped button as a circle (lib/transition.ts). */
+@keyframes vt-reveal {
+  from { clip-path: circle(0 at var(--vt-x, 50%) var(--vt-y, 90%)); }
+  to { clip-path: circle(150vmax at var(--vt-x, 50%) var(--vt-y, 90%)); }
+}
+@keyframes vt-recede {
+  to { transform: scale(0.94); opacity: 0.4; filter: blur(3px); }
+}
+html.vt-reveal::view-transition-old(root) {
+  animation: vt-recede 0.8s cubic-bezier(0.65, 0, 0.35, 1) both;
+}
+html.vt-reveal::view-transition-new(root) {
+  animation: vt-reveal 0.8s cubic-bezier(0.65, 0, 0.35, 1) both;
+}
+
+/* Scroll reveal (components/Reveal.tsx). */
+.reveal {
+  opacity: 0;
+  transform: translateY(28px) scale(0.98);
+  transition: opacity 0.6s ease, transform 0.7s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+.reveal.is-visible {
+  opacity: 1;
+  transform: none;
+}
+
+/* Bill scan: the lime line sweeping over the photo while it's read. */
+@keyframes scan {
+  from { top: 4%; }
+  to { top: 94%; }
 }

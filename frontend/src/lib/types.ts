@@ -59,3 +59,139 @@ export interface ShopSummary {
   entries: number;
   llm_configured: boolean;
 }
+
+// Read-only API shapes (backend/app/schemas.py).
+
+export interface FirebaseWebConfig {
+  apiKey: string;
+  authDomain: string;
+  projectId: string;
+  appId: string;
+}
+
+export interface AppConfig {
+  llm_configured: boolean;
+  firebase: FirebaseWebConfig | null; // null: Google login not set up
+}
+
+export interface EntryOut {
+  id: number;
+  type: EntryType;
+  party_id: number | null;
+  party_name: string | null;
+  amount: number;
+  paid_now: number | null;
+  mode: Mode | null;
+  due_date: string | null;
+  raw_text: string;
+  source: "rules" | "llm" | "seed";
+  reversed: boolean;
+  created_at: string;
+}
+
+export interface PartyBalance {
+  id: number;
+  name: string;
+  kind: "customer" | "supplier";
+  phone: string | null;
+  balance: number;
+  overdue_since: string | null;
+  last_entry_at: string | null;
+}
+
+export interface DayTotals {
+  date: string;
+  sales: number;
+  sales_cash: number;
+  sales_upi: number;
+  udhaar_given: number;
+  collected: number;
+  cash_in: number;
+  upi_in: number;
+  expenses: number;
+  purchases_paid: number;
+  purchases: number;
+  withdrawals: number;
+  cash_out: number;
+  entries: number;
+}
+
+export interface Summary {
+  today: DayTotals;
+  days: DayTotals[];
+  opening_cash: number;
+  expected_cash_today: number;
+  udhaar_outstanding: number;
+  overdue_count: number;
+}
+
+// Inventory (D18): backend/app/inventory.py
+export interface Item {
+  id: number;
+  name: string;
+  variant: string | null;
+  unit: string;
+  price: number;
+  stock: number;
+  low_stock_at: number;
+  low: boolean;
+  value: number;
+}
+
+export type StockReason = "purchase" | "sale" | "wastage" | "count";
+
+export interface StockMove {
+  id: number;
+  delta: number;
+  reason: StockReason | "opening";
+  stock_after: number;
+  created_at: string;
+}
+
+// Accounts and day close: backend/app/accounts.py
+export interface Accounts {
+  days: number;
+  sales: number;
+  sales_cash: number;
+  sales_upi: number;
+  purchases: number;
+  expenses: number;
+  withdrawals: number;
+  net: number;
+  receivable: number;
+  payable: number;
+  cash_in: number;
+  cash_out: number;
+  upi_in: number;
+  stock_value: number;
+  stock_items: number;
+  low_stock: number;
+}
+
+export interface DayCloseOut {
+  id: number;
+  date: string;
+  opening: number;
+  expected: number;
+  counted: number;
+  difference: number;
+}
+
+export interface DayCloseView {
+  date: string;
+  opening: number;
+  cash_in: number;
+  cash_out: number;
+  expected: number;
+  entries: { id: number; type: EntryType; amount: number; raw_text: string; created_at: string }[];
+  closed: DayCloseOut | null;
+}
+
+// Bill scan: backend/app/inventory.py (/api/items/scan)
+export interface ScanLine {
+  raw: string;
+  qty: number;
+  item_id: number | null;
+  confidence: number;
+  alternatives: number[];
+}

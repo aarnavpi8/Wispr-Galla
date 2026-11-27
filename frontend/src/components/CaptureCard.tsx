@@ -1,0 +1,181 @@
+"use client";
+
+import { useRef, useState } from "react";
+
+import { useSpeech } from "@/hooks/useSpeech";
+
+import { LANGS as APP_LANGS } from "@/lib/i18n";
+
+import { Magnetic, Spotlight } from "./interactive";
+import { useLang } from "./language";
+import { HelpTip } from "./HelpTip";
+
+// Example sentences come from the chosen language (ex1..ex4).
+export const EXAMPLE_KEYS = ["ex1", "ex2", "ex3", "ex4"] as const;
+
+const LANGS = [
+  { code: "hi-IN", label: "हिं" },
+  { code: "en-IN", label: "EN" },
+  { code: "mr-IN", label: "मरा" },
+];
+
+/**
+ * The capture box (engine step 1). Wispr Flow types into it; the mic uses browser speech.
+ * `onSubmit` receives the text; understanding it is flow 1's job.
+ */
+export function CaptureCard({ onSubmit }: { onSubmit: (text: string) => void }) {
+  const { t, lang: appLang } = useLang();
+  const [text, setText] = useState("");
+  // Mic language starts from the app language; the chips below can switch it per entry.
+  const [lang, setLang] = useState(APP_LANGS.find((l) => l.code === appLang)?.speech ?? "hi-IN");
+  const typing = useRef<number | null>(null);
+  const area = useRef<HTMLTextAreaElement>(null);
+  const speech = useSpeech(setText, lang);
+
+  // Tapping an example "types" it in, so it feels like dictation.
+  const typeIn = (sample: string) => {
+    if (typing.current) window.clearInterval(typing.current);
+    let i = 0;
+    setText("");
+    typing.current = window.setInterval(() => {
+      i += 1;
+      setText(sample.slice(0, i));
+      if (i >= sample.length && typing.current) {
+        window.clearInterval(typing.current);
+        typing.current = null;
+        area.current?.focus();
+      }
+    }, 18);
+  };
+
+  const submit = () => {
+    const t = text.trim();
+    if (t) onSubmit(t);
+  };
+
+  return (
+    <Spotlight
+      as="section"
+      aria-labelledby="capture-label"
+      className="animate-rise rounded-[28px] border border-line bg-surface p-4 shadow-sm [animation-delay:80ms]"
+    >
+      <div className="flex items-center justify-between">
+        <span className="flex items-center gap-2">
+          <label id="capture-label" htmlFor="capture" className="text-lg font-bold text-forest-950">
+            {t("speakOrType")}
+          </label>
+          <HelpTip title="speakOrType" body="helpCapture" />
+        </span>
+        <div className="flex rounded-full bg-surface-2 p-0.5 text-xs font-semibold" aria-label="Bhasha">
+          {LANGS.map((l) => (
+            <button
+              key={l.code}
+              type="button"
+              aria-pressed={lang === l.code}
+              onClick={() => setLang(l.code)}
+              className={`rounded-full px-2.5 py-1 transition ${
+                lang === l.code ? "bg-forest-900 text-white" : "text-muted hover:text-forest-900"
+              }`}
+            >
+              {l.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div className="relative mt-3">
+        <textarea
+          ref={area}
+          id="capture"
+          value={text}
+          onChange={(e) => setText(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" && !e.shiftKey) {
+              e.preventDefault();
+              submit();
+            }
+          }}
+          rows={3}
+          placeholder={t("ex1")}
+          className="w-full resize-none rounded-2xl border-2 border-line bg-background p-4 pr-10 text-xl text-forest-950 placeholder:text-muted/60 transition focus:border-leaf-500 focus:bg-surface focus:outline-none focus:ring-4 focus:ring-leaf-500/15"
+        />
+        {text && (
+          <button
+            type="button"
+            aria-label={t("clear")}
+            onClick={() => setText("")}
+            className="absolute right-3 top-3 grid size-7 place-items-center rounded-full bg-surface-2 text-muted transition hover:bg-line hover:text-forest-950"
+          >
+            ×
+          </button>
+        )}
+      </div>
+
+      <div className="no-scrollbar -mx-4 mt-2 flex gap-2 overflow-x-auto px-4 pb-1">
+        {EXAMPLE_KEYS.map((k) => t(k)).map((ex) => (
+          <button
+            key={ex}
+            type="button"
+            onClick={() => typeIn(ex)}
+            className="shrink-0 rounded-full border border-line bg-background px-3 py-2 text-sm text-forest-800 transition hover:-translate-y-0.5 hover:border-leaf-500 hover:bg-mint-100 active:translate-y-0"
+          >
+            {ex}
+          </button>
+        ))}
+      </div>
+
+      <div className="mt-3 flex items-center gap-3">
+        {speech.supported && (
+          <Magnetic>
+            <button
+              type="button"
+              aria-label={speech.listening ? t("stopListening") : t("holdToSpeak")}
+              aria-pressed={speech.listening}
+              onClick={speech.listening ? speech.stop : speech.start}
+              className={`relative grid size-14 place-items-center rounded-full text-2xl transition active:scale-95 ${
+                speech.listening
+                  ? "bg-money-out text-white"
+                  : "bg-mint-100 text-forest-900 hover:bg-leaf-300"
+              }`}
+            >
+              {speech.listening && (
+                <span aria-hidden className="animate-ring absolute inset-0 rounded-full bg-money-out" />
+              )}
+              <span className="relative">{speech.listening ? <StopIcon /> : <MicIcon />}</span>
+            </button>
+          </Magnetic>
+        )}
+        <Magnetic strength={0.15} className="flex flex-1">
+          <button
+            type="button"
+            disabled={!text.trim()}
+            onClick={submit}
+            className="group min-h-14 w-full rounded-2xl bg-forest-900 text-lg font-semibold text-white shadow-lg shadow-forest-900/20 transition hover:bg-forest-800 hover:shadow-xl active:scale-[0.98] disabled:bg-line disabled:text-muted disabled:shadow-none"
+          >
+            {t("next")} <span className="inline-block transition group-hover:translate-x-1 group-disabled:translate-x-0">→</span>
+          </button>
+        </Magnetic>
+      </div>
+      {speech.error && <p className="mt-2 text-sm text-pending">{t(speech.error)}</p>}
+      {speech.listening && <p className="mt-2 text-sm text-forest-700">{t("listening")}</p>}
+    </Spotlight>
+  );
+}
+
+function MicIcon() {
+  return (
+    <svg viewBox="0 0 24 24" className="size-6" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+      <rect x="9" y="3" width="6" height="11" rx="3" />
+      <path d="M5 11a7 7 0 0 0 14 0" />
+      <path d="M12 18v3" />
+    </svg>
+  );
+}
+
+function StopIcon() {
+  return (
+    <svg viewBox="0 0 24 24" className="size-5" fill="currentColor" aria-hidden>
+      <rect x="6" y="6" width="12" height="12" rx="2.5" />
+    </svg>
+  );
+}
