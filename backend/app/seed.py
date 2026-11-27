@@ -98,8 +98,8 @@ HISTORY = [
 ]
 
 
-def seed(db: Session) -> Shop:
-    shop = Shop(**SHOP)
+def seed(db: Session, owner: str | None = None) -> Shop:
+    shop = Shop(**SHOP, owner=owner)
     db.add(shop)
     db.flush()
 
@@ -139,7 +139,7 @@ def seed(db: Session) -> Shop:
 
 def seed_stock_if_missing(db: Session, shop: Shop | None = None) -> bool:
     """Give the demo shop opening stock, also for databases made before inventory existed."""
-    shop = shop or db.scalar(select(Shop).order_by(Shop.id).limit(1))
+    shop = shop or db.scalar(select(Shop).where(Shop.owner.is_(None)).order_by(Shop.id).limit(1))
     if shop is None or shop.name != SHOP["name"]:
         return False
     if db.scalar(select(StockMove.id).where(StockMove.shop_id == shop.id).limit(1)) is not None:
@@ -160,7 +160,8 @@ def seed_stock_if_missing(db: Session, shop: Shop | None = None) -> bool:
 
 
 def seed_if_empty(db: Session) -> bool:
-    if db.scalar(select(Shop.id).limit(1)) is not None:
+    """SEED_ON_START: give the shared (no-identity) slot the demo shop."""
+    if db.scalar(select(Shop.id).where(Shop.owner.is_(None)).limit(1)) is not None:
         return False
     seed(db)
     return True

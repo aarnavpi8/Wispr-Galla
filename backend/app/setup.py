@@ -14,7 +14,8 @@ from sqlalchemy.orm import Session
 
 from app import models
 from app.db import get_db
-from app.seed import seed_if_empty
+from app.deps import current_owner, shop_of
+from app.seed import seed
 
 router = APIRouter(prefix="/api/setup", tags=["setup"])
 
@@ -82,12 +83,13 @@ class SetupOut(BaseModel):
     items: int
 
 
-def has_shop(db: Session) -> bool:
-    return db.scalar(select(models.Shop.id).limit(1)) is not None
+def has_shop(db: Session, owner: str | None) -> bool:
+    return shop_of(db, owner) is not None
 
 
-def create_shop(db: Session, body: SetupIn) -> SetupOut:
+def create_shop(db: Session, body: SetupIn, owner: str | None = None) -> SetupOut:
     shop = models.Shop(
+        owner=owner,
         name=body.name.strip(),
         kind=body.kind,
         vpa=body.vpa.strip(),
@@ -105,24 +107,23 @@ def create_shop(db: Session, body: SetupIn) -> SetupOut:
 
 
 @router.get("", response_model=SetupStatus)
-def status(db: Session = Depends(get_db)) -> SetupStatus:
-    return SetupStatus(has_shop=has_shop(db))
+def status(db: Session = Depends(get_db), owner: str | None = Depends(current_owner)) -> SetupStatus:
+    return SetupStatus(has_shop=has_shop(db, owner))
 
 
 @router.post("", response_model=SetupOut, status_code=201)
-def setup(body: SetupIn, db: Session = Depends(get_db)) -> SetupOut:
-    if has_shop(db):
-        raise HTTPException(409, "A shop is already set up on this server.")
-    return create_shop(db, body)
+def setup(body: SetupIn, db: Session = Depends(get_db), owner: str | None = Depends(current_owner)) -> SetupOut:
+    if has_shop(db, owner):
+        raise HTTPException(409, "Your shop is already set up.")
+    return create_shop(db, body, owner)
 
 
 @router.post("/demo", response_model=SetupOut, status_code=201)
-def demo(db: Session = Depends(get_db)) -> SetupOut:
-    """Load the sample shop (for judges and first looks)."""
-    if not seed_if_empty(db):
-        raise HTTPException(409, "A shop is already set up on this server.")
-    shop = db.scalar(select(models.Shop).order_by(models.Shop.id).limit(1))
-    assert shop is not None
+def demo(db: Session = Depends(get_db), owner: str | None = Depends(current_owner)) -> SetupOut:
+    """Load the sample shop (for judges and first looks), as this account's / browser's own copy."""
+    if has_shop(db, owner):
+        raise HTTPException(409, "Your shop is already set up.")
+    shop = seed(db, owner)
     n = len(list(db.scalars(select(models.Item.id).where(models.Item.shop_id == shop.id))))
     return SetupOut(id=shop.id, name=shop.name, kind=shop.kind, items=n)
 

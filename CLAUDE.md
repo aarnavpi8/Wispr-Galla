@@ -45,6 +45,7 @@ We build hands-free: prompts are dictated with Wispr Flow.
   Written and validated, not applied yet.
 - Done: Android app shell with Capacitor around the same frontend (D22). Generated project in
   `frontend/android/`; not built here (no Android SDK on this machine).
+- Done: per-user data (D14 B). Each Google account and each browser sees only its own shop.
 - Done: first-run shop setup (D24). New installs start empty and ask: shop name, what you sell
   (kirana / sabzi / medical / other), UPI and cash (optional); starter items at ₹0 with a price
   edit in the item sheet. "Try a demo shop" loads the sample data in one tap.
@@ -249,15 +250,19 @@ Docker isn't installed on Samarth's machine, so `docker compose up` hasn't been 
 - **Option B: a teammate runs it** on their machine (doubles as the "friend clones it" check).
 Must happen before 30 Nov either way.
 
-### D14. Google login — `BUILT: A`
-- **Option A (built): optional Firebase Auth, Google provider, client-side only.** The API
-  serves the public Firebase web config from `FIREBASE_*` env vars at `/api/config` (runtime,
-  so one Docker image works with or without keys). No keys: no login screen, the app opens on
-  the demo shop and the account menu says login isn't set up. With keys: login screen with a
-  "demo without login" option. The API does not verify ID tokens yet and all users share the
-  one demo shop.
-- **Option B: verify tokens on the API** (`firebase-admin` or Google's JWKS) and add a
-  `shops.owner_uid` column so each Google account gets its own shop. Needed before real pilots.
+### D14. Google login and per-user data — `BUILT: B`
+- **Option A (first version): optional Firebase Auth, client-side only.** Every user shared the
+  one shop.
+- **Option B (built): each Google account and each browser gets its own shop.** `shops.owner` is
+  `google:<uid>` or `device:<random id>`. The browser sends the Firebase ID token
+  (`Authorization: Bearer`) and a random device id kept in localStorage (`X-Galla-Device`,
+  `frontend/src/lib/identity.ts`). The API checks the token with Firebase's `accounts:lookup`
+  (the project's web API key; no new dependency; cached 5 min) in `backend/app/identity.py`;
+  a bad token is 401, never a fallback to guest. `current_shop` and setup/demo look up the
+  caller's shop only. No keys: guests are still isolated per device (judges' path unchanged:
+  "demo shop" loads a private copy). Requests with no identity (curl, tests) see the old shared
+  shop (`owner` NULL). Not done: moving a guest shop into a Google account on first sign-in.
+- **Option C: no login** (original spec). Simplest for the judges' path.
 - **Option C: no login** (original spec). Simplest for the judges' path.
 
 ### D15. UI languages — `BUILT`

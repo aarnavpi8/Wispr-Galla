@@ -3,9 +3,11 @@
 import { createContext, type ReactNode, useCallback, useContext, useEffect, useState } from "react";
 
 import { getJSON } from "@/lib/api";
+import { setTokenSource } from "@/lib/identity";
 import type { AppConfig } from "@/lib/types";
 
 export interface GallaUser {
+  uid: string;
   name: string;
   email: string | null;
   photoURL: string | null;
@@ -61,9 +63,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         unsub = await watchUser(cfg.firebase, (u) => {
           if (!live) return;
           if (u) {
-            setUser({ name: u.displayName ?? "Dukaandaar", email: u.email, photoURL: u.photoURL });
+            // Every API call now carries this account's token, so the server shows its own shop.
+            setTokenSource(() => u.getIdToken());
+            setUser({ uid: u.uid, name: u.displayName ?? "Dukaandaar", email: u.email, photoURL: u.photoURL });
             setStatus("signed-in");
           } else {
+            setTokenSource(null);
             setUser(null);
             setStatus(readGuest() ? "guest" : "signed-out");
           }

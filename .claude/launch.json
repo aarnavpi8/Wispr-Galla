@@ -4,14 +4,42 @@
     {
       "name": "api",
       "runtimeExecutable": "backend/.venv/Scripts/python.exe",
-      "runtimeArgs": ["-m", "uvicorn", "app.main:app", "--reload", "--port", "8000", "--app-dir", "backend"],
+      "runtimeArgs": [
+        "-m",
+        "uvicorn",
+        "app.main:app",
+        "--reload",
+        "--port",
+        "8000",
+        "--app-dir",
+        "backend"
+      ],
       "port": 8000
     },
     {
       "name": "web",
       "runtimeExecutable": "npm",
-      "runtimeArgs": ["--prefix", "frontend", "run", "dev"],
+      "runtimeArgs": [
+        "--prefix",
+        "frontend",
+        "run",
+        "dev"
+      ],
       "port": 3000
+    },
+    {
+      "name": "web-prod",
+      "runtimeExecutable": "node",
+      "runtimeArgs": [
+        "frontend/.next/standalone/server.js"
+      ],
+      "port": 3002,
+      "env": {
+        "PORT": "3002",
+        "HOSTNAME": "0.0.0.0",
+        "API_URL": "http://localhost:8001"
+      },
+      "autoPort": false
     }
   ]
 }

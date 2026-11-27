@@ -22,6 +22,9 @@ class Shop(Base):
     opening_cash: Mapped[int] = mapped_column(Integer, default=0)
     # kirana | sabzi | medical | other (chosen at setup; decides the starter item list)
     kind: Mapped[str] = mapped_column(String(20), default="kirana", server_default="kirana")
+    # Whose shop this is: "google:<firebase uid>" or "device:<random id>" (a browser without
+    # sign-in). NULL = the old single shared shop, only reachable by API calls with no identity.
+    owner: Mapped[str | None] = mapped_column(String(160), index=True, nullable=True, default=None)
 
 
 class Item(Base):

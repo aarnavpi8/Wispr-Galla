@@ -2,8 +2,10 @@
 
 import { useCallback, useEffect, useState } from "react";
 
+import { identityHeaders } from "./identity";
+
 export async function getJSON<T>(path: string): Promise<T> {
-  const res = await fetch(path, { cache: "no-store" });
+  const res = await fetch(path, { cache: "no-store", headers: await identityHeaders() });
   if (!res.ok) {
     let detail = res.statusText;
     try {
@@ -23,7 +25,7 @@ export function patchJSON<T>(path: string, body: unknown): Promise<T> {
 export async function postJSON<T>(path: string, body: unknown, method: "POST" | "PATCH" = "POST"): Promise<T> {
   const res = await fetch(path, {
     method,
-    headers: { "Content-Type": "application/json" },
+    headers: { "Content-Type": "application/json", ...(await identityHeaders()) },
     body: JSON.stringify(body),
   });
   if (!res.ok) {
@@ -39,13 +41,17 @@ export async function postJSON<T>(path: string, body: unknown, method: "POST" | 
   return res.json() as Promise<T>;
 }
 
-/** Tiny fetch hook: { data, error, loading, reload, setData }. */
-export function useApi<T>(path: string) {
+/**
+ * Tiny fetch hook: { data, error, loading, reload, setData }.
+ * path null = don't fetch yet; a new `key` (e.g. who is signed in) fetches again.
+ */
+export function useApi<T>(path: string | null, key?: string) {
   const [data, setData] = useState<T | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [tick, setTick] = useState(0);
 
   useEffect(() => {
+    if (path === null) return;
     let live = true;
     getJSON<T>(path)
       .then((d) => {
@@ -59,7 +65,7 @@ export function useApi<T>(path: string) {
     return () => {
       live = false;
     };
-  }, [path, tick]);
+  }, [path, tick, key]);
 
   const reload = useCallback(() => setTick((t) => t + 1), []);
   return { data, error, loading: !data && !error, reload, setData };

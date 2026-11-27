@@ -22,17 +22,13 @@ function Loading() {
 // First open: pick a language -> sign in (only if Firebase keys are set) -> set up the shop
 // (only on a new install) -> the dashboard.
 export default function Home() {
-  const { status } = useAuth();
+  const { status, user } = useAuth();
   const { ready, chosen } = useLang();
-  const setup = useApi<{ has_shop: boolean }>("/api/setup");
+  // Ask only once we know who this is; ask again when the account changes (each has its own shop).
+  const setup = useApi<{ has_shop: boolean }>(status === "loading" ? null : "/api/setup", `${status}:${user?.uid ?? ""}`);
 
   if (!ready) return <Loading />;
-  if (!chosen)
-    return (
-      <DesktopFrame>
-        <LanguagePicker />
-      </DesktopFrame>
-    );
+  if (!chosen) return <LanguagePicker />; // full screen, no desktop side panel
   if (status === "loading") return <Loading />;
   if (status === "signed-out")
     return (
