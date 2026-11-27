@@ -15,6 +15,12 @@ class Settings(BaseSettings):
     llm_provider: str = ""
     llm_api_key: str = ""
 
+    # Optional Google login (Firebase web config, public values). All four empty = login off.
+    firebase_api_key: str = ""
+    firebase_auth_domain: str = ""
+    firebase_project_id: str = ""
+    firebase_app_id: str = ""
+
     # Load the demo shop on first start so the app never shows an empty screen.
     seed_on_start: bool = True
 
@@ -27,6 +33,10 @@ class Settings(BaseSettings):
     @property
     def llm_configured(self) -> bool:
         return bool(self.llm_provider and self.llm_api_key)
+
+    @property
+    def firebase_configured(self) -> bool:
+        return bool(self.firebase_api_key and self.firebase_auth_domain and self.firebase_project_id)
 
 
 settings = Settings()

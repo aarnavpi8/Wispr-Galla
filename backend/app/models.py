@@ -32,6 +32,23 @@ class Item(Base):
     unit: Mapped[str] = mapped_column(String(20))  # pc, kg, litre, packet
     price: Mapped[int] = mapped_column(Integer)  # rupees per unit
     aliases: Mapped[list[str]] = mapped_column(JSON, default=list)
+    # Inventory (D18). Older databases get these columns from app.migrate on start.
+    stock: Mapped[int] = mapped_column(Integer, default=0, server_default="0")
+    low_stock_at: Mapped[int] = mapped_column(Integer, default=5, server_default="5")
+
+
+class StockMove(Base):
+    """Every stock change, so the count can be explained. Like entries, never deleted."""
+
+    __tablename__ = "stock_moves"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    shop_id: Mapped[int] = mapped_column(ForeignKey("shops.id"), index=True)
+    item_id: Mapped[int] = mapped_column(ForeignKey("items.id"), index=True)
+    delta: Mapped[int] = mapped_column(Integer)  # +in / -out
+    reason: Mapped[str] = mapped_column(String(20))  # opening | purchase | sale | wastage | count
+    stock_after: Mapped[int] = mapped_column(Integer)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now)
 
 
 class Party(Base):

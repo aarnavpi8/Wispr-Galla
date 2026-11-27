@@ -54,3 +54,51 @@ class ShopSummary(BaseModel):
     suppliers: int
     entries: int
     llm_configured: bool
+
+
+class FirebaseWebConfig(BaseModel):
+    """Public Firebase web config. Not a secret: it is shipped to every browser."""
+
+    apiKey: str
+    authDomain: str
+    projectId: str
+    appId: str
+
+
+class AppConfig(BaseModel):
+    llm_configured: bool
+    firebase: FirebaseWebConfig | None  # None means Google login is not set up
+
+
+class EntryOut(BaseModel):
+    id: int
+    type: str
+    party_id: int | None
+    party_name: str | None
+    amount: int
+    paid_now: int | None
+    mode: str | None
+    due_date: date | None
+    raw_text: str
+    source: str
+    reversed: bool
+    created_at: str
+
+
+class PartyBalance(BaseModel):
+    id: int
+    name: str
+    kind: PartyKind
+    phone: str | None
+    balance: int
+    overdue_since: date | None
+    last_entry_at: str | None
+
+
+class Summary(BaseModel):
+    today: dict
+    days: list[dict]
+    opening_cash: int
+    expected_cash_today: int
+    udhaar_outstanding: int
+    overdue_count: int

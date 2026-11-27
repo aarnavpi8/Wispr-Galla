@@ -12,7 +12,7 @@ from sqlalchemy.orm import Session
 
 from app.config import settings
 from app.db import Base, SessionLocal, engine
-from app.models import Entry, Item, Party, Shop
+from app.models import Entry, Item, Party, Shop, StockMove
 
 SHOP = {"name": "Shree Ganesh Kirana", "vpa": "shreeganesh.kirana@upi", "language": "hi", "opening_cash": 2000}
 
@@ -44,6 +44,25 @@ ITEMS = [
     ("Thums Up", "750 ml", "pc", 40, ["thumbs up", "cold drink", "थम्स अप"]),
     ("Kurkure", None, "pc", 20, ["kurkurey", "कुरकुरे"]),
 ]
+
+# Opening stock and low-stock alert level per (name, variant). A few are low on purpose
+# so the demo shows the alerts. Anything not listed starts at 20, alert at 5.
+STOCK = {
+    ("Parle-G", "chhota"): (120, 30),
+    ("Parle-G", "bada"): (35, 10),
+    ("Amul doodh", "aadha litre"): (6, 15),
+    ("Amul doodh", "1 litre"): (14, 8),
+    ("Cheeni", None): (48, 10),
+    ("Atta", "Aashirvaad 5 kg"): (9, 4),
+    ("Chawal", "basmati"): (30, 8),
+    ("Toor dal", None): (3, 5),
+    ("Maggi", None): (60, 24),
+    ("Anda", None): (90, 30),
+    ("Bread", None): (2, 6),
+    ("Thums Up", "750 ml"): (18, 6),
+    ("Kurkure", None): (40, 12),
+}
+DEFAULT_STOCK = (20, 5)
 
 # (name, kind, phone, aliases). Phone numbers are placeholders for the demo.
 PARTIES = [
@@ -85,6 +104,8 @@ def seed(db: Session) -> Shop:
 
     for name, variant, unit, price, aliases in ITEMS:
         db.add(Item(shop_id=shop.id, name=name, variant=variant, unit=unit, price=price, aliases=aliases))
+    db.flush()
+    seed_stock_if_missing(db, shop)
 
     parties: dict[str, Party] = {}
     for name, kind, phone, aliases in PARTIES:
@@ -113,6 +134,27 @@ def seed(db: Session) -> Shop:
 
     db.commit()
     return shop
+
+
+def seed_stock_if_missing(db: Session, shop: Shop | None = None) -> bool:
+    """Give the demo shop opening stock, also for databases made before inventory existed."""
+    shop = shop or db.scalar(select(Shop).order_by(Shop.id).limit(1))
+    if shop is None or shop.name != SHOP["name"]:
+        return False
+    if db.scalar(select(StockMove.id).where(StockMove.shop_id == shop.id).limit(1)) is not None:
+        return False
+    items = list(db.scalars(select(Item).where(Item.shop_id == shop.id)))
+    if any(i.stock for i in items):
+        return False
+    opening_at = datetime.combine(datetime.now(settings.tz).date() - timedelta(days=4), time(8), tzinfo=settings.tz)
+    for item in items:
+        stock, low_at = STOCK.get((item.name, item.variant), DEFAULT_STOCK)
+        item.stock = stock
+        item.low_stock_at = low_at
+        db.add(StockMove(shop_id=shop.id, item_id=item.id, delta=stock, reason="opening",
+                         stock_after=stock, created_at=opening_at))
+    db.commit()
+    return True
 
 
 def seed_if_empty(db: Session) -> bool:
