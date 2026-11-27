@@ -6,6 +6,7 @@ import { type StringKey, speechCode } from "@/lib/i18n";
 import { canSpeak, readAloud, stopSpeaking } from "@/lib/speak";
 
 import { useLang } from "./language";
+import { Portal } from "./Portal";
 
 /** 🔊 button that reads a text aloud in the chosen language. */
 export function ListenButton({ text, className = "" }: { text: string; className?: string }) {
@@ -75,6 +76,7 @@ export function HelpTip({
         ?
       </button>
       {open && (
+        <Portal>
         <div className="fixed inset-0 z-[70] flex items-end justify-center p-3 sm:items-center" role="dialog" aria-modal aria-label={t(title)}>
           <button
             type="button"
@@ -102,6 +104,7 @@ export function HelpTip({
             </div>
           </div>
         </div>
+        </Portal>
       )}
     </>
   );

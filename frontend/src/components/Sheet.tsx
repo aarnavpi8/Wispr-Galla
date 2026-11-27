@@ -2,6 +2,7 @@
 
 import { type ReactNode, useEffect } from "react";
 import { useLang } from "./language";
+import { Portal } from "./Portal";
 
 /** Bottom sheet: dimmed backdrop, drag handle look, Escape or backdrop tap closes it. */
 export function Sheet({
@@ -31,6 +32,7 @@ export function Sheet({
   }, [onClose]);
 
   return (
+    <Portal>
     <div className="fixed inset-0 z-[55] flex items-end justify-center" role="dialog" aria-modal>
       <button
         type="button"
@@ -57,5 +59,6 @@ export function Sheet({
         {children}
       </div>
     </div>
+    </Portal>
   );
 }

@@ -9,6 +9,7 @@ import type { EntryOut, PartyBalance, ShopSummary } from "@/lib/types";
 import { EntryRow } from "./EntryList";
 import { Magnetic } from "./interactive";
 import { useLang } from "./language";
+import { Portal } from "./Portal";
 
 /** Bottom sheet with one party's khata. Reminder opens WhatsApp; the shopkeeper taps Send. */
 export function PartySheet({
@@ -32,6 +33,7 @@ export function PartySheet({
   const canRemind = party.kind === "customer" && party.balance > 0 && party.phone && shop;
 
   return (
+    <Portal>
     <div className="fixed inset-0 z-40 flex items-end justify-center" role="dialog" aria-modal aria-label={party.name}>
       <button
         type="button"
@@ -125,5 +127,6 @@ export function PartySheet({
         )}
       </div>
     </div>
+    </Portal>
   );
 }
