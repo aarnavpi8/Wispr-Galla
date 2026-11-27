@@ -1,0 +1,41 @@
+# One command: docker compose up --build   ->   open http://localhost:3000
+# Works without a .env file. Optional keys in .env (see .env.example) are passed through.
+
+services:
+  db:
+    image: postgres:17-alpine
+    environment:
+      # Local-only database credentials, not secrets.
+      POSTGRES_USER: galla
+      POSTGRES_PASSWORD: galla
+      POSTGRES_DB: galla
+    volumes:
+      - galla-db:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U galla -d galla"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+
+  api:
+    build: ./backend
+    environment:
+      DATABASE_URL: postgresql+psycopg://galla:galla@db:5432/galla
+      LLM_PROVIDER: ${LLM_PROVIDER:-}
+      LLM_API_KEY: ${LLM_API_KEY:-}
+    depends_on:
+      db:
+        condition: service_healthy
+
+  web:
+    build: ./frontend
+    environment:
+      API_URL: http://api:8000
+    ports:
+      - "3000:3000"
+    depends_on:
+      api:
+        condition: service_healthy
+
+volumes:
+  galla-db:
