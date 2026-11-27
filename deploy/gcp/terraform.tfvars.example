@@ -1,0 +1,5 @@
+project_id = "your-gcp-project-id"
+# region       = "asia-south1"
+# zone         = "asia-south1-a"
+# machine_type = "e2-medium"
+# domain       = ""   # empty = free <ip>.sslip.io

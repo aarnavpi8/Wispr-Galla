@@ -19,3 +19,12 @@ node_modules/
 .idea/
 .DS_Store
 Thumbs.db
+
+# Terraform (state can hold resource details; never commit it)
+.terraform/
+*.tfstate
+*.tfstate.*
+*.tfvars
+!*.tfvars.example
+.terraform.lock.hcl.bak
+crash.log

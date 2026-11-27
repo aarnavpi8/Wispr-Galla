@@ -1,0 +1,5 @@
+# Scripts run on Linux VMs: keep LF even when committed from Windows.
+*.sh text eol=lf
+Caddyfile text eol=lf
+*.tf text eol=lf
+*.yml text eol=lf

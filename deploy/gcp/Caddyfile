@@ -1,0 +1,10 @@
+# HTTPS for the domain (cert issued and renewed automatically).
+{$SITE_DOMAIN} {
+	encode gzip zstd
+	reverse_proxy web:3000
+}
+
+# Plain http://<ip> also works (no mic/camera there: browsers need HTTPS for those).
+:80 {
+	reverse_proxy web:3000
+}
