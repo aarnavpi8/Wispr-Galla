@@ -19,10 +19,27 @@ We build hands-free: prompts are dictated with Wispr Flow.
 
 ## Status (keep this current)
 
-- Done: repo scaffold. FastAPI backend with the data model, extraction contract and demo seed;
-  Next.js frontend with a placeholder home screen; Docker Compose; `.env.example`.
-- Next: flow 1 (one-line entries), starting with the rule-based extractor (D2).
-- Not yet verified: `docker compose up` on a machine with Docker (D13).
+- Done: repo scaffold (FastAPI, Next.js, Docker Compose, `.env.example`).
+- Done: home dashboard in the green + warm white theme (D17): expected-cash hero card, capture
+  box with browser mic (D6 A), 7-day sales chart, recent entries, khata with balances and
+  overdue flags, customer sheet with a WhatsApp reminder draft. Read-only API for it:
+  `/api/config`, `/api/entries`, `/api/khata`, `/api/summary` (money maths in `backend/app/ledger.py`).
+- Done: opening greeting animation, first-run language ring picker, 12 UI languages (D15).
+  Every visible word comes from `frontend/src/lib/locales/<lang>.ts`; a test fails if any
+  language misses a word or a `{placeholder}`.
+- Done: novice guidance (D20): first-visit guided tour, "?" help on every money word with a
+  plain example, read-aloud (🔊) everywhere, colour key (green in / red out / amber pending).
+- Done: accounts card (lena / dena / net estimate / cash vs UPI book), close the day with the
+  gap and the cash entries to check (flow 3, `/api/accounts`, `/api/day-close`).
+- Done: inventory (D18): stock per item, low-stock alerts, +/- steppers, stock in / sold /
+  wasted / recount with history, add item. Bill scan by photo (D19).
+- Done: dashboard motion: circular reveal from "Get started", scroll reveals, compact summary
+  bar that appears when the money card scrolls away, bottom nav with a raised mic button.
+- Done: optional Google login via Firebase (D14). Off without keys.
+- Done: tests (pytest 45, Vitest 80) and GitHub Actions CI incl. a Docker Compose smoke test (D16).
+- Next: flow 1 (one-line entries), starting with the rule-based extractor (D2). "Aage" on the
+  capture box currently shows "not saved yet".
+- Docker path: verified on Ansh's machine (D13); CI checks it on every push.
 
 ## Round 2 brief (official)
 
@@ -219,6 +236,69 @@ Docker isn't installed on Samarth's machine, so `docker compose up` hasn't been 
 - **Option B: a teammate runs it** on their machine (doubles as the "friend clones it" check).
 Must happen before 30 Nov either way.
 
+### D14. Google login — `BUILT: A`
+- **Option A (built): optional Firebase Auth, Google provider, client-side only.** The API
+  serves the public Firebase web config from `FIREBASE_*` env vars at `/api/config` (runtime,
+  so one Docker image works with or without keys). No keys: no login screen, the app opens on
+  the demo shop and the account menu says login isn't set up. With keys: login screen with a
+  "demo without login" option. The API does not verify ID tokens yet and all users share the
+  one demo shop.
+- **Option B: verify tokens on the API** (`firebase-admin` or Google's JWKS) and add a
+  `shops.owner_uid` column so each Google account gets its own shop. Needed before real pilots.
+- **Option C: no login** (original spec). Simplest for the judges' path.
+
+### D15. UI languages — `BUILT`
+- First open shows a language ring (turntable seen from front-top; scroll wheel, swipe, drag,
+  arrow keys or tap). Saved in `localStorage` (`galla.lang`); header button "अ/A" reopens it.
+- 12 languages, one file each in `frontend/src/lib/locales/` (English `en.ts` defines the keys;
+  the `Locale` type and `src/lib/i18n.test.ts` make a missing word or placeholder fail CI).
+  Gujarati, Punjabi, Bengali, Odia, Tamil, Telugu, Kannada, Malayalam were written by the team:
+  **get a native-speaker check before the video.**
+- Covers every word the app shows: headings, buttons, entry kinds, weekdays, "2 days ago",
+  help, tour, login, errors, and the WhatsApp reminder text. Data (shop/item/customer names)
+  stays as entered. Speech recognition and read-aloud use the chosen language.
+- Opening animation cycles "नमस्ते / Namaste / नमस्कार / Hello / …" with ₹1,25,000 shown in
+  each script's digits, then a time-of-day greeting in the chosen language. Tap to skip.
+
+### D16. Tests and CI — `BUILT`
+- Backend: pytest (`backend/tests/`): API on a fresh SQLite DB with no keys, ledger maths.
+- Frontend: Vitest + Testing Library (`*.test.ts(x)` next to the code), jsdom acts as a touch
+  phone with reduced motion so animations resolve instantly.
+- `.github/workflows/ci.yml`: backend tests; frontend lint, typecheck, tests, build; then
+  `docker compose up --build` with no `.env` and curl checks on port 3000.
+
+### D17. Visual design — `BUILT`
+- Warm white paper (`#faf6ee`) + forest greens, lime accent; tokens in `globals.css`.
+- Cursor effects only on devices with a fine pointer, off for touch and reduced motion
+  (`components/interactive.tsx`): card spotlight + glowing rim, hero card 3D tilt, magnetic
+  buttons, page glow that trails the cursor.
+
+### D18. Inventory — `BUILT`
+Was a parked idea; the team asked for it. `items.stock` + `items.low_stock_at`, and a
+`stock_moves` table (delta, reason, stock_after) so every count can be explained; moves are
+never deleted. Reasons: opening, purchase, sale, wastage, count (recount sets the number).
+`app/migrate.py` adds the new columns to older databases on start (add-only, never drop), and
+`seed_stock_if_missing` gives an existing demo shop its opening stock.
+Not yet: sales entries don't reduce stock automatically (needs flow 1's item matching).
+
+### D19. Bill scan OCR — `BUILT: A`
+- **Option A (built): Tesseract.js in the browser, English, LSTM-only int model.** No key, no
+  server load. Loaded only when "Scan bill" is opened; the engine and model (a few MB) come
+  from the jsDelivr CDN on first use, then the browser caches them. The photo is shrunk to
+  1600 px and greyed first. Text goes to `POST /api/items/scan` (`app/billscan.py`: fuzzy
+  item match on names/aliases, quantity from "2 dozen", "10 kg", "24 x 10", qty×rate=amount).
+  The shopkeeper ticks lines, fixes amber ones via chips, then one tap calls
+  `POST /api/items/stock-batch` (all or nothing). Needs internet on first use.
+- **Option B: Tesseract on the server** (apt `tesseract-ocr` in the API image). Offline, but a
+  much bigger image and slower builds.
+- **Option C: LLM vision** (D3 provider). Best on messy/handwritten bills; needs a key.
+
+### D20. Guidance for first-time users — `BUILT`
+Users may never have used an app or kept accounts. Tour (`components/Tour.tsx`, 6 steps,
+auto-starts once, "How to use" in the account menu reopens it), `HelpTip` "?" buttons with a
+plain-language example per term, `ListenButton` read-aloud via browser speech (D7 A), colour
+key under the money card, numbered steps in the bill scan, breathing ring on the mic button.
+
 ## The engine (every feature goes through it)
 
 1. Capture: a large text box that Wispr Flow types into, plus a hold-to-talk mic button (D6).
@@ -360,6 +440,11 @@ Kept here so they aren't lost; mention as finale work in the deck.
 | Data model | `undone_at`, jsonb, arrays | `reverses_id`, `edited`, `source`; JSON columns | D9 reversals, zero-edit metric, SQLite support |
 | Video | 90 seconds | ≤ 3 minutes allowed | Round 2 rules |
 | Added | — | Deck and submission checklists, parked ideas, D10–D13 | Round 2 rules, scaffolding |
+| Login | None | D14: optional Google login (Firebase), off without keys | Team request; keyless path kept |
+| UI language | Hindi/Hinglish/English/Marathi | D15: 12 UI languages, ring picker, greeting splash | Team request |
+| Quality | Backend smoke test | D16: pytest + Vitest + CI with Docker smoke test | Catch breakage before submission |
+| Scope | Flows 1, 3, 4 (D1 A) | + inventory and bill scan (D18, D19); flow 3 built | Team request |
+| Users | Assumed app-literate | D20: tour, "?" help, read-aloud, colour key | Team request: first-time app users |
 
 ## Working agreements
 
@@ -382,15 +467,25 @@ on macOS/Linux use `.venv/bin/`.
 - Frontend dev server: `cd frontend && npm run dev` (proxies `/api/*` to `API_URL`, default http://localhost:8000)
 - Reset the demo shop: `cd backend && .venv/Scripts/python -m app.seed --reset`
 - Backend tests: `cd backend && .venv/Scripts/python -m pytest`
-- Frontend checks: `cd frontend && npm run lint && npm run build`
+- Frontend checks: `cd frontend && npm run lint && npm run typecheck && npm test && npm run build`
+- Frontend tests in watch mode: `cd frontend && npm run test:watch`
+- Show the first-run screens again: in the browser console, `localStorage.removeItem("galla.lang")`
 
 ## Repo layout
 
-- `backend/app/`: `main.py` (routes: `/api/health`, `/api/shop`), `models.py` (tables),
+- `backend/app/`: `main.py` (routes: `/api/health`, `/api/config`, `/api/shop`, `/api/entries`,
+  `/api/khata`, `/api/summary`), `ledger.py` (day totals, expected cash, balances), `models.py` (tables),
   `schemas.py` (extraction contract), `seed.py` (demo shop), `config.py` (settings, all with
   defaults so no `.env` is needed), `db.py`.
-- `backend/tests/`: starts the app on an empty database with no keys and checks the seed.
-- `frontend/src/app/`: `page.tsx` (home, placeholder for flow 1), `layout.tsx` (fonts),
+- `backend/tests/`: `conftest.py` (fresh DB, no keys), `test_api.py`, `test_ledger.py`.
+- `frontend/src/components/`: `Dashboard.tsx` and its parts, `auth.tsx` (Firebase, D14),
+  `language.tsx` + `LanguagePicker.tsx` + `Splash.tsx` (D15), `interactive.tsx` (cursor effects).
+- `frontend/src/lib/`: `types.ts`, `format.ts` (₹, entry kinds, time ago, WhatsApp/UPI links),
+  `i18n.ts` + `locales/*.ts` (UI words, D15), `ocr.ts` (bill scan, D19), `speak.ts` (read-aloud),
+  `transition.ts` (circular reveal), `firebase.ts` (lazy-loaded), `api.ts`.
+- `backend/app/`: also `inventory.py` (items, stock moves, scan, batch), `accounts.py`
+  (accounts overview, day close), `billscan.py` (OCR text -> item lines), `migrate.py`, `deps.py`.
+- `frontend/src/app/`: `page.tsx` (language picker -> login if configured -> dashboard), `layout.tsx` (fonts, providers),
   `api/[...path]/route.ts` (proxy to backend, D11). `frontend/src/lib/types.ts` mirrors
   `backend/app/schemas.py`.
 - Next.js here is v16 with Cache Components; read `frontend/AGENTS.md` and the docs in

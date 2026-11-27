@@ -1,0 +1,81 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  backend:
+    name: Backend tests
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12" # same as backend/Dockerfile
+          cache: pip
+          cache-dependency-path: backend/requirements*.txt
+      - run: pip install -r requirements-dev.txt
+      - run: python -m pytest -q
+
+  frontend:
+    name: Frontend lint, types, tests, build
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24" # same as frontend/Dockerfile
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run typecheck
+      - run: npm test
+      - run: npm run build
+
+  docker:
+    # The judges' path: fresh clone, no .env, `docker compose up --build`, port 3000 shows the app.
+    name: Docker Compose smoke test (no keys)
+    runs-on: ubuntu-latest
+    needs: [backend, frontend]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Make sure there is no .env
+        run: test ! -f .env
+      - name: Build and start
+        run: docker compose up --build -d
+      - name: Wait for the app on port 3000
+        run: |
+          for i in $(seq 1 60); do
+            if curl -fsS http://localhost:3000/ > /dev/null; then echo "web is up"; break; fi
+            sleep 3
+          done
+          curl -fsS http://localhost:3000/ | grep -q "<title>Galla</title>"
+      - name: API works through the web proxy without keys
+        run: |
+          curl -fsS http://localhost:3000/api/health | grep -q '"llm_configured":false'
+          curl -fsS http://localhost:3000/api/config | grep -q '"firebase":null'
+          curl -fsS http://localhost:3000/api/shop | grep -q "Shree Ganesh Kirana"
+          curl -fsS "http://localhost:3000/api/summary?days=7" | grep -q '"udhaar_outstanding"'
+          curl -fsS "http://localhost:3000/api/accounts?days=7" | grep -q '"low_stock"'
+          curl -fsS http://localhost:3000/api/items | grep -q '"stock"'
+          curl -fsS -X POST -H 'Content-Type: application/json' -d '{"text":"Maggi 2 dozen"}' \
+            http://localhost:3000/api/items/scan | grep -q '"qty":24'
+      - name: Logs on failure
+        if: failure()
+        run: docker compose logs
+      - name: Stop
+        if: always()
+        run: docker compose down -v
