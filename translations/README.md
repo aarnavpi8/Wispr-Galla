@@ -4,7 +4,7 @@ Two spreadsheets (CSV, UTF-8; open in Excel or Google Sheets):
 
 | File | What it is | Rows |
 |---|---|---|
-| `ui-words.csv` | Every word and sentence the app shows | 267 |
+| `ui-words.csv` | Every word and sentence the app shows | 340 |
 | `voice-words.csv` | What shopkeepers **say**: commands ("close the day") and entry words ("credit", "paid") | 17 |
 
 Hindi, Hinglish and Marathi have been checked. **Gujarati, Punjabi, Bengali, Odia, Tamil, Telugu,
