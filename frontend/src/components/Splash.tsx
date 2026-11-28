@@ -7,8 +7,8 @@ import { GREETINGS, greetingKey } from "@/lib/i18n";
 import { useAuth } from "./auth";
 import { useLang } from "./language";
 
-const STEP_MS = 330;
-const HOLD_MS = 1000; // how long the final, personal greeting stays
+export const STEP_MS = 420; // each hello in the opening cycle (was 330: a little slower, easier to read)
+const HOLD_MS = 1200; // how long the final, personal greeting stays
 
 /**
  * Opening animation: "नमस्ते → Namaste → नमस्कार → Hello → …", then a time-of-day greeting

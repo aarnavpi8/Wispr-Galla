@@ -14,6 +14,7 @@ COLUMNS = [
     ("items", "stock", "INTEGER NOT NULL DEFAULT 0"),
     ("items", "low_stock_at", "INTEGER NOT NULL DEFAULT 5"),
     ("items", "cost_price", "INTEGER NOT NULL DEFAULT 0"),
+    ("items", "shelf_life", "VARCHAR(10)"),
     ("stock_moves", "unit_cost", "INTEGER"),
 ]
 

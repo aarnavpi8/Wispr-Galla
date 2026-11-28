@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 
-import { formatINR } from "@/lib/format";
+import { balanceTone, formatINR } from "@/lib/format";
 import type { Summary } from "@/lib/types";
 
 import { CountUp, TiltCard } from "./interactive";
@@ -12,7 +12,9 @@ import { HelpTip } from "./HelpTip";
 type Range = "today" | "week";
 
 /** Indigo money card: expected cash in the galla plus today's / this week's flow. */
-export function HeroCard({ summary }: { summary: Summary }) {
+export type HeroTarget = "sales" | "collected" | "udhaar" | "out";
+
+export function HeroCard({ summary, onOpen }: { summary: Summary; onOpen?: (what: HeroTarget) => void }) {
   const { t } = useLang();
   // Seed history has nothing for today, so start on the week view to never show zeroes.
   const [range, setRange] = useState<Range>(summary.today.entries > 0 ? "today" : "week");
@@ -59,7 +61,10 @@ export function HeroCard({ summary }: { summary: Summary }) {
         </div>
       </div>
 
-      <p className="mt-2 text-5xl font-extrabold tracking-tight" style={{ transform: "translateZ(30px)" }}>
+      <p
+        className={`mt-2 text-5xl font-extrabold tracking-tight transition-colors ${balanceTone(summary.expected_cash_today)}`}
+        style={{ transform: "translateZ(30px)" }}
+      >
         <CountUp value={summary.expected_cash_today} format={formatINR} />
       </p>
       <p className="mt-1 text-sm text-muted">
@@ -67,19 +72,28 @@ export function HeroCard({ summary }: { summary: Summary }) {
       </p>
 
       <dl className="reveal-stagger mt-5 grid grid-cols-2 gap-2" style={{ transform: "translateZ(20px)" }}>
-        <Stat label={t("sales")} value={stats.sales} tone="text-ink-950" />
-        <Stat label={t("collected")} value={stats.collected} tone="text-money-in" />
-        <Stat label={t("udhaarGiven")} value={stats.udhaar} tone="text-pending" />
-        <Stat label={t("cashOut")} value={stats.out} tone="text-money-out" />
+        <Stat label={t("sales")} value={stats.sales} tone="text-ink-950" onClick={onOpen && (() => onOpen("sales"))} />
+        <Stat label={t("collected")} value={stats.collected} tone="text-money-in" onClick={onOpen && (() => onOpen("collected"))} />
+        <Stat label={t("udhaarGiven")} value={stats.udhaar} tone="text-pending" onClick={onOpen && (() => onOpen("udhaar"))} />
+        <Stat label={t("cashOut")} value={stats.out} tone="text-money-out" onClick={onOpen && (() => onOpen("out"))} />
       </dl>
     </TiltCard>
   );
 }
 
-function Stat({ label, value, tone }: { label: string; value: number; tone: string }) {
+function Stat({ label, value, tone, onClick }: { label: string; value: number; tone: string; onClick?: () => void }) {
   return (
-    <div className="rounded-2xl bg-white/75 px-3 py-2.5 ring-1 ring-line transition hover:bg-white">
-      <dt className="text-xs text-muted">{label}</dt>
+    <div className="relative rounded-2xl bg-white/75 px-3 py-2.5 ring-1 ring-line transition hover:bg-white">
+      <dt className="flex items-center justify-between text-xs text-muted">
+        {onClick ? (
+          <button type="button" onClick={onClick} className="text-left after:absolute after:inset-0 after:rounded-2xl after:content-['']">
+            {label}
+          </button>
+        ) : (
+          label
+        )}
+        {onClick && <span aria-hidden>›</span>}
+      </dt>
       <dd className={`text-lg font-bold ${tone}`}>
         <CountUp value={value} format={formatINR} />
       </dd>

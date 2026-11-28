@@ -46,6 +46,7 @@ export function Tour({ onClose }: { onClose: () => void }) {
   const { t } = useLang();
   const [i, setI] = useState(0);
   const [box, setBox] = useState<Box | null>(null);
+  const [finePointer] = useState(() => typeof window !== "undefined" && !!window.matchMedia?.("(pointer: fine)").matches);
   const step = TOUR_STEPS[i];
   const last = i === TOUR_STEPS.length - 1;
 
@@ -65,18 +66,29 @@ export function Tour({ onClose }: { onClose: () => void }) {
     // Park the part near the top so the explanation card fits underneath it.
     if (!fixed) {
       const top = el.getBoundingClientRect().top + window.scrollY - 72;
-      window.scrollTo?.({ top: Math.max(0, top), behavior: "smooth" });
+      // Phones jump straight there: a smooth glide under the dimmed overlay was the remaining lag.
+      window.scrollTo?.({ top: Math.max(0, top), behavior: finePointer ? "smooth" : "auto" });
     }
-    const id = window.setTimeout(measure, fixed ? 0 : 450);
+    const id = window.setTimeout(measure, fixed ? 0 : finePointer ? 450 : 60);
     return () => window.clearTimeout(id);
-  }, [step.target, measure]);
+  }, [step.target, measure, finePointer]);
 
+  // Re-frame at most once per screen frame while the page scrolls (measuring on every scroll
+  // event re-rendered the tour dozens of times per glide and made phones stutter).
   useEffect(() => {
-    window.addEventListener("resize", measure);
-    window.addEventListener("scroll", measure, { passive: true });
+    let frame = 0;
+    const onMove = () => {
+      if (!frame) frame = requestAnimationFrame(() => {
+        frame = 0;
+        measure();
+      });
+    };
+    window.addEventListener("resize", onMove);
+    window.addEventListener("scroll", onMove, { passive: true });
     return () => {
-      window.removeEventListener("resize", measure);
-      window.removeEventListener("scroll", measure);
+      cancelAnimationFrame(frame);
+      window.removeEventListener("resize", onMove);
+      window.removeEventListener("scroll", onMove);
     };
   }, [measure]);
 
@@ -102,11 +114,14 @@ export function Tour({ onClose }: { onClose: () => void }) {
   const CARD = 250;
   const spaceBelow = box ? vh - (box.top + box.height) : vh;
   const spaceAbove = box ? box.top : 0;
+  // The card never leaves the screen: if the part has scrolled out of view, the card waits at
+  // the bottom (it once sat above the top edge with its Skip button, leaving the page blocked).
+  const onScreen = !!box && box.top + box.height > 0 && box.top < vh;
   const cardStyle =
-    box && spaceBelow >= CARD + 20
-      ? { top: box.top + box.height + 14 }
-      : box && spaceAbove >= CARD + 20
-        ? { bottom: vh - box.top + 14 }
+    onScreen && box && spaceBelow >= CARD + 20
+      ? { top: Math.min(box.top + box.height + 14, vh - CARD - 12) }
+      : onScreen && box && spaceAbove >= CARD + 20
+        ? { bottom: Math.min(vh - box.top + 14, vh - CARD - 12) }
         : { bottom: 16 };
 
   return (
@@ -115,8 +130,22 @@ export function Tour({ onClose }: { onClose: () => void }) {
       {box ? (
         <div
           aria-hidden
-          className="pointer-events-none absolute rounded-[30px] ring-4 ring-gold-300 transition-all duration-500 ease-[cubic-bezier(0.2,0.8,0.2,1)]"
-          style={{ ...box, boxShadow: "0 0 0 9999px rgb(31 42 61 / 0.5), 0 0 40px 8px rgb(243 194 98 / 0.45)" }}
+          // Phones: the frame jumps to its place (animating size + a screen-sized shadow every frame
+          // was the lag); a mouse device glides it. Glow only where there's power to spare.
+          className="pointer-events-none absolute rounded-[30px] ring-4 ring-gold-300 [@media(pointer:fine)]:transition-all [@media(pointer:fine)]:duration-500 [@media(pointer:fine)]:ease-[cubic-bezier(0.2,0.8,0.2,1)]"
+          style={{
+            // Moved with a GPU transform: the screen-sized dimming shadow is painted once per step
+            // and then only slides while the page scrolls (top/left repainted it every frame).
+            top: 0,
+            left: 0,
+            width: box.width,
+            height: box.height,
+            transform: `translate3d(${box.left}px, ${box.top}px, 0)`,
+            willChange: "transform",
+            boxShadow: finePointer
+              ? "0 0 0 9999px rgb(31 42 61 / 0.5), 0 0 40px 8px rgb(243 194 98 / 0.45)"
+              : "0 0 0 9999px rgb(31 42 61 / 0.5)",
+          }}
         />
       ) : (
         <div aria-hidden className="absolute inset-0 bg-ink-950/45" />

@@ -14,6 +14,8 @@ Command = Literal[
     "bill_start", "bill_total", "day_close", "show_khata", "send_reminder",
     # Voice control for the rest of the app (app/commands.py)
     "show_stock", "scan_bill", "add_item", "show_accounts", "show_entries", "change_language", "help", "undo_last",
+    # "Cheeni kitni bachi hai?": answer with the stock of the items named
+    "item_stock",
 ]
 
 
@@ -30,6 +32,7 @@ class ItemOption(BaseModel):
     name: str
     unit: str = "pc"
     price: int | None = None
+    in_stock: int | None = None
 
 
 class LineItem(BaseModel):
@@ -42,6 +45,8 @@ class LineItem(BaseModel):
     options: list[ItemOption] = []
     # The words heard for this line, so a pick can be remembered as an alias.
     heard: str | None = None
+    # How much of this item is on the shelf now (None when it isn't a stock item).
+    in_stock: int | None = None
 
 
 class PartyOption(BaseModel):

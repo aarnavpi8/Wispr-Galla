@@ -106,6 +106,25 @@ export function StockPlanCard({ refreshKey = 0, onChanged }: { refreshKey?: numb
           {acc.no_cost_items > 0 && (
             <p className="mt-2 rounded-xl bg-amber-50 px-3 py-2 text-sm text-pending">{t("invNoCost", { n: acc.no_cost_items })}</p>
           )}
+          {/* Spoilage: the stock version of depreciation, estimated from how long each item stays good. */}
+          {(acc.expected_spoilage ?? 0) > 0 && (
+            <div className="mt-2 flex items-center justify-between gap-2 rounded-xl bg-surface-2 px-3 py-2 text-sm">
+              <span className="flex items-center gap-1.5 text-ink-800">
+                {t("spoilage")} <HelpTip title="spoilage" body="helpSpoilage" />
+              </span>
+              <span className="font-bold tabular-nums text-money-out">−{formatINR(acc.expected_spoilage)}</span>
+            </div>
+          )}
+          {(acc.to_check?.length ?? 0) > 0 && (
+            <div className="mt-2 rounded-xl bg-amber-50 px-3 py-2 ring-1 ring-amber-200">
+              <p className="text-sm font-semibold text-pending">{t("spoilTitle")}</p>
+              <ul className="mt-1 space-y-0.5 text-sm text-ink-800">
+                {acc.to_check!.map((c) => (
+                  <li key={c.item_id}>{t("spoilCheck", { item: c.name, days: c.days })}</li>
+                ))}
+              </ul>
+            </div>
+          )}
         </>
       )}
 

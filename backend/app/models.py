@@ -42,6 +42,8 @@ class Item(Base):
     low_stock_at: Mapped[int] = mapped_column(Integer, default=5, server_default="5")
     # Weighted-average cost per unit (what the shop paid), for the inventory account (D25).
     cost_price: Mapped[int] = mapped_column(Integer, default=0, server_default="0")
+    # How long it stays sellable: days | months | long | none (None = guessed from the name; spoilage.py).
+    shelf_life: Mapped[str | None] = mapped_column(String(10), nullable=True, default=None)
 
 
 class StockMove(Base):

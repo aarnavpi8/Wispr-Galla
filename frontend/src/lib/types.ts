@@ -26,7 +26,9 @@ export type Command =
   | "show_entries"
   | "change_language"
   | "help"
-  | "undo_last";
+  | "undo_last"
+  // "Cheeni kitni bachi hai?": the items asked about, with their stock
+  | "item_stock";
 
 export interface PartyRef {
   name: string;
@@ -39,6 +41,7 @@ export interface ItemOption {
   name: string;
   unit: string;
   price: number | null;
+  in_stock?: number | null;
 }
 
 export interface LineItem {
@@ -51,6 +54,12 @@ export interface LineItem {
   options?: ItemOption[];
   /** The words heard for this line; saved as the picked item's alias. */
   heard?: string | null;
+  /** How much of this item is on the shelf (stock items only). */
+  in_stock?: number | null;
+  /** Buying: what was paid per unit (required; the item's known cost by default). */
+  unit_cost?: number | null;
+  /** Buying an item that has no selling price yet: what it will sell for per unit. */
+  sell_price?: number | null;
 }
 
 export interface PartyOption {
@@ -165,6 +174,7 @@ export interface Item {
   low: boolean;
   value: number;
   cost_price?: number; // weighted-average cost per unit; 0 = not known
+  shelf_life?: "days" | "months" | "long" | "none" | null; // how long it stays good (spoilage estimate)
   margin?: number | null;
 }
 
@@ -182,17 +192,21 @@ export interface StockMove {
 export interface Accounts {
   days: number;
   sales: number;
+  credit_sales: number;
   sales_cash: number;
   sales_upi: number;
   purchases: number;
   expenses: number;
   withdrawals: number;
+  cogs: number;
+  wastage: number;
   net: number;
   receivable: number;
   payable: number;
   cash_in: number;
   cash_out: number;
   upi_in: number;
+  upi_out: number;
   stock_value: number;
   stock_items: number;
   low_stock: number;
@@ -247,6 +261,10 @@ export interface InventoryAccount {
   margin_pct: number | null;
   turnover: number | null;
   no_cost_items: number;
+  /** Spoilage (backend app/spoilage.py): estimate only; real losses are recorded as wastage. */
+  expected_spoilage: number;
+  value_after_spoilage: number;
+  to_check: { item_id: number; name: string; unit: string; stock: number; days: number }[];
 }
 
 export type PlanStatus = "out" | "order_now" | "ok" | "dead" | "no_sales";

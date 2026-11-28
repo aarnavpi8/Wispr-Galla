@@ -6,7 +6,7 @@ import { GREETINGS, greetingKey, LANGS, translate } from "@/lib/i18n";
 
 import { LanguagePicker, wrapDelta } from "./LanguagePicker";
 import { LanguageProvider, useLang } from "./language";
-import { Splash } from "./Splash";
+import { Splash, STEP_MS } from "./Splash";
 
 describe("translate", () => {
   it("has every string in every language", () => {
@@ -103,10 +103,10 @@ describe("Splash", () => {
     render(<Splash />);
     expect(screen.getByRole("heading")).toHaveTextContent(GREETINGS[0].text);
 
-    act(() => vi.advanceTimersByTime(340));
+    act(() => vi.advanceTimersByTime(STEP_MS + 10));
     expect(screen.getByRole("heading")).toHaveTextContent(GREETINGS[1].text);
 
-    act(() => vi.advanceTimersByTime(GREETINGS.length * 340)); // through every greeting
+    act(() => vi.advanceTimersByTime(GREETINGS.length * (STEP_MS + 10))); // through every greeting
     // Personal greeting: no longer one of the cycling hellos, and no emoji.
     expect(screen.getByRole("heading")).not.toHaveTextContent(GREETINGS[GREETINGS.length - 1].text);
     expect(screen.getByRole("heading").textContent).not.toContain("🙏");

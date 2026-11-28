@@ -12,6 +12,7 @@ from app.billscan import parse_bill
 from app.stockbook import record_move
 from app.db import get_db
 from app.deps import current_shop, iso
+from app.spoilage import ShelfLife, shelf_life_of
 
 router = APIRouter(prefix="/api/items", tags=["inventory"])
 
@@ -30,16 +31,20 @@ class ItemOut(BaseModel):
     value: int  # stock x price, at selling price
     cost_price: int = 0  # weighted-average cost per unit (0 = not known yet)
     margin: int | None = None  # price - cost, when the cost is known
+    shelf_life: ShelfLife = "months"  # how long it stays good (drives the spoilage estimate)
+    shelf_life_guessed: bool = True  # guessed from the name; the shopkeeper hasn't set it yet
 
 
 class NewItem(BaseModel):
     name: str = Field(min_length=1, max_length=120)
     variant: str | None = Field(default=None, max_length=60)
     unit: str = Field(default="pc", min_length=1, max_length=20)
-    price: int = Field(ge=0, le=10_00_000)
+    # Both prices are required for a new item: the books (profit, stock value) need them.
+    price: int = Field(gt=0, le=10_00_000)
     stock: int = Field(default=0, ge=0, le=1_00_000)
     low_stock_at: int = Field(default=5, ge=0, le=1_00_000)
-    cost_price: int = Field(default=0, ge=0, le=10_00_000)
+    cost_price: int = Field(gt=0, le=10_00_000)
+    shelf_life: ShelfLife | None = None  # None: guessed from the name
 
 
 class StockChange(BaseModel):
@@ -76,6 +81,8 @@ def item_out(i: models.Item) -> ItemOut:
         value=i.stock * i.price,
         cost_price=i.cost_price,
         margin=i.price - i.cost_price if i.cost_price else None,
+        shelf_life=shelf_life_of(i),
+        shelf_life_guessed=i.shelf_life is None,
     )
 
 
@@ -114,6 +121,7 @@ def add_item(body: NewItem, db: Session = Depends(get_db), shop: models.Shop = D
         stock=0,
         low_stock_at=body.low_stock_at,
         cost_price=body.cost_price,
+        shelf_life=body.shelf_life,
     )
     db.add(item)
     db.flush()
@@ -124,9 +132,11 @@ def add_item(body: NewItem, db: Session = Depends(get_db), shop: models.Shop = D
 
 
 class ItemUpdate(BaseModel):
-    price: int | None = Field(default=None, ge=0, le=10_00_000)
+    # Prices can be changed but never cleared back to ₹0.
+    price: int | None = Field(default=None, gt=0, le=10_00_000)
     low_stock_at: int | None = Field(default=None, ge=0, le=1_00_000)
-    cost_price: int | None = Field(default=None, ge=0, le=10_00_000)
+    cost_price: int | None = Field(default=None, gt=0, le=10_00_000)
+    shelf_life: ShelfLife | None = None
 
 
 @router.patch("/{item_id}", response_model=ItemOut)
@@ -144,6 +154,8 @@ def update_item(
         item.low_stock_at = body.low_stock_at
     if body.cost_price is not None:
         item.cost_price = body.cost_price
+    if body.shelf_life is not None:
+        item.shelf_life = body.shelf_life
     db.commit()
     return item_out(item)
 
@@ -166,7 +178,14 @@ def change_stock(
         raise HTTPException(422, f"Stock sirf {item.stock} {item.unit} hai")
     if delta == 0 and body.reason != "count":
         raise HTTPException(422, "Kitna? Quantity 0 se zyada honi chahiye")
-    record_move(db, shop.id, item, delta, body.reason, body.unit_cost if body.reason == "purchase" else None)
+    cost = None
+    if body.reason == "purchase":
+        # Stock coming in must say what it cost (or the item's known cost is used).
+        cost = body.unit_cost or item.cost_price or None
+        if not cost:
+            raise HTTPException(422, {"code": "missing_prices", "cost": [item.name], "price": [],
+                                      "detail": f"{item.name}: kharid ka daam (per {item.unit}) batayiye"})
+    record_move(db, shop.id, item, delta, body.reason, cost)
     db.commit()
     return item_out(item)
 
@@ -209,10 +228,14 @@ def stock_batch(body: BatchIn, db: Session = Depends(get_db), shop: models.Shop 
     missing = [line.item_id for line in body.lines if line.item_id not in items]
     if missing:
         raise HTTPException(404, f"Item nahi mila: {missing}")
+    no_cost = [items[line.item_id].name for line in body.lines if not (line.unit_cost or items[line.item_id].cost_price)]
+    if no_cost:
+        raise HTTPException(422, {"code": "missing_prices", "cost": no_cost, "price": [],
+                                  "detail": "Kharid ka daam batayiye: " + ", ".join(no_cost)})
     touched: dict[int, models.Item] = {}
     for line in body.lines:
         item = items[line.item_id]
-        record_move(db, shop.id, item, line.qty, body.reason, line.unit_cost)
+        record_move(db, shop.id, item, line.qty, body.reason, line.unit_cost or item.cost_price)
         touched[item.id] = item
     db.commit()
     return [item_out(i) for i in touched.values()]

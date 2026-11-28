@@ -313,9 +313,27 @@ def _label(it: Item) -> str:
 
 def line_for(it: Item, qty: float, choice: tuple[list[Item], str] | None = None) -> LineItem:
     """A card line for a matched item; with the other close matches when we need to ask."""
-    options = [ItemOption(item_id=o.id, name=_label(o), unit=o.unit, price=o.price) for o in choice[0]] if choice else []
+    options = [_option(o) for o in choice[0]] if choice else []
     return LineItem(name=_label(it), item_id=it.id, qty=qty, unit=it.unit, price=it.price,
-                    options=options, heard=choice[1] if choice else None)
+                    options=options, heard=choice[1] if choice else None, in_stock=it.stock)
+
+
+def _option(o: Item) -> ItemOption:
+    return ItemOption(item_id=o.id, name=_label(o), unit=o.unit, price=o.price, in_stock=o.stock)
+
+
+def closest_items(name: str, items: list[Item], k: int = 3, floor: float = 0.6) -> list[Item]:
+    """Stock items that sound like a name we couldn't match outright ("Kesar" -> "Kesari dal"),
+    so the card can offer the shopkeeper's own items before "add it as new"."""
+    gram = name.lower().strip()
+    scored = []
+    for it in items:
+        own, extra = _item_names(it)
+        sc = max([similarity(gram, n) for n in own] + [SYNONYM_WEIGHT * similarity(gram, n) for n in extra] or [0.0])
+        if sc >= floor:
+            scored.append((sc, it))
+    scored.sort(key=lambda x: -x[0])
+    return [it for _, it in scored[:k]]
 
 
 def item_words(text: str, items: list[tuple[Item, float, float]]) -> set[str]:
@@ -470,7 +488,8 @@ def extract_rules(text: str, ctx: ShopContext) -> ExtractedEntry:
         type=type_,
         party=party_ref,
         items=[line_for(it, q, choices.get(it.id)) for it, q, _ in items]
-        + [LineItem(name=n, item_id=None, qty=q, unit=u) for n, q, u in new_items],
+        + [LineItem(name=n, item_id=None, qty=q, unit=u, heard=n.lower(),
+                    options=[_option(o) for o in closest_items(n, ctx.items)]) for n, q, u in new_items],
         amount=amount,
         paid_now=paid_now,
         mode=mode,
@@ -484,7 +503,36 @@ def extract_rules(text: str, ctx: ShopContext) -> ExtractedEntry:
     )
 
 
+# "How much do I have?" in five languages: with an item named, the app answers with its stock.
+STOCK_QUESTION = [
+    "how much", "how many", "kitna hai", "kitni hai", "kitne hai", "kitna bacha", "kitni bachi", "kitne bache",
+    "stock me kitna", "stock mein kitna", "kitna stock", "kitni stock", "kitna pada", "kitni padi",
+    "कितना", "कितनी", "कितने", "बचा है", "बची है", "किती", "शिल्लक", "કેટલું", "કેટલી", "કેટલા", "બાકી છે",
+]
+
+
+def stock_question(text: str, ctx: ShopContext) -> ExtractedEntry | None:
+    t = text.lower()
+    if not _has(t, STOCK_QUESTION) or re.search(r"₹|rs|rupay|rupee|रुपये", t):
+        return None
+    choices: dict[int, tuple[list[Item], str]] = {}
+    found = match_items(text, ctx.items, choices)
+    if not found:
+        return None
+    return ExtractedEntry(
+        type="command",
+        command="item_stock",
+        items=[line_for(it, 0, choices.get(it.id)) for it, _, _ in found],
+        confidence={"type": 0.9, "items": min(c for _, _, c in found)},
+        raw_text=text.strip(),
+        source="rules",
+    )
+
+
 def as_command(text: str, ctx: ShopContext) -> ExtractedEntry | None:
+    asked = stock_question(replace_number_words(text.strip()), ctx)
+    if asked is not None:
+        return asked
     found = detect_command(replace_number_words(text.strip()), ctx.parties, match_party)
     if found is None:
         return None

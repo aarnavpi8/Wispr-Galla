@@ -49,7 +49,8 @@ describe("EntryCard: buying from a supplier", () => {
     render(<EntryCard entry={PURCHASE} parties={[]} onClose={() => {}} onSaved={() => {}} onItemAdded={onItemAdded} />);
     await user.click(screen.getByRole("button", { name: "Stock mein nahi · Jodiye" }));
     expect(screen.getByLabelText("Naam")).toHaveValue("Cheeni");
-    await user.type(screen.getByLabelText("Daam (₹)"), "45");
+    await user.type(screen.getByLabelText("Bechne ka daam (₹)"), "45");
+    if (!(screen.getByLabelText("Kharid ka daam (₹)") as HTMLInputElement).value) await user.type(screen.getByLabelText("Kharid ka daam (₹)"), "40");
     await user.click(screen.getAllByRole("button", { name: "Save karo" }).at(-1)!);
     await waitFor(() => expect(onItemAdded).toHaveBeenCalledWith(created));
     expect(screen.queryByRole("button", { name: "Stock mein nahi · Jodiye" })).not.toBeInTheDocument();
@@ -70,7 +71,8 @@ describe("EntryCard: buying from a supplier", () => {
     render(<EntryCard entry={PURCHASE} parties={[]} onClose={() => {}} onSaved={() => {}} />);
     await user.click(screen.getByRole("button", { name: "Stock mein nahi · Jodiye" }));
     expect(screen.queryByLabelText("Abhi kitna hai")).not.toBeInTheDocument();
-    await user.type(screen.getByLabelText("Daam (₹)"), "45");
+    await user.type(screen.getByLabelText("Bechne ka daam (₹)"), "45");
+    if (!(screen.getByLabelText("Kharid ka daam (₹)") as HTMLInputElement).value) await user.type(screen.getByLabelText("Kharid ka daam (₹)"), "40");
     await user.click(screen.getAllByRole("button", { name: "Save karo" }).at(-1)!);
     await waitFor(() => expect(posted[0]).toMatchObject({ name: "Cheeni", stock: 0 }));
   });
@@ -93,6 +95,12 @@ describe("EntryCard: a sale says what was sold", () => {
     expect(screen.getAllByText("Kya becha? Item aur kitna, jodiye.").length).toBeGreaterThan(0);
     expect(screen.getByRole("button", { name: "Save karo ✓" })).toBeDisabled();
     await user.selectOptions(screen.getByRole("combobox"), String(KURKURE.id));
+    // 1 Kurkure = ₹20, but the sale was ₹60: that doesn't add up, so Save waits.
+    expect(screen.getByRole("alert")).toHaveTextContent("Items ka jod ₹20 hai, par amount ₹60 hai");
+    expect(screen.getByRole("button", { name: "Save karo ✓" })).toBeDisabled();
+    await user.click(screen.getByRole("button", { name: "Kurkure +1" }));
+    await user.click(screen.getByRole("button", { name: "Kurkure +1" }));
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Save karo ✓" })).toBeEnabled();
   });
 
@@ -143,5 +151,90 @@ describe("EntryCard: a word that fits several items", () => {
     await user.click(screen.getByRole("button", { name: "Save karo ✓" }));
     await waitFor(() => expect(posted[0]).toBeTruthy());
     expect(posted[0]).toMatchObject({ amount: 130, items: [{ item_id: 9, name: "Moong dal", heard: "daal" }] });
+  });
+});
+
+describe("EntryCard: stock safety", () => {
+  const KURKURE = { id: 4, name: "Kurkure", variant: null, unit: "pc", price: 20, stock: 3, low_stock_at: 5, low: true, value: 60 };
+  const sale = (qty: number): ExtractedEntry => ({
+    ...PURCHASE,
+    type: "sale",
+    party: null,
+    mode: "cash",
+    amount: 20 * qty,
+    raw_text: "kurkure becha",
+    items: [{ name: "Kurkure", item_id: 4, qty, unit: "pc", price: 20, in_stock: 3 }],
+  });
+
+  it("shows how much is on the shelf", () => {
+    render(<EntryCard entry={sale(2)} parties={[]} stock={[KURKURE] as never} onClose={() => {}} onSaved={() => {}} />);
+    expect(screen.getByText("Stock mein: 3 pc")).toBeInTheDocument();
+  });
+
+  it("won't sell more than the shelf has, and says how to fix it", async () => {
+    const posted: Record<string, unknown>[] = [];
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (_url: string, init?: RequestInit) => {
+        posted.push(JSON.parse(String(init?.body)));
+        return Response.json({ id: 1, type: "sale", amount: 100, mode: "cash", raw_text: "", reversed: false, created_at: "" }, { status: 201 });
+      }),
+    );
+    const onSaved = vi.fn();
+    const user = userEvent.setup();
+    render(<EntryCard entry={sale(5)} parties={[]} stock={[KURKURE] as never} onClose={() => {}} onSaved={onSaved} />);
+    expect(screen.getByRole("alert")).toHaveTextContent("Kurkure: Sirf 3 pc stock mein. Quantity kam karein, ya pehle aaya hua maal darj karein.");
+    expect(screen.getByRole("button", { name: "Save karo ✓" })).toBeDisabled();
+    expect(screen.queryByRole("button", { name: "Phir bhi save karo" })).not.toBeInTheDocument();
+    // Back to what's on the shelf (and the amount follows): now it adds up.
+    await user.click(screen.getByRole("button", { name: "Kurkure −1" }));
+    await user.click(screen.getByRole("button", { name: "Kurkure −1" }));
+    await user.click(screen.getByRole("button", { name: /₹60/ })); // "use the items' total"
+    await user.click(screen.getByRole("button", { name: "Save karo ✓" }));
+    await waitFor(() => expect(onSaved).toHaveBeenCalled());
+    expect(posted).toHaveLength(1);
+  });
+
+  it("a payment can't be more than the person owes", async () => {
+    const pay: ExtractedEntry = {
+      ...PURCHASE, type: "payment", items: [], amount: 900, mode: "cash", raw_text: "Sharma ji ne 900 diye",
+      party: { name: "Sharma ji", kind: "customer", match_id: 1 },
+    };
+    const sharma = { id: 1, name: "Sharma ji", kind: "customer", phone: null, balance: 820, overdue_since: null, last_entry_at: null };
+    render(<EntryCard entry={pay} parties={[sharma] as never} onClose={() => {}} onSaved={() => {}} />);
+    expect(screen.getByRole("alert")).toHaveTextContent("Sharma ji ka sirf ₹820 baaki hai");
+    expect(screen.getByRole("button", { name: "Save karo ✓" })).toBeDisabled();
+  });
+});
+
+describe("EntryCard: every transaction carries its prices", () => {
+  it("buying an unpriced item needs what you paid and what it sells for", async () => {
+    const posted: Record<string, unknown>[] = [];
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (_url: string, init?: RequestInit) => {
+        posted.push(JSON.parse(String(init?.body)));
+        return Response.json({ id: 1, type: "purchase", amount: 400, mode: "cash", raw_text: "", reversed: false, created_at: "" }, { status: 201 });
+      }),
+    );
+    const ATTA = { id: 7, name: "Atta", variant: null, unit: "kg", price: 0, cost_price: 0, stock: 0, low_stock_at: 0, low: false, value: 0 };
+    const entry: ExtractedEntry = {
+      ...PURCHASE,
+      mode: "cash",
+      amount: 400,
+      raw_text: "Gupta se 10 kilo atta 400 ka",
+      items: [{ name: "Atta", item_id: 7, qty: 10, unit: "kg", price: 0, in_stock: 0 }],
+    };
+    const user = userEvent.setup();
+    render(<EntryCard entry={entry} parties={[]} stock={[ATTA] as never} onClose={() => {}} onSaved={() => {}} />);
+    // Cost per kg is worked out from the spoken total (400 / 10); the selling price is asked.
+    expect(screen.getByLabelText("Atta: Kharid ka daam (₹)")).toHaveValue("40");
+    const save = screen.getByRole("button", { name: "Save karo ✓" });
+    expect(save).toBeDisabled();
+    await user.type(screen.getByLabelText("Atta: Bechne ka daam (₹)"), "48");
+    expect(save).toBeEnabled();
+    await user.click(save);
+    await waitFor(() => expect(posted[0]).toBeTruthy());
+    expect(posted[0]).toMatchObject({ items: [{ item_id: 7, unit_cost: 40, sell_price: 48 }] });
   });
 });

@@ -7,6 +7,7 @@ import { formatINR, itemLabel, stockLevel, timeAgo } from "@/lib/format";
 import type { StringKey } from "@/lib/i18n";
 import type { EntryOut, Item, Mode, PartyBalance, SellOut, StockMove, StockReason } from "@/lib/types";
 
+import { SHELF_LIFE } from "./AddItemSheet";
 import { useLang } from "./language";
 import { Sheet } from "./Sheet";
 
@@ -90,6 +91,11 @@ export function StockSheet({
         if (out.entry) onSold?.(out.entry);
         else setError(t("noPriceSale"));
       } else {
+        if (reason === "purchase" && !costIn && !item.cost_price) {
+          // Stock can't come in without what it cost: ask, in the shopkeeper's words.
+          setError(t("askCost", { item: item.name, unit: item.unit }));
+          return;
+        }
         const after = await postJSON<Item>(`/api/items/${item.id}/stock`, {
           reason,
           qty: n,
@@ -175,6 +181,25 @@ export function StockSheet({
           {t("setCost")}
         </button>
       </div>
+      {/* How long it stays good: guessed from the name until the shopkeeper picks (spoilage estimate). */}
+      <fieldset className="mt-3">
+        <legend className="text-sm font-semibold text-ink-950">{t("shelfLife")}</legend>
+        <div className="mt-1 flex flex-wrap gap-2">
+          {SHELF_LIFE.map((s) => (
+            <button
+              key={s.value}
+              type="button"
+              aria-pressed={item.shelf_life === s.value}
+              onClick={() => void patchJSON<Item>(`/api/items/${item.id}`, { shelf_life: s.value }).then(onUpdated)}
+              className={`min-h-10 rounded-full px-4 text-sm font-semibold transition ${
+                item.shelf_life === s.value ? "bg-brand-600 text-white" : "bg-surface-2 text-ink-900 hover:bg-iris-100"
+              }`}
+            >
+              {t(s.key)}
+            </button>
+          ))}
+        </div>
+      </fieldset>
       {item.cost_price && item.margin != null ? (
         <p className={`mt-1 text-sm font-semibold ${item.margin >= 0 ? "text-money-in" : "text-money-out"}`}>
           {t("marginEach", { x: formatINR(item.margin), u: item.unit })}
@@ -244,7 +269,8 @@ export function StockSheet({
 
       {Number(qty) > 0 && (
         <label className="mt-3 block text-sm font-semibold text-ink-950">
-          {t("stockIn")} · {t("costPrice")} / {item.unit} ({t("optional")})
+          {t("stockIn")} · {t("youPay")} / {item.unit}
+          {item.cost_price ? ` (${t("optional")})` : ""}
           <input
             inputMode="numeric"
             value={costIn}

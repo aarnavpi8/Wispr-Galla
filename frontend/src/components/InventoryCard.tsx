@@ -17,17 +17,20 @@ const PREVIEW = 6;
 
 /** Inventory: what's on the shelf, what's running low, quick in/out, and new items. */
 export function InventoryCard({
+  refreshKey = 0,
   onChanged,
   onSold,
   parties = [],
 }: {
+  /** Bumped when stock changes elsewhere (a saved entry, a bill scan), so the list reloads. */
+  refreshKey?: number;
   onChanged?: () => void;
   /** A sale was recorded from the stock screen (show "Saved ₹x · Undo"). */
   onSold?: (entry: EntryOut) => void;
   parties?: PartyBalance[];
 }) {
   const { t } = useLang();
-  const { data: items, setData, reload } = useApi<Item[]>("/api/items");
+  const { data: items, setData, reload } = useApi<Item[]>(`/api/items?r=${refreshKey}`);
   const [query, setQuery] = useState("");
   const [lowOnly, setLowOnly] = useState(false);
   const [showAll, setShowAll] = useState(false);

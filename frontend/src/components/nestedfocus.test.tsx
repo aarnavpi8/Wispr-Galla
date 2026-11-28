@@ -48,7 +48,8 @@ describe("New item sheet opened from the entry card", () => {
     const user = userEvent.setup();
     render(<EntryCard entry={PURCHASE} parties={[]} onClose={vi.fn()} onSaved={vi.fn()} />);
     await user.click(screen.getByRole("button", { name: "Stock mein nahi · Jodiye" }));
-    await user.type(screen.getByLabelText("Daam (₹)"), "45");
+    await user.type(screen.getByLabelText("Bechne ka daam (₹)"), "45");
+    if (!(screen.getByLabelText("Kharid ka daam (₹)") as HTMLInputElement).value) await user.type(screen.getByLabelText("Kharid ka daam (₹)"), "40");
     await user.click(screen.getAllByRole("button", { name: "Save karo" }).at(-1)!);
     await waitFor(() => expect(dialogs()).toHaveLength(1));
     expect(dialogs()[0]).toContainElement(document.activeElement as HTMLElement);

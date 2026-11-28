@@ -181,10 +181,11 @@ def test_cannot_sell_more_than_in_stock(client):
     assert client.post(f"/api/items/{bread['id']}/sell", json={"qty": bread["stock"] + 1}).status_code == 422
 
 
-def test_item_without_price_moves_stock_only(client):
-    item = client.post("/api/items", json={"name": "Agarbatti", "unit": "box", "price": 0, "stock": 5}).json()
-    body = client.post(f"/api/items/{item['id']}/sell", json={"qty": 1}).json()
-    assert body["entry"] is None and body["item"]["stock"] == 4
+def test_new_item_needs_both_prices(client):
+    no_cost = {"name": "Agarbatti", "unit": "box", "price": 30, "stock": 5}
+    assert client.post("/api/items", json=no_cost).status_code == 422
+    assert client.post("/api/items", json={**no_cost, "price": 0, "cost_price": 20}).status_code == 422
+    assert client.post("/api/items", json={**no_cost, "cost_price": 20}).status_code == 201
 
 
 def test_goods_on_udhaar_leave_the_shelf(client):
@@ -280,7 +281,7 @@ def test_unknown_item_added_from_the_card_gets_the_purchase_stock(client):
     line = next(li for li in e["items"] if li["item_id"] is None)
     assert line["name"].lower().startswith("harpic") and line["qty"] == 12
     # The card's "Not in stock · Add it" creates the item, then the line points at it.
-    item = client.post("/api/items", json={"name": "Harpic", "unit": "bottle", "price": 99, "stock": 0}).json()
+    item = client.post("/api/items", json={"name": "Harpic", "unit": "bottle", "price": 99, "cost_price": 90, "stock": 0}).json()
     line.update(item_id=item["id"], price=item["price"])
     assert save_card(client, e).status_code == 201
     stock = next(i for i in client.get("/api/items").json() if i["id"] == item["id"])["stock"]
@@ -296,3 +297,47 @@ def test_a_sale_must_say_what_was_sold_and_how_much(client):
     line = {"item_id": kurkure["id"], "name": "Kurkure", "qty": 3, "unit": "pc", "price": 20}
     assert client.post("/api/entries", json={**base, "items": [line]}).status_code == 201
     assert item_named(client, "Kurkure")["stock"] == kurkure["stock"] - 3
+
+
+# --- Numbers must add up ---------------------------------------------------------------------
+
+
+def test_amount_must_match_the_items(client):
+    maggi = item_named(client, "Maggi")  # 15 each
+    body = {"type": "sale", "amount": 100, "mode": "cash",
+            "items": [{"item_id": maggi["id"], "name": "Maggi", "qty": 5, "unit": "pc", "price": 15}]}
+    res = client.post("/api/entries", json=body)
+    assert res.status_code == 422
+    d = res.json()["detail"]
+    assert d["code"] == "amount_mismatch" and d["items_total"] == 75 and d["amount"] == 100
+    assert item_named(client, "Maggi")["stock"] == maggi["stock"]  # nothing saved
+    assert client.post("/api/entries", json={**body, "amount": 75}).status_code == 201
+
+
+def test_payment_cannot_be_more_than_owed(client):
+    sharma = next(p for p in client.get("/api/khata").json() if p["name"] == "Sharma ji")
+    res = client.post("/api/entries", json={"type": "payment", "amount": sharma["balance"] + 1, "party_id": sharma["id"], "mode": "cash"})
+    assert res.status_code == 422 and res.json()["detail"]["code"] == "overpay"
+    assert res.json()["detail"]["owed"] == sharma["balance"]
+    ok = client.post("/api/entries", json={"type": "payment", "amount": sharma["balance"], "party_id": sharma["id"], "mode": "cash"})
+    assert ok.status_code == 201
+
+
+def test_payment_from_someone_who_owes_nothing_is_refused(client):
+    res = client.post("/api/entries", json={"type": "payment", "amount": 200, "party_name": "Naya Aadmi", "mode": "cash"})
+    assert res.status_code == 422 and res.json()["detail"]["code"] == "overpay"
+
+
+def test_paying_a_supplier_more_than_the_bill_is_refused(client):
+    gupta = next(p for p in client.get("/api/khata").json() if p["name"] == "Gupta Distributors")
+    res = client.post("/api/entries", json={"type": "payment", "amount": gupta["balance"] + 500, "party_id": gupta["id"], "mode": "cash"})
+    assert res.status_code == 422 and res.json()["detail"]["owed"] == gupta["balance"]
+
+
+def test_purchase_cost_comes_from_the_spoken_bill(client):
+    doodh = next(i for i in client.get("/api/items").json() if i["name"] == "Amul doodh" and i["variant"] == "aadha litre")
+    assert save_card(client, card(client, "Raju dairy se 40 packet doodh aaya 1120")).status_code == 201
+    after = next(i for i in client.get("/api/items").json() if i["id"] == doodh["id"])
+    # Average cost moves toward 28 per packet (1120 / 40), not the item's older cost.
+    s0, c0 = doodh["stock"], doodh["cost_price"]
+    assert after["cost_price"] == round((s0 * c0 + 40 * 28) / (s0 + 40))

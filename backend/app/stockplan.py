@@ -20,12 +20,13 @@ from typing import Literal
 
 from fastapi import APIRouter, Depends, Query
 from pydantic import BaseModel, Field
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from app import models
 from app.db import get_db
 from app.deps import current_shop
+from app.spoilage import expected_loss, needs_check
 
 router = APIRouter(prefix="/api/inventory", tags=["inventory"])
 
@@ -83,6 +84,50 @@ class InventoryAccount(BaseModel):
     margin_pct: float | None
     turnover: float | None  # cost of goods sold / average stock value, for the period
     no_cost_items: int  # items on the shelf without a cost price (their value counts as 0)
+    # Spoilage (spoilage.py): the stock version of depreciation. Shown, not booked; real losses
+    # are booked when the shopkeeper records wastage.
+    expected_spoilage: int = 0  # rupees of today's stock (at cost) expected to spoil in a month
+    value_after_spoilage: int = 0  # closing - expected_spoilage
+    to_check: list["SpoilCheck"] = []  # items older than they stay good: look, record wastage
+
+
+class SpoilCheck(BaseModel):
+    item_id: int
+    name: str
+    unit: str
+    stock: int
+    days: int  # since this stock came in
+
+
+class CostFlows(BaseModel):
+    purchases: int = 0  # stock in, at what was paid
+    cogs: int = 0  # cost of goods sold
+    wastage: int = 0
+    adjustments: int = 0
+    sales: int = 0  # what the sold goods fetched, at today's selling price
+
+
+def cost_flows(db: Session, shop_id: int, since: datetime) -> CostFlows:
+    """Stock movements since a moment, valued at cost (one source for the stock account and Net)."""
+    items = {i.id: i for i in _items(db, shop_id)}
+    f = CostFlows()
+    for m in _moves(db, shop_id, since):
+        if m.reason == "opening":
+            continue  # part of the opening balance, not a change during the period
+        cost = m.unit_cost or 0
+        value = m.delta * cost
+        sold = _sold(m)
+        if sold:
+            f.cogs += sold * cost
+            item = items.get(m.item_id)
+            f.sales += sold * (item.price if item else 0)
+        elif m.reason == "purchase" or (m.reason == "undo" and m.delta < 0):
+            f.purchases += value  # an undone purchase comes back off
+        elif m.reason == "wastage":
+            f.wastage += -value
+        else:
+            f.adjustments += value
+    return f
 
 
 @router.get("/account", response_model=InventoryAccount)
@@ -94,22 +139,25 @@ def inventory_account(
     now = datetime.now(timezone.utc)
     since = now - timedelta(days=days)
     items = {i.id: i for i in _items(db, shop.id)}
-    purchases = cogs = wastage = adjustments = sales = 0
-    for m in _moves(db, shop.id, since):
-        cost = m.unit_cost or 0
-        value = m.delta * cost
-        sold = _sold(m)
-        if sold:
-            cogs += sold * cost
-            item = items.get(m.item_id)
-            sales += sold * (item.price if item else 0)
-        elif m.reason == "purchase" or (m.reason == "undo" and m.delta < 0):
-            purchases += value  # an undone purchase comes back off
-        elif m.reason == "wastage":
-            wastage += -value
-        else:
-            adjustments += value
+    f = cost_flows(db, shop.id, since)
+    purchases, cogs, wastage, adjustments, sales = f.purchases, f.cogs, f.wastage, f.adjustments, f.sales
     closing = sum(i.stock * i.cost_price for i in items.values())
+    spoil = sum(expected_loss(i) for i in items.values())
+    last_in = dict(
+        db.execute(
+            select(models.StockMove.item_id, func.max(models.StockMove.created_at))
+            .where(models.StockMove.shop_id == shop.id, models.StockMove.delta > 0,
+                   models.StockMove.reason.in_(["purchase", "opening"]))
+            .group_by(models.StockMove.item_id)
+        ).all()
+    )
+    to_check = []
+    for i in items.values():
+        age = needs_check(i, last_in.get(i.id), now)
+        if age is not None:
+            label = i.name if not i.variant else f"{i.name} {i.variant}"
+            to_check.append(SpoilCheck(item_id=i.id, name=label, unit=i.unit, stock=i.stock, days=age))
+    to_check.sort(key=lambda c: -c.days)
     opening = closing - purchases + cogs + wastage - adjustments
     gross = sales - cogs
     average_stock = (opening + closing) / 2
@@ -126,6 +174,9 @@ def inventory_account(
         margin_pct=round(gross * 100 / sales, 1) if sales else None,
         turnover=round(cogs / average_stock, 2) if average_stock > 0 else None,
         no_cost_items=sum(1 for i in items.values() if i.stock > 0 and i.cost_price <= 0),
+        expected_spoilage=spoil,
+        value_after_spoilage=closing - spoil,
+        to_check=to_check[:10],
     )
 
 

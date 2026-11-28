@@ -34,12 +34,16 @@ class DayTotals:
     sales_cash: int = 0
     sales_upi: int = 0
     udhaar_given: int = 0
+    credit_sales: int = 0  # goods given on udhaar (named items, or a sale on credit): earned, not yet paid
     collected_cash: int = 0
     collected_upi: int = 0
-    expenses: int = 0
-    purchases_paid: int = 0
+    expenses: int = 0  # paid in cash (leaves the galla)
+    expenses_upi: int = 0
+    purchases_paid: int = 0  # paid to suppliers in cash, at purchase or later
+    paid_upi: int = 0  # paid to suppliers by UPI
     purchases: int = 0  # full bill value of maal bought, paid or not
-    withdrawals: int = 0
+    withdrawals: int = 0  # cash taken home
+    withdrawals_upi: int = 0
     entries: int = 0
 
     @property
@@ -53,6 +57,19 @@ class DayTotals:
     @property
     def upi_in(self) -> int:
         return self.sales_upi + self.collected_upi
+
+    @property
+    def expenses_all(self) -> int:
+        return self.expenses + self.expenses_upi
+
+    @property
+    def withdrawals_all(self) -> int:
+        return self.withdrawals + self.withdrawals_upi
+
+    @property
+    def upi_out(self) -> int:
+        """Money that left the bank account by UPI: expenses, suppliers, money taken home."""
+        return self.expenses_upi + self.paid_upi + self.withdrawals_upi
 
     @property
     def cash_out(self) -> int:
@@ -74,6 +91,7 @@ class DayTotals:
             "purchases": self.purchases,
             "withdrawals": self.withdrawals,
             "cash_out": self.cash_out,
+            "upi_out": self.upi_out,
             "entries": self.entries,
         }
 
@@ -83,16 +101,21 @@ def add_to_day(day: DayTotals, e: Entry, party_kind: str | None) -> None:
     if e.type == "sale":
         if e.mode == "udhaar":
             day.udhaar_given += e.amount
+            day.credit_sales += e.amount
         elif e.mode == "upi":
             day.sales_upi += e.amount
         else:
             day.sales_cash += e.amount
     elif e.type == "udhaar":
         day.udhaar_given += e.amount
+        if e.items:
+            day.credit_sales += e.amount
     elif e.type == "payment":
         if party_kind == "supplier":
             # We paid a supplier: money out.
-            if e.mode != "upi":
+            if e.mode == "upi":
+                day.paid_upi += e.amount
+            else:
                 day.purchases_paid += e.amount
         elif e.mode == "upi":
             day.collected_upi += e.amount
@@ -100,13 +123,19 @@ def add_to_day(day: DayTotals, e: Entry, party_kind: str | None) -> None:
             day.collected_cash += e.amount
     elif e.type == "purchase":
         day.purchases += e.amount
-        if e.mode != "upi":
+        if e.mode == "upi":
+            day.paid_upi += purchase_paid(e)
+        else:
             day.purchases_paid += purchase_paid(e)
     elif e.type == "expense":
-        if e.mode != "upi":
+        if e.mode == "upi":
+            day.expenses_upi += e.amount
+        else:
             day.expenses += e.amount
     elif e.type == "owner_withdrawal":
-        if e.mode != "upi":
+        if e.mode == "upi":
+            day.withdrawals_upi += e.amount
+        else:
             day.withdrawals += e.amount
 
 

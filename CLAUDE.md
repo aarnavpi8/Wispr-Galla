@@ -40,7 +40,7 @@ We build hands-free: prompts are dictated with Wispr Flow.
   (`ScrollMotion` in `components/Reveal.tsx`, one IntersectionObserver for the whole app, web
   and Android WebView alike; off for reduced motion).
 - Done: optional Google login via Firebase (D14). Off without keys.
-- Done: tests (pytest 45, Vitest 80) and GitHub Actions CI incl. a Docker Compose smoke test (D16).
+- Done: tests (pytest 238, Vitest 122) and GitHub Actions CI incl. a Docker Compose smoke test (D16).
 - Next: flow 1 (one-line entries), starting with the rule-based extractor (D2). "Aage" on the
   capture box currently shows "not saved yet".
 - Done: in-app mic via Wispr Flow API when `WISPR_API_KEY` is set (D23); browser speech
@@ -58,9 +58,24 @@ We build hands-free: prompts are dictated with Wispr Flow.
   reads all Indian scripts (it used to split Gujarati words). Gujarati added to the mic language switch.
 - Done: the mic keeps listening through pauses until stop is tapped (Android and browser restart
   after a silence and keep the words; 5-minute safety cap; Wispr recording cap 60 s -> 5 min).
+  Stop always ends listening at once (Android never answers stop() between two stretches of
+  speech, which once left the mic stuck on "Stop"; `lib/native.test.ts` guards it).
 - Done: phone performance and fit. No live background blur or blurred glows on touch screens
   (janky frames while scrolling went 27% -> 1.2% on a Galaxy A55); a long example chip that pushed
   the page 18 px off-screen now wraps, and `overflow-x: clip` stops any future sideways overflow.
+- Done: every transaction carries the prices the books need (server enforces, card guides):
+  new item = selling + cost price (+ shelf life, guessed if skipped); buying = cost per unit
+  (prefilled from the item or the spoken total ÷ qty) and a selling price if the item has none;
+  selling = a price; stock-in / bill scan = a cost. First-time prices are saved on the item, so
+  the next entry is one tap. Refusals use code `missing_prices` naming the items. The card shows
+  stock per line, refuses selling more than the shelf has (see "Numbers must add up"),
+  offers close stock items for unknown names, and "Items add up to ₹X. Use that?" on mismatches.
+  "Cheeni kitni bachi hai?" (5 languages) answers with the stock (`item_stock` command).
+- Done: spoilage (`backend/app/spoilage.py`), the stock version of depreciation. COGS stays at
+  weighted-average cost; each item has a shelf life (days / months / long / none, guessed from the
+  name) giving a monthly loss rate (20% / 5% / 1% / 0%). The stock account shows expected spoilage
+  (estimate, not booked) and lists items older than they stay good, so the shopkeeper checks and
+  records real wastage (booked at cost).
 - Done: per-user data (D14 B). Each Google account and each browser sees only its own shop.
 - Done: first-run shop setup (D24). New installs start empty and ask: shop name, what you sell
   (kirana / sabzi / medical / other), UPI and cash (optional); starter items at ₹0 with a price
@@ -70,6 +85,30 @@ We build hands-free: prompts are dictated with Wispr Flow.
   "500 diye, baaki baad mein" become purchases owed to the supplier; the API turns an udhaar saved
   against a supplier into a credit purchase and rejects paid-now above the bill. Unknown items on a
   card get "Not in stock · Add it"; from a purchase the new item takes its stock from that entry.
+- Done: numbers must add up (team request: "don't let them enter a value that doesn't add up").
+  The server refuses, and the card disables Save with one plain sentence per problem:
+  amount ≠ items' total (`amount_mismatch`, ±₹1; buying allows rounding of a cost worked out
+  from the bill), selling more than the shelf has (`short_stock`, now a 422 with no "save anyway":
+  lower the qty or record the stock in first), a payment above what the person owes, or any
+  payment from someone who owes nothing (`overpay` with `owed`), paid-now above the bill
+  (`paid_too_much`). Buying: the one line without a cost takes it from the spoken bill
+  ("40 packet doodh 1120" = ₹28), not the item's older cost.
+- Done: books fixed (`ledger.py`, `accounts.py`, `stockplan.cost_flows`). UPI spending was dropped
+  (expenses, supplier payments, withdrawals by UPI were in no total; the UPI book's "out" was a
+  fixed 0): now `upi_out`, and Expenses/Withdrawals include UPI. "Net" was sales − stock bought −
+  expenses (a restock looked like a loss); now Profit = sales + goods given on credit (`credit_sales`)
+  − cost of goods sold − wastage − expenses, the same COGS as the stock account. Stock on shelves is
+  valued at cost. Opening stock is the stock account's opening balance, not a "recount". The demo
+  history names its items (`seed.HISTORY_ITEMS`, same amounts; openings chosen so shelves end at
+  the same counts), so demo profit uses real costs (7 days: ₹875, margin 28.6%).
+- Done: summary numbers are buttons. Accounts: To collect → khata customers, To pay → khata
+  suppliers, Profit → stock account, Stock → stock list. Money card: Sales/Collected → entries,
+  Credit given → customers, Cash out → close the day. Sticky bar and desktop sidebar "To collect"
+  too. Khata lists the overdue and biggest balances first. A person's sheet has a settle-up box
+  (received / paid, cash or UPI, capped at what is owed).
+- Fixed: the stock list didn't refresh after a purchase or new item saved from the speak box (it
+  kept its own copy; now it follows the dashboard's refresh key). The tour card could sit above
+  the screen with its Skip button while the overlay blocked the page; it now stays on screen.
 
 ## Round 2 brief (official)
 
@@ -528,6 +567,8 @@ Kept here so they aren't lost; mention as finale work in the deck.
 | Users | Assumed app-literate | D20: tour, "?" help, read-aloud, colour key | Team request: first-time app users |
 | Speech-to-text | Indian STT API (Sarvam/Bhashini) | D23: Wispr Flow API, browser/native fallback | Hackathon partner; team request |
 | Hosting | Optional live link | D21/D22: GCP VM with nginx, Android app shell | Team request |
+| Sanity checks | "Ask which is right" on mismatches | Refuse anything that doesn't add up (total, stock, overpay) | Team request: no logical fallacies |
+| Net | Sales − purchases − expenses | Profit = sales + credit sales − COGS − wastage − expenses; UPI spending counted | Restocking looked like a loss; UPI out was dropped |
 
 ## Working agreements
 

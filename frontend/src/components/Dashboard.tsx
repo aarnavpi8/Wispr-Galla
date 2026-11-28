@@ -3,8 +3,9 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import { postJSON, useApi } from "@/lib/api";
+import { readAloud } from "@/lib/speak";
 import { formatINR } from "@/lib/format";
-import { greetingKey, LANGS } from "@/lib/i18n";
+import { greetingKey, LANGS, speechCode } from "@/lib/i18n";
 import type { Accounts, Command, EntryOut, ExtractedEntry, Item, PartyBalance, ShopSummary, Summary } from "@/lib/types";
 
 import { AccountMenu } from "./AccountMenu";
@@ -50,6 +51,7 @@ export function Dashboard() {
   const items = useApi<Item[]>(`/api/items?r=${refresh}`);
 
   const [tab, setTab] = useState<Tab>("hisaab");
+  const [khataKind, setKhataKind] = useState<"customer" | "supplier">("customer");
   const [openParty, setOpenParty] = useState<PartyBalance | null>(null);
   const [toast, setToast] = useState<string | null>(null);
   const [card, setCard] = useState<ExtractedEntry | null>(null);
@@ -108,7 +110,13 @@ export function Dashboard() {
     try {
       const entry = await postJSON<ExtractedEntry>("/api/extract", { text });
       setToast(null);
-      if (entry.type === "command" && entry.command) {
+      if (entry.type === "command" && entry.command === "item_stock") {
+        // "Cheeni kitni bachi hai?" -> "Cheeni: 12 kg left", on screen and spoken.
+        setCaptureKey((k) => k + 1);
+        const answer = entry.items.map((li) => t("stockAnswer", { item: li.name, qty: `${li.in_stock ?? 0} ${li.unit}` })).join(" · ");
+        setToast(answer);
+        readAloud(answer, speechCode(lang));
+      } else if (entry.type === "command" && entry.command) {
         setCaptureKey((k) => k + 1); // clear the speak box
         runCommand(entry.command, entry.party?.match_id ?? null);
       } else {
@@ -182,6 +190,16 @@ export function Dashboard() {
     else document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" });
   };
 
+  // Summary numbers open what they add up.
+  const openKhata = (kind: "customer" | "supplier") => {
+    setKhataKind(kind);
+    go("khata");
+  };
+  const openEntries = () => {
+    setTab("hisaab");
+    document.getElementById("khata")?.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
+
   const speak = () => {
     const box = document.getElementById("capture") as HTMLTextAreaElement | null;
     box?.scrollIntoView({ behavior: "smooth", block: "center" });
@@ -211,6 +229,7 @@ export function Dashboard() {
         lowStock={accounts.data?.low_stock ?? 0}
         onTap={() => go("aaj")}
         onLowStock={() => go("maal")}
+        onReceivable={() => openKhata("customer")}
         account={<AccountMenu compact onShowTour={() => setTouring(true)} onLanguage={() => setPicking(true)} />}
       />
       </div>
@@ -255,7 +274,18 @@ export function Dashboard() {
       <div className="contents lg:grid lg:grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)] lg:items-start lg:gap-6">
         <div className="contents lg:flex lg:flex-col lg:gap-6">
       <div ref={hero} id="tour-hero" className="order-1 space-y-2 lg:order-none">
-        {summary.data ? <HeroCard summary={summary.data} /> : <div className="skeleton h-64 rounded-[28px]" />}
+        {summary.data ? (
+          <HeroCard
+            summary={summary.data}
+            onOpen={(what) => {
+              if (what === "udhaar") openKhata("customer");
+              else if (what === "out") setVoiceSheet("day_close");
+              else openEntries();
+            }}
+          />
+        ) : (
+          <div className="skeleton h-64 rounded-[28px]" />
+        )}
         <ColorLegend className="justify-center" />
       </div>
       <div id="tour-capture" className="order-2 lg:order-none">
@@ -329,16 +359,28 @@ export function Dashboard() {
                 ))}
               </div>
             ))}
-          {tab === "khata" && khata.data && <KhataList parties={khata.data} onOpen={setOpenParty} />}
+          {tab === "khata" && khata.data && (
+            <KhataList parties={khata.data} onOpen={setOpenParty} filter={khataKind} onFilter={setKhataKind} />
+          )}
         </section>
       </Reveal>
         </div>
         <div className="contents lg:flex lg:flex-col lg:gap-6">
       <Reveal id="hisaab" className="order-4 lg:order-none">
-        <AccountsCard refreshKey={refresh} onChanged={bump} />
+        <AccountsCard
+          refreshKey={refresh}
+          onChanged={bump}
+          onOpen={(what) => {
+            if (what === "receivable") openKhata("customer");
+            else if (what === "payable") openKhata("supplier");
+            else if (what === "stock") go("maal");
+            else document.getElementById("stockplan")?.scrollIntoView({ behavior: "smooth", block: "start" });
+          }}
+        />
       </Reveal>
       <Reveal id="maal" className="order-6 lg:order-none">
         <InventoryCard
+          refreshKey={refresh}
           onChanged={bump}
           onSold={(entry) => {
             setLastSaved(entry);
@@ -347,7 +389,7 @@ export function Dashboard() {
           parties={khata.data ?? []}
         />
       </Reveal>
-      <Reveal className="order-7 lg:order-none">
+      <Reveal id="stockplan" className="order-7 lg:order-none">
         <StockPlanCard refreshKey={refresh} onChanged={bump} />
       </Reveal>
         </div>
@@ -398,7 +440,7 @@ export function Dashboard() {
           entry={card}
           parties={khata.data ?? []}
           stock={items.data ?? []}
-          onItemAdded={() => items.reload()}
+          onItemAdded={bump}
           onClose={() => setCard(null)}
           onSaved={(saved) => {
             setCard(null);
@@ -418,7 +460,18 @@ export function Dashboard() {
         </div>
       )}
 
-      {openParty && <PartySheet party={openParty} shop={shop.data} onClose={closeSheet} />}
+      {openParty && (
+        <PartySheet
+          party={openParty}
+          shop={shop.data}
+          onClose={closeSheet}
+          onPaid={(entry) => {
+            setOpenParty(null);
+            setLastSaved(entry);
+            refreshAll();
+          }}
+        />
+      )}
 
       {toast && (
         <div

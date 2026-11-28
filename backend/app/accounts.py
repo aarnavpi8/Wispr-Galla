@@ -8,6 +8,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app import inventory, ledger, models
+from app.stockplan import cost_flows
 from app.config import settings
 from app.db import get_db
 from app.deps import current_shop, iso
@@ -17,19 +18,23 @@ router = APIRouter(prefix="/api", tags=["accounts"])
 
 class Accounts(BaseModel):
     days: int
-    sales: int
+    sales: int  # paid now (cash + UPI)
+    credit_sales: int  # goods given on udhaar: earned, to be collected
     sales_cash: int
     sales_upi: int
-    purchases: int
-    expenses: int
-    withdrawals: int
-    net: int  # sales - purchases - expenses (cash-basis estimate, not profit)
+    purchases: int  # stock bought (full bills, paid or not); not a loss: it is still on the shelf
+    expenses: int  # cash + UPI
+    withdrawals: int  # cash + UPI taken home (not an expense)
+    cogs: int  # what the goods sold had cost
+    wastage: int  # stock thrown away, at cost
+    net: int  # profit estimate: (sales + credit sales) - cost of goods sold - wastage - expenses
     receivable: int  # customers owe the shop ("lena")
     payable: int  # shop owes suppliers ("dena")
     cash_in: int
     cash_out: int
     upi_in: int
-    stock_value: int
+    upi_out: int
+    stock_value: int  # at cost (what the shelf stock cost to buy)
     stock_items: int
     low_stock: int
 
@@ -90,22 +95,29 @@ def accounts(
     def total(attr: str) -> int:
         return sum(getattr(d, attr) for d in totals)
 
-    sales, purchases, expenses = total("sales"), total("purchases"), total("expenses")
+    sales, purchases, expenses = total("sales"), total("purchases"), total("expenses_all")
+    start = datetime.combine(window[0], datetime.min.time(), tzinfo=settings.tz)
+    flows = cost_flows(db, shop.id, start)
     return Accounts(
         days=days,
         sales=sales,
+        credit_sales=total("credit_sales"),
         sales_cash=total("sales_cash"),
         sales_upi=total("sales_upi"),
         purchases=purchases,
         expenses=expenses,
-        withdrawals=total("withdrawals"),
-        net=sales - purchases - expenses,
+        withdrawals=total("withdrawals_all"),
+        cogs=flows.cogs,
+        wastage=flows.wastage,
+        # Goods given on credit were sold too: their cost is in cost of goods, so their value counts.
+        net=sales + total("credit_sales") - flows.cogs - flows.wastage - expenses,
         receivable=sum(max(b.balance, 0) for pid, b in balances.items() if kinds[pid] == "customer"),
         payable=sum(max(b.balance, 0) for pid, b in balances.items() if kinds[pid] == "supplier"),
         cash_in=total("cash_in"),
         cash_out=total("cash_out"),
         upi_in=total("upi_in"),
-        stock_value=sum(i.stock * i.price for i in items),
+        upi_out=total("upi_out"),
+        stock_value=sum(max(i.stock, 0) * (i.cost_price or i.price) for i in items),
         stock_items=len(items),
         low_stock=sum(1 for i in items if inventory.is_low(i)),
     )

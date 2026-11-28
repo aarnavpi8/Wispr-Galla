@@ -13,16 +13,24 @@ type Filter = "customer" | "supplier";
 export function KhataList({
   parties,
   onOpen,
+  filter: shownKind,
+  onFilter,
 }: {
   parties: PartyBalance[];
   onOpen: (p: PartyBalance) => void;
+  /** Controlled by the dashboard, so "To pay" can open the suppliers. */
+  filter?: Filter;
+  onFilter?: (f: Filter) => void;
 }) {
   const { t } = useLang();
-  const [filter, setFilter] = useState<Filter>("customer");
+  const [own, setOwn] = useState<Filter>("customer");
+  const filter = shownKind ?? own;
+  const setFilter = onFilter ?? setOwn;
   const [query, setQuery] = useState("");
-  const shown = parties.filter(
-    (p) => p.kind === filter && p.name.toLowerCase().includes(query.trim().toLowerCase()),
-  );
+  // Who owes the most comes first (overdue before that), so "To collect" / "To pay" lead with them.
+  const shown = parties
+    .filter((p) => p.kind === filter && p.name.toLowerCase().includes(query.trim().toLowerCase()))
+    .sort((a, b) => Number(!!b.overdue_since) - Number(!!a.overdue_since) || b.balance - a.balance);
 
   return (
     <div>

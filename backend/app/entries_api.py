@@ -13,7 +13,7 @@ from pydantic import BaseModel, Field
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
-from app import inventory, models
+from app import inventory, ledger, models
 from app.db import get_db
 from app.deps import current_shop, iso
 from app.extract import ShopContext, extract, today_in_shop
@@ -40,6 +40,10 @@ class EntryItemIn(BaseModel):
     price: int | None = None
     # The words heard for this line ("dal"): saved as the item's alias, so next time it's found directly.
     heard: str | None = Field(default=None, max_length=60)
+    # Buying: what was paid per unit (feeds the item's average cost and profit).
+    unit_cost: int | None = Field(default=None, gt=0, le=10_00_000)
+    # Buying an item that has no selling price yet: what it will be sold for per unit.
+    sell_price: int | None = Field(default=None, gt=0, le=10_00_000)
 
 
 class EntryIn(BaseModel):
@@ -59,6 +63,8 @@ class EntryIn(BaseModel):
     edited: bool = False
     confidence: dict[str, float] = Field(default_factory=dict)
     force: bool = False  # save even if it looks like a duplicate ("Dobara?" -> yes)
+    # Save a sale even though the shelf shows less than was sold (the card asked "save anyway?").
+    allow_short_stock: bool = False
 
 
 def shop_context(db: Session, shop: models.Shop) -> ShopContext:
@@ -142,7 +148,82 @@ def _move_stock(db: Session, shop: models.Shop, entry_type: str, items: list[dic
         if delta == 0:
             continue
         reason = "undo" if undo else ("purchase" if entry_type == "purchase" else "sale")
-        record_move(db, shop.id, item, delta, reason)
+        record_move(db, shop.id, item, delta, reason, li.get("unit_cost") if reason == "purchase" else None)
+
+
+def _complete_prices(db: Session, shop: models.Shop, body: "EntryIn") -> None:
+    """Every stock line carries the prices the books need, and the item keeps them.
+
+    Buying: cost per unit is required (the line's, else the item's known cost), and an item with
+    no selling price yet must get one. Selling / udhaar: a selling price is required (the line's,
+    else the item's). Prices given for the first time are saved on the item, so the next entry
+    is filled in by itself. Missing ones are refused with code "missing_prices", naming the items.
+    """
+    if body.type not in {"sale", "udhaar", "purchase"}:
+        return
+    if body.type == "purchase":
+        # "40 packet doodh aaya 1120": the one line without a cost takes it from the spoken bill
+        # (1120 / 40 = 28 per packet), before any older cost on the item is used.
+        open_lines = [li for li in body.items if not li.unit_cost]
+        if len(open_lines) == 1:
+            rest = sum((li.unit_cost or 0) * li.qty for li in body.items if li.unit_cost)
+            each = (body.amount - rest) / open_lines[0].qty
+            if each >= 1:
+                open_lines[0].unit_cost = round(each)
+    need_cost: list[str] = []
+    need_price: list[str] = []
+    for li in body.items:
+        item = db.get(models.Item, li.item_id) if li.item_id else None
+        if item is None or item.shop_id != shop.id:
+            continue
+        label = li.name or item.name
+        if body.type == "purchase":
+            li.unit_cost = li.unit_cost or item.cost_price or None
+            if not li.unit_cost:
+                need_cost.append(label)
+            if not item.price:
+                if li.sell_price:
+                    item.price = li.sell_price
+                else:
+                    need_price.append(label)
+        else:
+            li.price = li.price or item.price or None
+            if not li.price:
+                need_price.append(label)
+            elif not item.price:
+                item.price = li.price  # first time this item is sold: remember its price
+    if need_cost or need_price:
+        db.rollback()
+        raise HTTPException(422, {
+            "code": "missing_prices", "cost": need_cost, "price": need_price,
+            "detail": "Daam batayiye: " + ", ".join(dict.fromkeys(need_cost + need_price)),
+        })
+
+
+def _owed(db: Session, shop: models.Shop, party: models.Party) -> int:
+    """What is still owed with this person: by them (customer) or to them (supplier)."""
+    rows = list(db.scalars(select(models.Entry).where(models.Entry.shop_id == shop.id, models.Entry.party_id == party.id)))
+    today = datetime.now(UTC).date()
+    return max(ledger.party_balances(rows, {party.id: party.kind}, today)[party.id].balance, 0)
+
+
+def _check_total(db: Session, body: "EntryIn") -> None:
+    """The amount must be what the items add up to (selling price, or cost when buying)."""
+    if body.type not in {"sale", "udhaar", "purchase"} or not body.items:
+        return
+    total = 0.0
+    slack = 1.0  # rupees; a cost worked out from the bill (1000 / 3) can be off by rounding
+    for li in body.items:
+        unit = li.unit_cost if body.type == "purchase" else li.price
+        if not unit:
+            return  # an item without a price: nothing to check against yet
+        total += unit * li.qty
+        if body.type == "purchase":
+            slack = max(slack, li.qty / 2)
+    if abs(total - body.amount) > slack:
+        db.rollback()
+        raise HTTPException(422, {"code": "amount_mismatch", "items_total": round(total), "amount": body.amount,
+                                  "detail": f"Items ka jod {round(total)} hai, par amount {body.amount} hai. Dono barabar hone chahiye."})
 
 
 @router.post("/entries", response_model=EntryOut, status_code=201)
@@ -154,13 +235,35 @@ def save_entry(body: EntryIn, db: Session = Depends(get_db), shop: models.Shop =
         known = {i for i in db.scalars(select(models.Item.id).where(models.Item.shop_id == shop.id))}
         if not body.items or any(li.item_id not in known for li in body.items):
             raise HTTPException(422, "Kya becha? Stock se item aur kitna, batayiye.")
+    if body.type in {"sale", "udhaar"}:
+        # Goods can't leave a shelf that doesn't have them: fix the quantity, or record the stock in first.
+        short = []
+        for li in body.items:
+            item = db.get(models.Item, li.item_id) if li.item_id else None
+            if item is not None and item.shop_id == shop.id and li.qty > item.stock:
+                short.append({"item_id": item.id, "name": li.name or item.name, "have": item.stock, "want": li.qty, "unit": item.unit})
+        if short:
+            db.rollback()
+            names = ", ".join(f"{s['name']} ({s['have']} {s['unit']})" for s in short)
+            raise HTTPException(422, {"code": "short_stock", "items": short,
+                                      "detail": f"Shelf par itna nahi hai: {names}. Quantity theek karein, ya pehle maal aaya darj karein."})
     party = _resolve_party(db, shop, body)
     if body.type == "udhaar" and party is not None and party.kind == "supplier":
         # Udhaar with a supplier means we bought on credit: we owe them, not the other way round.
         body.type, body.mode = "purchase", "udhaar"
     if body.type == "purchase" and body.paid_now is not None and body.paid_now > body.amount:
         db.rollback()
-        raise HTTPException(422, "Abhi diye paise bill se zyada hain.")
+        raise HTTPException(422, {"code": "paid_too_much", "detail": "Abhi diye paise bill se zyada hain."})
+    if body.type == "payment":
+        # A payment settles what is owed; more than that doesn't add up.
+        owed = _owed(db, shop, party) if party is not None else 0
+        if body.amount > owed:
+            db.rollback()
+            who = party.name if party is not None else (body.party_name or "")
+            raise HTTPException(422, {"code": "overpay", "owed": owed, "detail": (
+                f"{who} ka sirf {owed} baaki hai. Payment usse zyada nahi ho sakti." if owed > 0
+                else f"{who} ka koi baaki nahi hai. Pehle purana udhaar darj karein."
+            )})
 
     if not body.force:
         since = datetime.now(UTC) - DUPLICATE_WINDOW
@@ -182,6 +285,8 @@ def save_entry(body: EntryIn, db: Session = Depends(get_db), shop: models.Shop =
             raise HTTPException(409, {"code": "duplicate", "entry_id": dup.id, "detail": "Same entry was saved just now. Save again?"})
 
     mode = body.mode or ("udhaar" if body.type == "udhaar" else "cash")
+    _complete_prices(db, shop, body)
+    _check_total(db, body)
     _learn_item_words(db, shop, body.items)
     items = [li.model_dump(exclude={"heard"}) for li in body.items]
     entry = models.Entry(
@@ -252,6 +357,10 @@ def sell_from_stock(
         raise HTTPException(404, "Item nahi mila")
     if body.qty > item.stock:
         raise HTTPException(422, f"Stock sirf {item.stock} {item.unit} hai")
+    if not item.price:
+        # A sale needs a price; an item without one would record ₹0 sales.
+        raise HTTPException(422, {"code": "missing_prices", "cost": [], "price": [item.name],
+                                  "detail": f"{item.name}: bechne ka daam pehle set kijiye"})
     if body.mode == "udhaar" and body.party_id is None:
         raise HTTPException(422, "Kiska udhaar? Naam batayiye.")
     line = {"item_id": item.id, "name": item.name if not item.variant else f"{item.name} {item.variant}",

@@ -13,6 +13,7 @@ import { InventoryCard } from "./InventoryCard";
 import { Reveal } from "./Reveal";
 import { StickySummary } from "./StickySummary";
 import { StockPlanCard } from "./StockPlanCard";
+import { PartySheet } from "./PartySheet";
 
 type Handler = (url: string, init?: RequestInit) => unknown;
 
@@ -136,20 +137,21 @@ describe("AddItemSheet", () => {
     expect(save).toBeDisabled();
     await user.type(screen.getByLabelText("Naam"), "Dettol");
     await user.type(screen.getByLabelText("Size / brand (optional)"), "125 ml");
-    await user.type(screen.getByLabelText("Daam (₹)"), "62");
+    await user.type(screen.getByLabelText("Bechne ka daam (₹)"), "62");
+    await user.type(screen.getByLabelText("Kharid ka daam (₹)"), "50");
     await user.type(screen.getByLabelText("Abhi kitna hai"), "12");
     await user.click(screen.getByRole("button", { name: "box" }));
     await user.click(save);
 
     await waitFor(() => expect(onAdded).toHaveBeenCalled());
-    expect(calls[0].body).toEqual({ name: "Dettol", variant: "125 ml", unit: "box", price: 62, stock: 12, low_stock_at: 5 });
+    expect(calls[0].body).toEqual({ name: "Dettol", variant: "125 ml", unit: "box", price: 62, cost_price: 50, shelf_life: null, stock: 12, low_stock_at: 5 });
     expect(onClose).toHaveBeenCalled();
   });
 });
 
 const ACCOUNTS: Accounts = {
-  days: 7, sales: 4630, sales_cash: 2330, sales_upi: 2300, purchases: 4600, expenses: 850, withdrawals: 500,
-  net: -820, receivable: 1210, payable: 2200, cash_in: 2530, cash_out: 3750, upi_in: 2800,
+  days: 7, sales: 4630, credit_sales: 1410, sales_cash: 2330, sales_upi: 2300, purchases: 4600, expenses: 850, withdrawals: 500,
+  cogs: 3800, wastage: 0, net: -20, receivable: 1210, payable: 2200, cash_in: 2530, cash_out: 3750, upi_in: 2800, upi_out: 0,
   stock_value: 36627, stock_items: 25, low_stock: 3,
 };
 
@@ -159,7 +161,7 @@ describe("AccountsCard", () => {
     render(<AccountsCard />);
     await waitFor(() => expect(screen.getByText("₹1,210")).toBeInTheDocument());
     expect(screen.getByText("₹2,200")).toBeInTheDocument();
-    expect(screen.getByText("−₹820")).toHaveClass("tabular-nums");
+    expect(screen.getByText("−₹20")).toHaveClass("tabular-nums");
     expect(screen.getByText("₹36,627")).toBeInTheDocument();
   });
 
@@ -282,5 +284,60 @@ describe("StockPlanCard", () => {
     await user.click(await screen.findByRole("button", { name: "Alert ko reorder point par set karo" }));
     expect(await screen.findByRole("status")).toHaveTextContent("1 alert badle");
     expect(calls.find((c) => c.method === "POST")?.body).toEqual({ days: 30, lead_days: 3 });
+  });
+});
+
+describe("Summary numbers open what they add up", () => {
+  it("AccountsCard: To collect / To pay / Profit / Stock tiles call onOpen", async () => {
+    mockApi({ "/api/accounts": () => ACCOUNTS });
+    const onOpen = vi.fn();
+    const user = userEvent.setup();
+    render(<AccountsCard onOpen={onOpen} />);
+    await user.click(await screen.findByRole("button", { name: "Lena hai" }));
+    await user.click(screen.getByRole("button", { name: "Dena hai" }));
+    expect(onOpen.mock.calls.map((c) => c[0])).toEqual(["receivable", "payable"]);
+  });
+
+  it("StickySummary: To collect is a button", async () => {
+    const onReceivable = vi.fn();
+    const user = userEvent.setup();
+    render(<StickySummary visible shopName="S" expected={0} receivable={1210} lowStock={0} onTap={() => {}} onLowStock={() => {}} onReceivable={onReceivable} />);
+    await user.click(screen.getByRole("button", { name: /₹1,210/ }));
+    expect(onReceivable).toHaveBeenCalled();
+  });
+
+  it("InventoryCard reloads when stock changed elsewhere", async () => {
+    let stock = 2;
+    mockApi({ "/api/items": () => [{ ...ITEMS[0], stock }] });
+    const { rerender } = render(<InventoryCard refreshKey={0} />);
+    expect(await screen.findByLabelText("2 bacha")).toBeInTheDocument();
+    stock = 12; // a purchase saved from the speak box
+    rerender(<InventoryCard refreshKey={1} />);
+    expect(await screen.findByLabelText("12 bacha")).toBeInTheDocument();
+  });
+});
+
+describe("PartySheet: settle up", () => {
+  const GUPTA = { id: 9, name: "Gupta Distributors", kind: "supplier" as const, phone: null, balance: 2200, overdue_since: null, last_entry_at: null };
+
+  it("records a payment to a supplier, never more than owed", async () => {
+    const calls = mockApi({
+      "/api/entries?party_id": () => [],
+      "POST /api/entries": () => Response.json({ id: 5, type: "payment", amount: 1000 }, { status: 201 }),
+    });
+    const onPaid = vi.fn();
+    const user = userEvent.setup();
+    render(<PartySheet party={GUPTA as never} shop={null} onClose={() => {}} onPaid={onPaid} />);
+    const amount = screen.getByLabelText("Kitne");
+    expect(amount).toHaveValue("2200");
+    await user.clear(amount);
+    await user.type(amount, "2500");
+    expect(screen.getByRole("alert")).toHaveTextContent("Aapko Gupta Distributors ko sirf ₹2,200 dene hain");
+    expect(screen.getByRole("button", { name: "₹2,500 diye" })).toBeDisabled();
+    await user.clear(amount);
+    await user.type(amount, "1000");
+    await user.click(screen.getByRole("button", { name: "₹1,000 diye" }));
+    await waitFor(() => expect(onPaid).toHaveBeenCalled());
+    expect(calls.find((c) => c.method === "POST")?.body).toMatchObject({ type: "payment", amount: 1000, party_id: 9, mode: "cash" });
   });
 });

@@ -122,7 +122,9 @@ export function useSpeech(onText: (text: string) => void, lang = "hi-IN", wispr 
       r = new Ctor();
       r.lang = lang;
       r.interimResults = true;
-      r.continuous = true;
+      // Chrome on Android repeats earlier words in each result when continuous; there we listen
+      // one stretch at a time and restart (same as continuous, without the doubled text).
+      r.continuous = !/android/i.test(navigator.userAgent);
       r.onresult = (e) => {
         let text = "";
         for (let i = 0; i < e.results.length; i++) text += e.results[i][0].transcript;
@@ -155,13 +157,26 @@ export function useSpeech(onText: (text: string) => void, lang = "hi-IN", wispr 
 
   const startNative = useCallback(async () => {
     setListening(true);
+    // A stop tap while the mic is still starting (permission prompt) must not be lost.
+    let cancelled = false;
+    stopRef.current = () => {
+      cancelled = true;
+      setListening(false);
+    };
     const handle = await nativeListen(lang, (text) => cb.current(text));
     if (!handle.ok) {
       setListening(false);
       setError(handle.error);
       return;
     }
-    stopRef.current = () => void handle.stop();
+    if (cancelled) {
+      void handle.stop();
+      return;
+    }
+    stopRef.current = () => {
+      setListening(false); // the button changes back right away
+      void handle.stop();
+    };
     await handle.done;
     setListening(false);
   }, [lang]);

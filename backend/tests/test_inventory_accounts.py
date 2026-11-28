@@ -64,7 +64,7 @@ def test_unknown_item_is_404(client):
 
 
 def test_add_item_with_opening_stock(client):
-    res = client.post("/api/items", json={"name": "Dettol", "variant": "125 ml", "unit": "pc", "price": 62,
+    res = client.post("/api/items", json={"name": "Dettol", "variant": "125 ml", "unit": "pc", "price": 62, "cost_price": 50,
                                           "stock": 12, "low_stock_at": 3})
     assert res.status_code == 201
     item = res.json()
@@ -74,7 +74,7 @@ def test_add_item_with_opening_stock(client):
 
 
 def test_duplicate_item_is_rejected(client):
-    res = client.post("/api/items", json={"name": "maggi", "unit": "pc", "price": 15})
+    res = client.post("/api/items", json={"name": "maggi", "unit": "pc", "price": 15, "cost_price": 12})
     assert res.status_code == 409
 
 
@@ -91,12 +91,16 @@ def test_accounts_overview(client):
     assert a["sales"] == 640 + 1200 + 930 + 1100 + 760
     assert a["purchases"] == 1400 + 3200
     assert a["expenses"] == 850
-    assert a["net"] == a["sales"] - a["purchases"] - a["expenses"]
+    # Buying stock is not a loss: profit = sales - what the sold goods cost - wastage - expenses.
+    assert a["credit_sales"] == 350 + 820 + 240  # goods given on udhaar
+    assert a["net"] == a["sales"] + a["credit_sales"] - a["cogs"] - a["wastage"] - a["expenses"]
+    assert a["cogs"] > 0  # the demo's sales took real goods off the shelf
     assert a["receivable"] == 150 + 820 + 240
     assert a["payable"] == 2200
     assert a["stock_items"] >= 25
     assert a["low_stock"] >= 1
-    assert a["stock_value"] == sum(i["value"] for i in client.get("/api/items").json())
+    items = client.get("/api/items").json()
+    assert a["stock_value"] == sum(max(i["stock"], 0) * (i["cost_price"] or i["price"]) for i in items)  # at cost
 
 
 def test_day_close_records_gap(client):
@@ -127,9 +131,19 @@ def test_migration_adds_stock_columns_to_old_database(tmp_path):
         conn.execute(text("CREATE TABLE items (id INTEGER PRIMARY KEY, name VARCHAR(120))"))
         conn.execute(text("INSERT INTO items (id, name) VALUES (1, 'Parle-G')"))
 
-    assert add_missing_columns(engine) == ["items.stock", "items.low_stock_at", "items.cost_price"]
+    assert add_missing_columns(engine) == ["items.stock", "items.low_stock_at", "items.cost_price", "items.shelf_life"]
     assert {"stock", "low_stock_at"} <= {c["name"] for c in inspect(engine).get_columns("items")}
     with engine.connect() as conn:
         assert conn.execute(text("SELECT stock, low_stock_at FROM items")).one() == (0, 5)
 
     assert add_missing_columns(engine) == []  # running again is a no-op
+
+
+def test_upi_spending_counts_in_expenses_and_the_upi_book(client):
+    before = client.get("/api/accounts?days=7").json()
+    assert client.post("/api/entries", json={"type": "expense", "amount": 300, "mode": "upi", "raw_text": "Bijli 300 UPI"}).status_code == 201
+    after = client.get("/api/accounts?days=7").json()
+    assert after["expenses"] == before["expenses"] + 300
+    assert after["upi_out"] == before["upi_out"] + 300
+    assert after["cash_out"] == before["cash_out"]  # the galla didn't pay it
+    assert after["net"] == before["net"] - 300

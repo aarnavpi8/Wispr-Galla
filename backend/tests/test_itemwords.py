@@ -37,6 +37,7 @@ def test_the_pick_is_remembered(client):
     line = e["items"][0]
     moong = next(o for o in line["options"] if o["name"].startswith("Moong"))
     e["items"] = [{**line, "item_id": moong["item_id"], "name": moong["name"], "price": moong["price"], "options": []}]
+    e["amount"] = moong["price"]  # the card's amount follows the picked item
     assert save_card(client, e, edited=True).status_code == 201
     again = card(client, "1 kilo daal becha 130 cash")["items"][0]
     assert again["name"] == "Moong dal" and again["options"] == []  # learned: no question

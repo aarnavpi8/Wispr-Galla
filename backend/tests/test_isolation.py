@@ -55,7 +55,7 @@ def test_two_browsers_never_see_each_others_shop(client):
 def test_ids_from_another_shop_are_not_found(client):
     setup_shop(client, A, "Asha Stores")
     setup_shop(client, B, "Bharat Kirana")
-    item = client.post("/api/items", json={"name": "Soap", "unit": "pc", "price": 30, "stock": 5}, headers=A).json()
+    item = client.post("/api/items", json={"name": "Soap", "unit": "pc", "price": 30, "cost_price": 25, "stock": 5}, headers=A).json()
     assert client.post(f"/api/items/{item['id']}/stock", json={"reason": "wastage", "qty": 1}, headers=B).status_code == 404
     assert client.get(f"/api/items/{item['id']}/moves", headers=B).status_code == 404
     saved = client.post("/api/entries", json={"type": "expense", "amount": 50, "raw_text": "chai"}, headers=A).json()

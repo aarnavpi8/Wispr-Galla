@@ -1,12 +1,12 @@
 "use client";
 
-import { useRef } from "react";
+import { useRef, useState } from "react";
 
 import { useDialog } from "@/hooks/useDialog";
 
-import { useApi } from "@/lib/api";
+import { postJSON, useApi } from "@/lib/api";
 import { formatINR, initials, reminderLink, upiLink } from "@/lib/format";
-import type { EntryOut, PartyBalance, ShopSummary } from "@/lib/types";
+import type { EntryOut, Mode, PartyBalance, ShopSummary } from "@/lib/types";
 
 import { EntryRow } from "./EntryList";
 import { Magnetic } from "./interactive";
@@ -18,12 +18,44 @@ export function PartySheet({
   party,
   shop,
   onClose,
+  onPaid,
 }: {
   party: PartyBalance;
   shop: ShopSummary | null;
   onClose: () => void;
+  /** A payment was recorded here (they paid you, or you paid the supplier). */
+  onPaid?: (entry: EntryOut) => void;
 }) {
   const { t } = useLang();
+  // Settle up: never more than what is owed (the server refuses more too).
+  const owed = Math.max(party.balance, 0);
+  const [pay, setPay] = useState(owed ? String(owed) : "");
+  const [payMode, setPayMode] = useState<Mode>("cash");
+  const [paying, setPaying] = useState(false);
+  const [payError, setPayError] = useState<string | null>(null);
+  const payNum = Number(pay);
+  const tooMuch = payNum > owed;
+  const record = async () => {
+    if (!payNum || tooMuch) return;
+    setPaying(true);
+    setPayError(null);
+    try {
+      const entry = await postJSON<EntryOut>("/api/entries", {
+        type: "payment",
+        amount: payNum,
+        party_id: party.id,
+        party_kind: party.kind,
+        mode: payMode,
+        raw_text: `${party.kind === "customer" ? t("gotBtn", { x: formatINR(payNum) }) : t("paidBtn", { x: formatINR(payNum) })} · ${party.name}`,
+        source: "manual",
+      });
+      onPaid?.(entry);
+    } catch (e) {
+      setPayError((e as Error).message);
+    } finally {
+      setPaying(false);
+    }
+  };
   const { data: entries } = useApi<EntryOut[]>(`/api/entries?party_id=${party.id}&limit=50`);
 
   const panel = useRef<HTMLDivElement>(null);
@@ -108,6 +140,55 @@ export function PartySheet({
         )}
         {canRemind && (
           <p className="mt-2 text-center text-xs text-muted">{t("reminderNote")}</p>
+        )}
+
+        {owed > 0 && (
+          <div className="mt-4 rounded-3xl bg-surface-2 p-4">
+            <p className="font-semibold text-ink-950">
+              {party.kind === "customer" ? t("settleCustomer", { name: party.name }) : t("settleSupplier", { name: party.name })}
+            </p>
+            <div className="mt-2 flex items-center gap-2">
+              <span className="text-2xl font-extrabold text-ink-900">₹</span>
+              <input
+                inputMode="numeric"
+                value={pay}
+                aria-label={t("fAmount")}
+                aria-invalid={tooMuch}
+                onChange={(e) => setPay(e.target.value.replace(/[^0-9]/g, ""))}
+                className={`min-h-12 min-w-0 flex-1 rounded-2xl border-2 bg-surface px-3 text-xl font-bold tabular-nums focus:outline-none ${tooMuch ? "border-money-out" : "border-line focus:border-iris-500"}`}
+              />
+            </div>
+            <div className="mt-2 flex gap-2" role="radiogroup" aria-label={t("fMode")}>
+              {(["cash", "upi"] as const).map((m) => (
+                <button
+                  key={m}
+                  type="button"
+                  role="radio"
+                  aria-checked={payMode === m}
+                  onClick={() => setPayMode(m)}
+                  className={`min-h-10 rounded-full px-4 text-sm font-semibold transition ${payMode === m ? "bg-brand-600 text-white" : "bg-surface text-ink-900 hover:bg-iris-100"}`}
+                >
+                  {t(m === "cash" ? "mCash" : "mUpi")}
+                </button>
+              ))}
+            </div>
+            {tooMuch && (
+              <p role="alert" className="mt-2 text-sm font-semibold text-money-out">
+                {party.kind === "customer"
+                  ? t("overpayCustomer", { name: party.name, x: formatINR(owed) })
+                  : t("overpaySupplier", { name: party.name, x: formatINR(owed) })}
+              </p>
+            )}
+            {payError && <p className="mt-2 text-sm text-money-out">{payError}</p>}
+            <button
+              type="button"
+              disabled={!payNum || tooMuch || paying}
+              onClick={() => void record()}
+              className="mt-3 min-h-12 w-full rounded-2xl bg-brand-600 font-semibold text-white transition hover:bg-brand-500 active:scale-[0.99] disabled:bg-line disabled:text-muted"
+            >
+              {party.kind === "customer" ? t("gotBtn", { x: formatINR(payNum || 0) }) : t("paidBtn", { x: formatINR(payNum || 0) })}
+            </button>
+          </div>
         )}
 
         <h3 className="mt-5 font-bold text-ink-950">{t("history")}</h3>

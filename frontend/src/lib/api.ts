@@ -30,13 +30,19 @@ export async function postJSON<T>(path: string, body: unknown, method: "POST" | 
   });
   if (!res.ok) {
     let detail = res.statusText;
+    let extra: { code?: string; info?: unknown } = {};
     try {
       const j = await res.json();
-      detail = typeof j.detail === "string" ? j.detail : detail;
+      if (typeof j.detail === "string") detail = j.detail;
+      else if (j.detail && typeof j.detail === "object") {
+        // Structured refusals ({code, detail, ...}): keep the code so screens can react to it.
+        detail = typeof j.detail.detail === "string" ? j.detail.detail : detail;
+        extra = { code: j.detail.code, info: j.detail };
+      }
     } catch {
       // Body wasn't JSON; keep the status text.
     }
-    throw new Error(detail);
+    throw Object.assign(new Error(detail), extra);
   }
   return res.json() as Promise<T>;
 }

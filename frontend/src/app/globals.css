@@ -53,6 +53,8 @@
   /* Money colours used everywhere: in, out, pending. */
   --color-money-in: #2563c4;
   --color-money-out: #c0392b;
+  /* Only for a positive galla balance (the user asked: minus red, plus green). */
+  --color-balance-up: #17804c;
   --color-pending: #b45309;
   --font-sans: var(--font-noto-sans), var(--font-noto-devanagari), sans-serif;
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { formatINR } from "@/lib/format";
+import { balanceTone, formatINR } from "@/lib/format";
 import { LANGS } from "@/lib/i18n";
 
 import { AccountMenu } from "./AccountMenu";
@@ -93,15 +93,15 @@ export function DesktopSidebar({
       </nav>
 
       <dl className="space-y-2">
-        <div className="rounded-2xl bg-brand-600 p-4 text-white">
-          <dt className="text-xs text-iris-300">{t("expectedCash")}</dt>
-          <dd className="text-2xl font-extrabold tabular-nums">{formatINR(expected)}</dd>
+        <div className="rounded-2xl bg-iris-100 p-4 ring-1 ring-line">
+          <dt className="text-xs text-ink-700">{t("expectedCash")}</dt>
+          <dd className={`text-2xl font-extrabold tabular-nums ${balanceTone(expected)}`}>{formatINR(expected)}</dd>
         </div>
         <div className="grid grid-cols-2 gap-2">
-          <div className="rounded-2xl bg-amber-50 p-3">
+          <button type="button" onClick={() => onGo("khata")} className="rounded-2xl bg-amber-50 p-3 text-left transition hover:bg-amber-100">
             <dt className="text-xs font-semibold text-muted">{t("receivable")}</dt>
             <dd className="font-bold tabular-nums text-pending">{formatINR(receivable)}</dd>
-          </div>
+          </button>
           <button type="button" onClick={() => onGo("maal")} className="rounded-2xl bg-surface-2 p-3 text-left transition hover:bg-line">
             <dt className="text-xs font-semibold text-muted">{t("lowStock")}</dt>
             <dd className={`font-bold tabular-nums ${lowStock ? "text-pending" : "text-ink-900"}`}>{lowStock}</dd>

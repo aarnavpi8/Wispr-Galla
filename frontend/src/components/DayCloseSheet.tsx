@@ -3,7 +3,7 @@
 import { useState } from "react";
 
 import { postJSON, useApi } from "@/lib/api";
-import { entryMeta, FLOW_SIGN, FLOW_TEXT, formatINR, timeAgo } from "@/lib/format";
+import { balanceTone, entryMeta, FLOW_SIGN, FLOW_TEXT, formatINR, timeAgo } from "@/lib/format";
 import type { DayCloseOut, DayCloseView } from "@/lib/types";
 
 import { useLang } from "./language";
@@ -44,7 +44,7 @@ export function DayCloseSheet({ onClose, onSaved }: { onClose: () => void; onSav
         <>
           <div className="rounded-3xl bg-gradient-to-br from-iris-100 to-gold-100 p-4 text-ink-950 ring-1 ring-line">
             <p className="text-sm text-ink-700">{t("expected")}</p>
-            <p className="text-4xl font-extrabold tabular-nums">{formatINR(view.expected)}</p>
+            <p className={`text-4xl font-extrabold tabular-nums ${balanceTone(view.expected)}`}>{formatINR(view.expected)}</p>
             <p className="mt-1 text-xs text-muted">
               {formatINR(view.opening)} + {formatINR(view.cash_in)} − {formatINR(view.cash_out)}
             </p>

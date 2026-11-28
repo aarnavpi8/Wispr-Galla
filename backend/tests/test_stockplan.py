@@ -29,7 +29,7 @@ def client():
     app.dependency_overrides.clear()
 
 
-def add(client, name="Maggi", price=15, stock=0, cost=0, low=5):
+def add(client, name="Maggi", price=15, stock=0, cost=10, low=5):
     res = client.post("/api/items", json={"name": name, "unit": "pc", "price": price, "stock": stock,
                                           "cost_price": cost, "low_stock_at": low})
     assert res.status_code == 201
@@ -51,10 +51,9 @@ def test_weighted_average_cost(client):
 
 
 def test_first_purchase_sets_cost_and_stock_in_without_cost_keeps_it(client):
-    item = add(client)
-    assert item["cost_price"] == 0 and item["margin"] is None
+    item = add(client, cost=11)
     assert stock_in(client, item, 10, unit_cost=11)["cost_price"] == 11
-    assert stock_in(client, item, 5)["cost_price"] == 11
+    assert stock_in(client, item, 5)["cost_price"] == 11  # no cost given: the known cost is used
 
 
 def test_cost_can_be_set_by_hand(client):
@@ -85,8 +84,13 @@ def test_undone_sale_comes_off_cost_of_goods(client):
 
 
 def test_items_without_cost_are_counted(client):
-    add(client, stock=3)
-    assert client.get("/api/inventory/account").json()["no_cost_items"] == 1
+    # A new shop's starter items begin at ₹0 until the shopkeeper prices them.
+    H = {"X-Galla-Device": "nocostcheck0000000001"}
+    body = {"name": "Naya", "kind": "kirana", "vpa": "", "language": "hi", "opening_cash": 0}
+    assert client.post("/api/setup", json=body, headers=H).status_code == 201
+    # Unpriced starters have no stock, and stock can't come in without a cost, so nothing on the
+    # shelf is ever valued at ₹0 (only old data could be; the card then asks for the cost).
+    assert client.get("/api/inventory/account", headers=H).json()["no_cost_items"] == 0
 
 
 def test_reorder_point_eoq_and_days_left(client):

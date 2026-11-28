@@ -141,8 +141,8 @@ export const en = {
   receivableSub: "From customers",
   payable: "To pay",
   payableSub: "To suppliers",
-  net: "Net (estimate)",
-  netSub: "Sales − stock bought − expenses",
+  net: "Profit (estimate)",
+  netSub: "Sales − cost of goods sold − waste − expenses",
   stockValue: "Stock on shelves",
   itemsCount: "{n} items",
   cashBook: "Cash",
@@ -217,7 +217,7 @@ export const en = {
   helpCapture: "Tap the mic and say the entry the way you'd say it at the counter, e.g. “Sharma ji paid 500 by UPI”. You can also type. Nothing is saved until you tap.",
   helpReceivable: "Money customers still have to give you (udhaar). Example: you gave Ramesh ₹350 of goods on credit and he paid ₹200, so ₹150 is still to collect.",
   helpPayable: "Money you still have to give your suppliers. Example: goods worth ₹3,200 came and you paid ₹1,000, so ₹2,200 is still to pay.",
-  helpNet: "A rough idea: sales minus the goods you bought minus expenses. It can be negative in a week you bought a lot of stock. It's not your exact profit.",
+  helpNet: "What you earned: sales minus what those goods cost you, minus thrown-away stock, minus expenses. Stock you bought but haven't sold isn't counted as a loss: it's still on your shelf. Money taken home isn't an expense.",
   helpBooks: "Cash = notes and coins in the galla. UPI = money that came to your phone or bank. Keeping them separate makes it easy to find a gap.",
   helpStock: "How much of each item is on your shelves. Tap + when goods come and − when they are sold. Orange means it's running low: order more.",
   helpCloseDay: "At closing time, count the cash in the galla and type it. BolKhata shows if anything is short or extra, and which entries to check.",
@@ -358,6 +358,88 @@ export const en = {
   notInStockAdd: "Not in stock · Add it",
 
   whichItem: "Which one?",
+
+
+  inStockQty: "In stock: {qty}",
+
+
+  onlyInStock: "Only {qty} in stock",
+
+
+  shortStockAsk: "Not enough stock for this. Save anyway?",
+
+
+  saveAnyway: "Save anyway",
+
+
+  stockAnswer: "{item}: {qty} left",
+
+
+
+  sellsFor: "Sells for (₹)",
+
+
+
+  youPay: "You pay (₹)",
+
+
+
+  askCost: "What did you pay per {unit} for {item}?",
+
+
+
+  askSellPrice: "What do you sell {item} for, per {unit}?",
+
+
+
+  useItemsTotal: "Items add up to {x}. Use that?",
+
+
+
+  shelfLife: "Stays good for",
+
+
+
+  shelfDays: "A few days",
+
+
+
+  shelfMonths: "1–3 months",
+
+
+
+  shelfLong: "6+ months",
+
+
+
+  shelfNone: "Doesn't spoil",
+
+
+
+  spoilage: "Expected spoilage this month",
+
+
+
+  helpSpoilage: "Stock that goes bad loses value. We estimate it from how long each item stays good, so your profit isn't overstated. Example: ₹1,000 of milk, which spoils in days, may lose about ₹200 a month.",
+
+
+
+  spoilTitle: "Check for spoilage",
+
+
+
+  spoilCheck: "{item}: bought {days} days ago. If it has gone bad, record it as wasted.",
+  // Numbers must add up before saving
+  totalMustMatch: "The items add up to {x}, but the amount is {y}. They must match: fix a price or quantity, or use {x}.",
+  shortStockBlock: "Lower the quantity, or first record the stock that came in.",
+  overpayCustomer: "{name} owes only {x}. A payment can't be more than that.",
+  overpaySupplier: "You owe {name} only {x}. You can't pay more than that.",
+  owesNothing: "{name} owes nothing in your khata. Record the old udhaar first.",
+  // Settle up from a person's khata
+  settleCustomer: "Money received from {name}",
+  settleSupplier: "Money paid to {name}",
+  gotBtn: "Received {x}",
+  paidBtn: "Paid {x}",
 };
 
 export type StringKey = keyof typeof en;

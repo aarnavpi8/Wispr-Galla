@@ -2,7 +2,7 @@
 
 import type { ReactNode } from "react";
 
-import { formatINR } from "@/lib/format";
+import { balanceTone, formatINR } from "@/lib/format";
 
 import { useLang } from "./language";
 
@@ -18,6 +18,7 @@ export function StickySummary({
   lowStock,
   onTap,
   onLowStock,
+  onReceivable,
   account,
 }: {
   visible: boolean;
@@ -27,6 +28,8 @@ export function StickySummary({
   lowStock: number;
   onTap: () => void;
   onLowStock: () => void;
+  /** "To collect": open the customers who owe. */
+  onReceivable?: () => void;
   /** Profile button, so Logout stays one tap away while scrolled down. */
   account?: ReactNode;
 }) {
@@ -43,12 +46,17 @@ export function StickySummary({
           <span className="block truncate text-[11px] text-muted">
             {shopName} · {t("expectedCash")}
           </span>
-          <span className="block text-lg font-extrabold leading-tight tabular-nums">{formatINR(expected)}</span>
+          <span className={`block text-lg font-extrabold leading-tight tabular-nums ${balanceTone(expected)}`}>{formatINR(expected)}</span>
         </button>
-        <span className="rounded-xl bg-surface-2 px-2.5 py-1 text-right">
+        <button
+          type="button"
+          onClick={onReceivable}
+          tabIndex={visible ? 0 : -1}
+          className="rounded-xl bg-surface-2 px-2.5 py-1 text-right transition hover:bg-line"
+        >
           <span className="block text-[10px] text-muted">{t("receivable")}</span>
           <span className="block text-sm font-bold tabular-nums text-pending">{formatINR(receivable)}</span>
-        </span>
+        </button>
         {lowStock > 0 && (
           <button
             type="button"

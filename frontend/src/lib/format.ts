@@ -10,6 +10,11 @@ export function formatINR(amount: number): string {
 }
 
 /** Whole calendar days from a to b (local time). */
+/** Colour for the galla balance: red when it is below zero, green above, plain at ₹0. */
+export function balanceTone(amount: number): string {
+  return amount < 0 ? "text-money-out" : amount > 0 ? "text-balance-up" : "text-ink-950";
+}
+
 export function daysBetween(a: Date, b: Date): number {
   const start = new Date(a.getFullYear(), a.getMonth(), a.getDate());
   const end = new Date(b.getFullYear(), b.getMonth(), b.getDate());

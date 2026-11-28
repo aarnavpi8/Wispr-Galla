@@ -20,9 +20,20 @@ type ListenHandle =
   | { ok: true; stop: () => Promise<void>; done: Promise<void> }
   | { ok: false; error: "micDenied" | "micFailed" };
 
-/** Join what was already heard with the words of the current stretch of speech. */
+/**
+ * Join what was already heard with the words of the current stretch of speech.
+ * Some recognizers repeat earlier words in a later result; never add text onto itself.
+ */
 export function joinSpeech(heard: string, current: string): string {
-  return [heard, current].map((s) => s.trim()).filter(Boolean).join(" ");
+  const h = heard.trim();
+  const c = current.trim();
+  if (!h) return c;
+  if (!c) return h;
+  const lh = h.toLowerCase();
+  const lc = c.toLowerCase();
+  if (lc.startsWith(lh)) return c; // the new result already contains everything so far
+  if (lh.endsWith(lc)) return h; // a late repeat of the last words
+  return `${h} ${c}`;
 }
 
 /**
@@ -71,21 +82,30 @@ export async function nativeListen(lang: string, onText: (text: string) => void)
         onText(joinSpeech(heard, current));
       }
     });
+    let settling = false;
     await SpeechRecognition.addListener("listeningState", (d) => {
-      if (d.status !== "stopped" || stopped) return;
-      // The phone stopped after a pause: keep what was said and carry on listening.
-      heard = joinSpeech(heard, current);
-      current = "";
-      window.setTimeout(listen, 250);
+      if (d.status !== "stopped" || stopped || settling) return;
+      // The phone stopped after a pause. Android often sends the final words of that stretch a
+      // moment *after* saying it stopped; wait for them before keeping the text, or the same
+      // words get added twice. Then carry on listening.
+      settling = true;
+      window.setTimeout(() => {
+        heard = joinSpeech(heard, current);
+        current = "";
+        settling = false;
+        listen();
+      }, 600);
     });
     listen();
     return {
       ok: true,
+      // Stop must always end the turn at once. Between two stretches of speech the recognizer
+      // isn't running, and Android then never answers stop(), so we don't wait for it.
       stop: async () => {
         stopped = true;
         window.clearTimeout(cap);
-        await SpeechRecognition.stop().catch(() => {});
         finish();
+        void SpeechRecognition.stop().catch(() => {});
       },
       done: done.finally(() => void SpeechRecognition.removeAllListeners()),
     };

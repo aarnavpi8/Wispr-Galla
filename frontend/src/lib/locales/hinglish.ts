@@ -128,8 +128,8 @@ export const hinglish: Locale = {
   receivableSub: "Grahak se",
   payable: "Dena hai",
   payableSub: "Supplier ko",
-  net: "Bachat (andaaza)",
-  netSub: "Bikri − maal − kharcha",
+  net: "Munafa (andaaza)",
+  netSub: "Bikri − bike maal ki laagat − kharab − kharche",
   stockValue: "Dukaan mein maal",
   itemsCount: "{n} item",
   cashBook: "Cash",
@@ -200,7 +200,7 @@ export const hinglish: Locale = {
   helpCapture: "Mic dabaiye aur counter jaise boliye, jaise “Sharma ji ne 500 UPI se diye”. Likh bhi sakte hain. Aapke tap kiye bina kuch save nahi hota.",
   helpReceivable: "Grahakon se jo paisa abhi aana baaki hai (udhaar). Jaise Ramesh ko ₹350 ka saman udhaar diya, ₹200 laut aaye, toh ₹150 lena baaki hai.",
   helpPayable: "Supplier ko jo paisa abhi dena baaki hai. Jaise ₹3,200 ka maal aaya, ₹1,000 diye, toh ₹2,200 dena baaki hai.",
-  helpNet: "Moti baat: bikri minus kharida hua maal minus kharcha. Jis hafte zyada maal kharida, ye minus mein bhi ho sakta hai. Ye pakka munafa nahi hai.",
+  helpNet: "Aapki kamaai: bikri minus us maal ki laagat, minus kharab maal, minus kharche. Jo maal kharida par abhi bika nahi, woh nuksaan nahi: woh shelf par hai. Ghar le gaye paise kharcha nahi hain.",
   helpBooks: "Cash = galle mein note aur sikke. UPI = jo paisa phone ya bank mein aaya. Alag rakhne se farak dhoondhna aasaan hai.",
   helpStock: "Har item ka kitna maal shelf par hai. Maal aaye toh + dabaiye, bike toh −. Narangi rang matlab kam bacha hai, mangwa lijiye.",
   helpCloseDay: "Dukaan band karte waqt galla giniye aur likhiye. BolKhata batayega kuch kam ya zyada hai, aur kaunsi entry dekhni hai.",
@@ -340,4 +340,86 @@ export const hinglish: Locale = {
   notInStockAdd: "Stock mein nahi · Jodiye",
 
   whichItem: "Kaunsa?",
+
+
+  inStockQty: "Stock mein: {qty}",
+
+
+  onlyInStock: "Sirf {qty} stock mein",
+
+
+  shortStockAsk: "Itna stock nahi hai. Phir bhi save karein?",
+
+
+  saveAnyway: "Phir bhi save karo",
+
+
+  stockAnswer: "{item}: {qty} bacha hai",
+
+
+
+  sellsFor: "Bechne ka daam (₹)",
+
+
+
+  youPay: "Kharid ka daam (₹)",
+
+
+
+  askCost: "{item} kitne mein liya, per {unit}?",
+
+
+
+  askSellPrice: "{item} kitne mein bechte ho, per {unit}?",
+
+
+
+  useItemsTotal: "Items ka total {x} hai. Wahi lein?",
+
+
+
+  shelfLife: "Kitne din chalta hai",
+
+
+
+  shelfDays: "Kuch din",
+
+
+
+  shelfMonths: "1–3 mahine",
+
+
+
+  shelfLong: "6+ mahine",
+
+
+
+  shelfNone: "Kharab nahi hota",
+
+
+
+  spoilage: "Is mahine kharab hone ka andaaza",
+
+
+
+  helpSpoilage: "Jo maal kharab hota hai uski keemat ghat jaati hai. Har item kitne din chalta hai, usse andaaza lagate hain, taaki munafa zyada na dikhe. Jaise: ₹1,000 ka doodh, jo kuch din mein kharab hota hai, mahine mein lagbhag ₹200 ka nuksaan.",
+
+
+
+  spoilTitle: "Kharab maal check karein",
+
+
+
+  spoilCheck: "{item}: {days} din pehle liya tha. Kharab ho gaya ho to wastage mein likhein.",
+  // Numbers must add up before saving
+  totalMustMatch: "Items ka jod {x} hai, par amount {y} hai. Dono barabar hone chahiye: daam ya quantity theek karein, ya {x} lein.",
+  shortStockBlock: "Quantity kam karein, ya pehle aaya hua maal darj karein.",
+  overpayCustomer: "{name} ka sirf {x} baaki hai. Payment usse zyada nahi ho sakti.",
+  overpaySupplier: "Aapko {name} ko sirf {x} dene hain. Usse zyada nahi de sakte.",
+  owesNothing: "Khate mein {name} ka kuch baaki nahi. Pehle purana udhaar darj karein.",
+  // Settle up from a person's khata
+  settleCustomer: "{name} se paise mile",
+  settleSupplier: "{name} ko paise diye",
+  gotBtn: "{x} mile",
+  paidBtn: "{x} diye",
 };

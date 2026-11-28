@@ -97,6 +97,35 @@ HISTORY = [
     (1, 18, "payment", "Ramesh", 200, None, "cash", None, "Ramesh ne 200 cash diye"),
 ]
 
+# What each history entry was made of: (name, variant, qty, price per unit). Selling price for
+# sales and udhaar, cost for purchases. Every list adds up exactly to the entry's amount, so the
+# demo obeys the app's own rules (a sale names what was sold) and profit uses real costs.
+HISTORY_ITEMS: dict[str, list[tuple[str, str | None, int, int]]] = {
+    "Raju dairy se 50 packet doodh, 1400 cash": [("Amul doodh", "aadha litre", 50, 28)],
+    "640 ki bikri cash": [("Atta", "Aashirvaad 5 kg", 2, 260), ("Kurkure", None, 6, 20)],
+    "Ramesh ko 350 udhaar, kal tak": [("Cheeni", None, 2, 45), ("Atta", "Aashirvaad 5 kg", 1, 260)],
+    "1200 UPI se aaye": [("Amul doodh", "aadha litre", 25, 28), ("Maggi", None, 20, 15), ("Mirchi powder", "100 g", 5, 40)],
+    "Sharma ji ko 820 ka saman udhaar": [
+        ("Toor dal", None, 2, 160), ("Atta", "Aashirvaad 5 kg", 1, 260), ("Besan", None, 1, 100), ("Chai patti", "Red Label 250 g", 1, 140),
+    ],
+    "930 ki bikri cash": [("Amul doodh", "aadha litre", 20, 28), ("Kurkure", None, 10, 20), ("Parle-G", "chhota", 17, 10)],
+    "Gupta distributor ka maal 3200, 1000 diye": [("Maggi", None, 50, 12), ("Atta", "Aashirvaad 5 kg", 13, 200)],
+    "1100 UPI se": [("Amul doodh", "1 litre", 10, 56), ("Bread", None, 12, 45)],
+    "Pappu ko 240 udhaar": [("Parle-G", "bada", 4, 25), ("Chai patti", "Red Label 250 g", 1, 140)],
+    "760 cash bikri": [("Cheeni", None, 8, 45), ("Thums Up", "750 ml", 10, 40)],
+}
+STOCK_SIGN = {"sale": -1, "udhaar": -1, "purchase": 1}
+
+
+def opening_stock() -> dict[tuple[str, str | None], int]:
+    """Opening counts chosen so that, after the history, each item ends at its STOCK level."""
+    out = {(name, variant): STOCK.get((name, variant), DEFAULT_STOCK)[0] for name, variant, *_ in ITEMS}
+    for _, _, type_, *_rest, raw in HISTORY:
+        for name, variant, qty, _price in HISTORY_ITEMS.get(raw, []):
+            out[(name, variant)] -= STOCK_SIGN[type_] * qty
+    assert all(v >= 0 for v in out.values()), out
+    return out
+
 
 def seed(db: Session, owner: str | None = None) -> Shop:
     shop = Shop(**SHOP, owner=owner)
@@ -106,7 +135,8 @@ def seed(db: Session, owner: str | None = None) -> Shop:
     for name, variant, unit, price, aliases in ITEMS:
         db.add(Item(shop_id=shop.id, name=name, variant=variant, unit=unit, price=price, aliases=aliases))
     db.flush()
-    seed_stock_if_missing(db, shop)
+    seed_stock_if_missing(db, shop, opening_stock())
+    by_key = {(i.name, i.variant): i for i in db.scalars(select(Item).where(Item.shop_id == shop.id))}
 
     parties: dict[str, Party] = {}
     for name, kind, phone, aliases in PARTIES:
@@ -118,18 +148,30 @@ def seed(db: Session, owner: str | None = None) -> Shop:
     today = datetime.now(settings.tz).date()
     for days_ago, hour, type_, party_name, amount, paid_now, mode, due_in, raw in HISTORY:
         day = today - timedelta(days=days_ago)
+        at = datetime.combine(day, time(hour), tzinfo=settings.tz)
+        lines = []
+        for name, variant, qty, price in HISTORY_ITEMS.get(raw, []):
+            item = by_key[(name, variant)]
+            line = {"item_id": item.id, "name": f"{name} {variant}" if variant else name, "qty": qty, "unit": item.unit}
+            line.update({"unit_cost": price} if type_ == "purchase" else {"price": price})
+            lines.append(line)
+            # Goods move with the money, at the time it happened.
+            move = record_move(db, shop.id, item, STOCK_SIGN[type_] * qty, "purchase" if type_ == "purchase" else "sale",
+                               price if type_ == "purchase" else None)
+            move.created_at = at
         db.add(
             Entry(
                 shop_id=shop.id,
                 type=type_,
                 party_id=parties[party_name].id if party_name else None,
+                items=lines,
                 amount=amount,
                 paid_now=paid_now,
                 mode=mode,
                 due_date=day + timedelta(days=due_in) if due_in is not None else None,
                 raw_text=raw,
                 source="seed",
-                created_at=datetime.combine(day, time(hour), tzinfo=settings.tz),
+                created_at=at,
             )
         )
 
@@ -137,7 +179,7 @@ def seed(db: Session, owner: str | None = None) -> Shop:
     return shop
 
 
-def seed_stock_if_missing(db: Session, shop: Shop | None = None) -> bool:
+def seed_stock_if_missing(db: Session, shop: Shop | None = None, opening: dict | None = None) -> bool:
     """Give the demo shop opening stock, also for databases made before inventory existed."""
     shop = shop or db.scalar(select(Shop).where(Shop.owner.is_(None)).order_by(Shop.id).limit(1))
     if shop is None or shop.name != SHOP["name"]:
@@ -150,6 +192,8 @@ def seed_stock_if_missing(db: Session, shop: Shop | None = None) -> bool:
     opening_at = datetime.combine(datetime.now(settings.tz).date() - timedelta(days=4), time(8), tzinfo=settings.tz)
     for item in items:
         stock, low_at = STOCK.get((item.name, item.variant), DEFAULT_STOCK)
+        if opening is not None:
+            stock = opening.get((item.name, item.variant), stock)
         item.stock = 0
         item.low_stock_at = low_at
         # Demo cost: roughly what a kirana pays the distributor (about 82% of the selling price).
