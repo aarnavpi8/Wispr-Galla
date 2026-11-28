@@ -162,7 +162,7 @@ export function BillScanSheet({
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src={photo} alt="" className="size-full object-cover opacity-80" />
               {/* Scanner line sweeping the photo */}
-              <div className="animate-[scan_1.6s_ease-in-out_infinite_alternate] absolute inset-x-0 h-1 bg-gold-300 shadow-[0_0_20px_4px_rgb(243_194_98/0.7)]" />
+              <div className="animate-[scan_1.6s_ease-in-out_infinite_alternate] absolute inset-x-0 h-1 bg-gold-300 shadow-[0_0_20px_4px_rgb(215_240_138/0.7)]" />
             </div>
           )}
           <p className="font-semibold text-ink-950">{t("reading")}</p>
