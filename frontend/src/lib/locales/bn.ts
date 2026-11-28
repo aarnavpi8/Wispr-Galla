@@ -427,4 +427,6 @@ export const bn: Locale = {
   handsFree: "হাত ছাড়া",
   handsFreeHint: "“BolKhata” বলুন, তারপর আপনার এন্ট্রি",
   handsFreeOff: "হাত ছাড়া মোড বন্ধ",
+  handsFreeListening: "হ্যাঁ, শুনছি…",
+  handsFreeGoOn: "আপনার এন্ট্রি বা কাজ বলুন",
 };

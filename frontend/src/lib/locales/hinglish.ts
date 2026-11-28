@@ -426,4 +426,6 @@ export const hinglish: Locale = {
   handsFree: "Bina haath",
   handsFreeHint: "“BolKhata” boliye, phir apni entry",
   handsFreeOff: "Bina haath wala mode band",
+  handsFreeListening: "Haan, sun raha hoon…",
+  handsFreeGoOn: "Apni entry ya kaam boliye",
 };

@@ -427,4 +427,6 @@ export const gu: Locale = {
   handsFree: "હાથ વગર",
   handsFreeHint: "“BolKhata” બોલો, પછી તમારી એન્ટ્રી",
   handsFreeOff: "હાથ વગરનો મોડ બંધ",
+  handsFreeListening: "હા, સાંભળું છું…",
+  handsFreeGoOn: "તમારી એન્ટ્રી કે કામ બોલો",
 };

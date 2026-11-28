@@ -427,4 +427,6 @@ export const ml: Locale = {
   handsFree: "കൈ തൊടാതെ",
   handsFreeHint: "“BolKhata” എന്ന് പറയൂ, പിന്നെ നിങ്ങളുടെ എൻട്രി",
   handsFreeOff: "കൈ തൊടാത്ത മോഡ് നിർത്തി",
+  handsFreeListening: "ഉവ്വ്, കേൾക്കുന്നു…",
+  handsFreeGoOn: "നിങ്ങളുടെ എൻട്രിയോ ജോലിയോ പറയൂ",
 };

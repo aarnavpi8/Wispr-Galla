@@ -41,6 +41,8 @@
     <!-- Mic: speaking entries (native speech recognition, or recording for Wispr Flow). -->
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
     <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS" />
+    <!-- A short buzz when hands-free hears "BolKhata" (navigator.vibrate in the WebView). -->
+    <uses-permission android:name="android.permission.VIBRATE" />
     <!-- Camera: photographing a supplier's bill for stock (bill scan). -->
     <uses-permission android:name="android.permission.CAMERA" />
     <uses-feature android:name="android.hardware.camera" android:required="false" />

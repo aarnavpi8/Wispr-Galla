@@ -427,4 +427,6 @@ export const pa: Locale = {
   handsFree: "ਬਿਨਾਂ ਹੱਥ",
   handsFreeHint: "“BolKhata” ਬੋਲੋ, ਫਿਰ ਆਪਣੀ ਐਂਟਰੀ",
   handsFreeOff: "ਬਿਨਾਂ ਹੱਥ ਵਾਲਾ ਮੋਡ ਬੰਦ",
+  handsFreeListening: "ਹਾਂ, ਸੁਣ ਰਿਹਾ ਹਾਂ…",
+  handsFreeGoOn: "ਆਪਣੀ ਐਂਟਰੀ ਜਾਂ ਕੰਮ ਬੋਲੋ",
 };

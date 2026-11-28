@@ -427,4 +427,6 @@ export const kn: Locale = {
   handsFree: "ಕೈ ಇಲ್ಲದೆ",
   handsFreeHint: "“BolKhata” ಹೇಳಿ, ನಂತರ ನಿಮ್ಮ ನಮೂದು",
   handsFreeOff: "ಕೈ ಇಲ್ಲದ ಮೋಡ್ ನಿಲ್ಲಿಸಲಾಗಿದೆ",
+  handsFreeListening: "ಹೌದು, ಕೇಳುತ್ತಿದ್ದೇನೆ…",
+  handsFreeGoOn: "ನಿಮ್ಮ ನಮೂದು ಅಥವಾ ಕೆಲಸ ಹೇಳಿ",
 };

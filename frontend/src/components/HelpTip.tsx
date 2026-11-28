@@ -147,9 +147,9 @@ export function ColorLegend({ className = "" }: { className?: string }) {
     { cls: "bg-amber-50 text-pending", icon: "⏳", label: t("legendPending") },
   ];
   return (
-    <ul className={`flex flex-wrap gap-1.5 text-xs font-semibold ${className}`} aria-label="Colours">
+    <ul className={`flex flex-wrap gap-1 text-[11px] font-semibold sm:gap-1.5 sm:text-xs ${className}`} aria-label="Colours">
       {items.map((i) => (
-        <li key={i.label} className={`flex items-center gap-1 rounded-full px-2.5 py-1 ${i.cls}`}>
+        <li key={i.label} className={`flex items-center gap-1 whitespace-nowrap rounded-full px-2 py-1 sm:px-2.5 ${i.cls}`}>
           <span aria-hidden>{i.icon}</span>
           {i.label}
         </li>

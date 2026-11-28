@@ -34,7 +34,7 @@ export function KhataList({
 
   return (
     <div>
-      <div className="flex gap-2">
+      <div className="flex flex-col gap-2 sm:flex-row">
         <input
           type="search"
           value={query}
@@ -43,14 +43,14 @@ export function KhataList({
           aria-label={t("searchName")}
           className="min-h-12 min-w-0 flex-1 rounded-2xl border border-line bg-background px-4 text-base transition focus:border-iris-500 focus:outline-none focus:ring-4 focus:ring-iris-500/15"
         />
-        <div className="flex rounded-2xl bg-surface-2 p-1 text-sm font-semibold">
+        <div className="grid grid-cols-2 rounded-2xl bg-surface-2 p-1 text-sm font-semibold sm:flex">
           {(["customer", "supplier"] as const).map((f) => (
             <button
               key={f}
               type="button"
               aria-pressed={filter === f}
               onClick={() => setFilter(f)}
-              className={`rounded-xl px-3 transition ${
+              className={`min-h-10 rounded-xl px-3 transition ${
                 filter === f ? "bg-surface text-ink-950 shadow-sm" : "text-muted hover:text-ink-900"
               }`}
             >

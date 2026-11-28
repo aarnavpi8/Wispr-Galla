@@ -170,7 +170,7 @@ export const en = {
   stockTitle: "Stock",
   stockSub: "{n} items · {x} worth",
   lowStock: "Low stock",
-  lowStockAlert: "{n} items running low",
+  lowStockAlert: "Running low: {n}",
   allItems: "All",
   searchItems: "Search items",
   addItem: "New item",
@@ -445,6 +445,8 @@ export const en = {
   handsFree: "Hands-free",
   handsFreeHint: "Say “BolKhata”, then your entry",
   handsFreeOff: "Hands-free turned off",
+  handsFreeListening: "Yes, I'm listening…",
+  handsFreeGoOn: "Say your entry or command",
 };
 
 export type StringKey = keyof typeof en;

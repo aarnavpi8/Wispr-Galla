@@ -48,6 +48,18 @@ We build hands-free: prompts are dictated with Wispr Flow.
   entry card / a command / a question, "BolKhata" alone opens the speaking bubble. Browser or phone
   speech (not Wispr), pauses while a card or sheet is open, keeps the screen awake, off after 10
   idle minutes (`hooks/useHandsFree.ts`). Saving still needs a tap.
+  Fixed on a Galaxy A55 (28 Nov): after 5 quiet seconds the Android plugin ends a round with no
+  event (its error goes to a `start` call that already returned), so listening silently died and
+  "BolKhata" was never heard. `nativeListen` now checks `isListening()` (two "no" answers in a row)
+  and starts exactly one new round per ended round, waiting 1.5 s after a silent round so late
+  errors don't kill the next one. A failed start is retried (4 in a minute = really off). Android's
+  English recognizer hears "BolKhata" as "Kolkata", so that counts as the wake word too, with
+  "bolo khaata", "bol khatha", "बोलो खाता" and similar.
+  Confirmation: the moment the wake word is heard, a rising two-note chime plays, the phone buzzes
+  (`android.permission.VIBRATE`, added to the APK) and a green "Yes, I'm listening…" banner shows
+  the words after "BolKhata" live until the pause, then the card / command follows. "BolKhata"
+  alone no longer opens the speaking bubble (two things at once was messy): the banner stays up
+  for 8 s saying "Say your entry or command" and acts on what follows; if nothing does, it goes away.
 - Done: optional Google login via Firebase (D14). Off without keys.
 - Done: tests (pytest 238, Vitest 122) and GitHub Actions CI incl. a Docker Compose smoke test (D16).
 - Next: flow 1 (one-line entries), starting with the rule-based extractor (D2). "Aage" on the

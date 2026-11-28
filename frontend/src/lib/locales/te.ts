@@ -427,4 +427,6 @@ export const te: Locale = {
   handsFree: "చేతులు లేకుండా",
   handsFreeHint: "“BolKhata” అనండి, తర్వాత మీ ఎంట్రీ",
   handsFreeOff: "చేతులు లేని మోడ్ ఆపబడింది",
+  handsFreeListening: "అవును, వింటున్నాను…",
+  handsFreeGoOn: "మీ ఎంట్రీ లేదా పని చెప్పండి",
 };

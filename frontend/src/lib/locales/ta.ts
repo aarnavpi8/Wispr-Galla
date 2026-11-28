@@ -427,4 +427,6 @@ export const ta: Locale = {
   handsFree: "கை இல்லாமல்",
   handsFreeHint: "“BolKhata” சொல்லுங்கள், பிறகு உங்கள் பதிவு",
   handsFreeOff: "கை இல்லா முறை நிறுத்தப்பட்டது",
+  handsFreeListening: "ஆம், கேட்கிறேன்…",
+  handsFreeGoOn: "உங்கள் பதிவு அல்லது வேலையைச் சொல்லுங்கள்",
 };

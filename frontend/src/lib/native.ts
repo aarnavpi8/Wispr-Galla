@@ -57,24 +57,48 @@ export async function nativeListen(lang: string, onText: (text: string) => void)
     let stopped = false;
     let heard = ""; // words from earlier stretches of speech
     let current = ""; // words of the stretch being heard now
-    let failures = 0;
+    let quickFails = 0; // rounds that died right after starting (mic taken by another app)
+    let round = 0; // each start of the recognizer is one round; only the current one may restart
+    let roundStart = 0;
+    let ending = false;
     const end = () => {
       if (stopped) return;
       stopped = true;
       window.clearTimeout(cap);
+      window.clearInterval(watchdog);
       finish();
     };
     const cap = window.setTimeout(() => void SpeechRecognition.stop().catch(() => {}).finally(end), 5 * 60 * 1000);
     const listen = () => {
       if (stopped) return;
-      SpeechRecognition.start({ language: lang, partialResults: true, popup: false, maxResults: 1 })
-        .then(() => (failures = 0))
-        .catch(() => {
-          // A pause with nothing said ends with "no match"; just listen again. Give up only if it
-          // keeps failing straight away (mic taken by another app).
-          if (++failures >= 5) end();
-          else window.setTimeout(listen, 300);
-        });
+      const r = ++round;
+      roundStart = Date.now();
+      ending = false;
+      SpeechRecognition.start({ language: lang, partialResults: true, popup: false, maxResults: 1 }).catch(() =>
+        endRound(r),
+      );
+    };
+    // A round ends after a pause. Android tells us in different ways: a "stopped" event after
+    // speech, a rejected start, or (after silence) nothing at all. Whichever comes first ends the
+    // round once; then we listen again. Android often sends the last words of a stretch a moment
+    // *after* it stops, so wait for them before keeping the text, or they get added twice.
+    // After speech ("stopped" event) the next round starts quickly so no words are missed. After a
+    // silent round Android still sends a couple of late errors about a second later; starting
+    // before they arrive made them end the *new* round, and rounds piled on top of each other.
+    const endRound = (r: number, afterSpeech = false) => {
+      if (stopped || ending || r !== round) return;
+      ending = true;
+      quickFails = Date.now() - roundStart < 1500 ? quickFails + 1 : 0;
+      if (quickFails >= 5) return end(); // keeps failing at once: give up instead of looping
+      window.setTimeout(
+        () => {
+          if (stopped || r !== round) return;
+          heard = joinSpeech(heard, current);
+          current = "";
+          listen();
+        },
+        afterSpeech ? 600 : 1500,
+      );
     };
     await SpeechRecognition.addListener("partialResults", (d) => {
       if (d.matches?.[0]) {
@@ -82,20 +106,29 @@ export async function nativeListen(lang: string, onText: (text: string) => void)
         onText(joinSpeech(heard, current));
       }
     });
-    let settling = false;
     await SpeechRecognition.addListener("listeningState", (d) => {
-      if (d.status !== "stopped" || stopped || settling) return;
-      // The phone stopped after a pause. Android often sends the final words of that stretch a
-      // moment *after* saying it stopped; wait for them before keeping the text, or the same
-      // words get added twice. Then carry on listening.
-      settling = true;
-      window.setTimeout(() => {
-        heard = joinSpeech(heard, current);
-        current = "";
-        settling = false;
-        listen();
-      }, 600);
+      if (d.status === "stopped") endRound(round, true);
     });
+    // After a silence the plugin sends no event (its error goes to a call that already returned),
+    // so check whether the phone is still listening; without this, listening silently died after
+    // the first quiet 5 seconds (hands-free never heard "BolKhata").
+    // Two "not listening" answers in a row are needed: a late error from the last round can flip
+    // the flag for a moment while the new round is starting.
+    let quiet = 0;
+    const watchdog = window.setInterval(() => {
+      if (stopped || ending || Date.now() - roundStart < 1500) return (quiet = 0), undefined;
+      const r = round;
+      void SpeechRecognition.isListening()
+        .then(({ listening }) => {
+          if (r !== round) return;
+          quiet = listening ? 0 : quiet + 1;
+          if (quiet >= 2) {
+            quiet = 0;
+            endRound(r);
+          }
+        })
+        .catch(() => {});
+    }, 1000);
     listen();
     return {
       ok: true,
@@ -104,6 +137,7 @@ export async function nativeListen(lang: string, onText: (text: string) => void)
       stop: async () => {
         stopped = true;
         window.clearTimeout(cap);
+        window.clearInterval(watchdog);
         finish();
         void SpeechRecognition.stop().catch(() => {});
       },

@@ -116,21 +116,21 @@ export function CaptureCard({
       aria-labelledby="capture-label"
       className="animate-rise rounded-[28px] border border-line bg-surface p-4 shadow-sm [animation-delay:80ms]"
     >
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-2">
         <span className="flex items-center gap-2">
           <label id="capture-label" htmlFor="capture" className="text-lg font-bold text-ink-950">
             {t("speakOrType")}
           </label>
           <HelpTip title="speakOrType" body="helpCapture" />
         </span>
-        <div className="flex rounded-full bg-surface-2 p-0.5 text-xs font-semibold" aria-label="Bhasha">
+        <div className="flex shrink-0 rounded-full bg-surface-2 p-0.5 text-xs font-semibold" aria-label="Bhasha">
           {LANGS.map((l) => (
             <button
               key={l.code}
               type="button"
               aria-pressed={lang === l.code}
               onClick={() => setLang(l.code)}
-              className={`rounded-full px-2.5 py-1 transition ${
+              className={`min-h-8 min-w-8 rounded-full px-2 py-1 transition ${
                 lang === l.code ? "bg-brand-600 text-white" : "text-muted hover:text-ink-900"
               }`}
             >

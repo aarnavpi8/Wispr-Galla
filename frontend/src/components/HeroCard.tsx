@@ -40,18 +40,18 @@ export function HeroCard({ summary, onOpen }: { summary: Summary; onOpen?: (what
       <div aria-hidden className="pointer-events-none absolute -right-16 -top-16 size-56 rounded-full border-[28px] border-iris-300/15" />
       <div aria-hidden className="pointer-events-none absolute -bottom-20 -right-4 size-40 rounded-full bg-gold-300/20 blur-2xl" />
 
-      <div className="flex items-center justify-between">
-        <p className="flex items-center gap-1.5 text-sm font-medium text-ink-700">
+      <div className="flex items-center justify-between gap-2">
+        <p className="flex min-w-0 items-center gap-1.5 text-sm font-medium leading-tight text-ink-700">
           {t("expectedCash")} <HelpTip title="expectedCash" body="helpExpected" />
         </p>
-        <div role="tablist" aria-label="Samay" className="flex rounded-full bg-white/80 p-1 text-sm ring-1 ring-line">
+        <div role="tablist" aria-label="Samay" className="flex shrink-0 rounded-full bg-white/80 p-0.5 text-xs ring-1 ring-line sm:p-1 sm:text-sm">
           {(["today", "week"] as const).map((r) => (
             <button
               key={r}
               role="tab"
               aria-selected={range === r}
               onClick={() => setRange(r)}
-              className={`rounded-full px-3 py-1.5 font-semibold transition ${
+              className={`whitespace-nowrap rounded-full px-2.5 py-1.5 font-semibold transition sm:px-3 ${
                 range === r ? "bg-gold-300 text-ink-950 shadow" : "text-ink-700 hover:text-ink-950"
               }`}
             >

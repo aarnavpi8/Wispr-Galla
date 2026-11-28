@@ -114,7 +114,7 @@ export function InventoryCard({
         </span>
         <span className="min-w-0 flex-1">
           <span className="flex items-center gap-2 font-bold">{t("scanBill")}</span>
-          <span className="block truncate text-xs text-white/70">{t("scanSub")}</span>
+          <span className="line-clamp-2 block text-xs leading-snug text-white/70">{t("scanSub")}</span>
         </span>
         <span aria-hidden className="transition group-hover:translate-x-1">
           →

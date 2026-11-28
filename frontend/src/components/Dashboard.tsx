@@ -215,7 +215,6 @@ export function Dashboard() {
     lang: speechCode(lang),
     paused: !!card || bubbleOpen || !!voiceSheet || !!openParty || !!undoAsk || picking || touring,
     onHeard: (text) => void understand(text),
-    onWake: () => setBubbleOpen(true),
     onIdleOff: () => setToast(t("handsFreeOff")),
   });
 
@@ -235,11 +234,11 @@ export function Dashboard() {
     <main className="mx-auto flex h-dvh w-full max-w-md flex-1 flex-col gap-4 overflow-hidden px-4 pt-5 lg:h-auto lg:max-w-6xl lg:gap-6 lg:overflow-visible lg:px-10 lg:pb-12 lg:pt-8">
       <header className="animate-rise flex shrink-0 items-center justify-between gap-3">
         <div className="min-w-0">
-          <p className="text-sm text-muted">
+          <p className="truncate text-sm text-muted">
             {t(greetingKey(new Date().getHours()))}
             {user ? `, ${user.name.split(" ")[0]}` : ""}
           </p>
-          <h1 className="truncate text-2xl font-extrabold tracking-tight text-ink-950 lg:text-4xl">
+          <h1 className="line-clamp-2 break-words text-xl font-extrabold leading-tight tracking-tight text-ink-950 sm:text-2xl lg:text-4xl">
             {shop.data?.name ?? <span className="skeleton inline-block h-7 w-48 rounded-lg align-middle" />}
           </h1>
         </div>
@@ -509,6 +508,31 @@ export function Dashboard() {
             refreshAll();
           }}
         />
+      )}
+
+      {/* Hands-free heard "BolKhata": confirm at once and show the words as they come in. */}
+      {handsFree.heard !== null && (
+        <div
+          role="status"
+          aria-live="assertive"
+          className="animate-pop fixed inset-x-4 bottom-28 z-[56] mx-auto flex max-w-md items-center gap-3 rounded-2xl bg-brand-600 px-4 py-3 text-white shadow-2xl ring-4 ring-brand-600/25 lg:inset-x-auto lg:bottom-8 lg:right-8 lg:mx-0 lg:w-[28rem]"
+        >
+          <span aria-hidden className="relative grid size-10 shrink-0 place-items-center">
+            <span className="absolute inset-0 animate-ping rounded-full bg-white/30" />
+            <span className="relative grid size-10 place-items-center rounded-full bg-white text-brand-700">
+              <svg viewBox="0 0 24 24" className="size-5" fill="none" stroke="currentColor" strokeWidth={2.2} strokeLinecap="round" aria-hidden>
+                <rect x="9" y="3" width="6" height="11" rx="3" />
+                <path d="M5 11a7 7 0 0 0 14 0M12 18v3" />
+              </svg>
+            </span>
+          </span>
+          <span className="min-w-0 flex-1">
+            <span className="block text-sm font-bold">{t("handsFreeListening")}</span>
+            <span className="line-clamp-2 block text-base leading-snug text-white/90">
+              {handsFree.heard ? `“${handsFree.heard}”` : t("handsFreeGoOn")}
+            </span>
+          </span>
+        </div>
       )}
 
       {lastSaved && (

@@ -162,8 +162,8 @@ function Tile({
       <p className={`mt-1 text-xl font-extrabold ${tone}`}>
         <CountUp value={value} format={formatINR} />
       </p>
-      <p className="mt-0.5 flex items-center justify-between gap-1 truncate text-[11px] text-muted">
-        <span className="truncate">{sub}</span>
+      <p className="mt-0.5 flex items-end justify-between gap-1 text-[11px] leading-snug text-muted">
+        <span className="line-clamp-2">{sub}</span>
         {onClick && <span aria-hidden className="text-sm">›</span>}
       </p>
     </div>
