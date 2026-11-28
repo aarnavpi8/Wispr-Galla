@@ -64,11 +64,9 @@ export function Tour({ onClose }: { onClose: () => void }) {
     if (!el) return;
     const fixed = getComputedStyle(el).position === "fixed" || el.closest("nav") !== null;
     // Park the part near the top so the explanation card fits underneath it.
-    if (!fixed) {
-      const top = el.getBoundingClientRect().top + window.scrollY - 72;
-      // Phones jump straight there: a smooth glide under the dimmed overlay was the remaining lag.
-      window.scrollTo?.({ top: Math.max(0, top), behavior: finePointer ? "smooth" : "auto" });
-    }
+    // On phones this also slides sideways to the part's page ("center" lines the page up exactly).
+    // Phones jump straight there: a smooth glide under the dimmed overlay was the remaining lag.
+    if (!fixed) el.scrollIntoView?.({ block: "start", inline: "center", behavior: finePointer ? "smooth" : "auto" });
     const id = window.setTimeout(measure, fixed ? 0 : finePointer ? 450 : 60);
     return () => window.clearTimeout(id);
   }, [step.target, measure, finePointer]);
@@ -84,11 +82,12 @@ export function Tour({ onClose }: { onClose: () => void }) {
       });
     };
     window.addEventListener("resize", onMove);
-    window.addEventListener("scroll", onMove, { passive: true });
+    // Capture: the swipeable pages scroll by themselves, and their scroll events don't bubble.
+    window.addEventListener("scroll", onMove, { passive: true, capture: true });
     return () => {
       cancelAnimationFrame(frame);
       window.removeEventListener("resize", onMove);
-      window.removeEventListener("scroll", onMove);
+      window.removeEventListener("scroll", onMove, { capture: true });
     };
   }, [measure]);
 

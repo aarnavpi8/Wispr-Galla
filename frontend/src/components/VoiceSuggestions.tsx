@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 
 import { postJSON } from "@/lib/api";
-import { formatINR } from "@/lib/format";
+import { formatINR, formatNumber } from "@/lib/format";
 import type { StringKey } from "@/lib/i18n";
 import type { Command, ExtractedEntry, Item, PartyBalance } from "@/lib/types";
 
@@ -154,7 +154,7 @@ export function VoiceSuggestions({
           {preview.party && <span>· {preview.party.name}</span>}
           {preview.amount ? <span className="font-bold tabular-nums">· {formatINR(preview.amount)}</span> : null}
           {preview.items.length > 0 && (
-            <span className="text-muted">· {preview.items.map((i) => `${i.qty} ${i.name}`).join(", ")}</span>
+            <span className="text-muted">· {preview.items.map((i) => `${formatNumber(i.qty)} ${i.name}`).join(", ")}</span>
           )}
         </p>
       )}

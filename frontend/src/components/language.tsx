@@ -2,6 +2,7 @@
 
 import { createContext, type ReactNode, useCallback, useContext, useEffect, useMemo, useSyncExternalStore } from "react";
 
+import { setNumberLanguage } from "@/lib/format";
 import { type Lang, LANGS, type StringKey, translate } from "@/lib/i18n";
 
 const KEY = "galla.lang";
@@ -63,6 +64,9 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
   const lang = chosen ?? "hinglish";
 
   const setLang = useCallback((l: Lang) => saveLang(l), []);
+
+  // Set during render (not in an effect) so the screen below already shows the right digits.
+  setNumberLanguage(lang);
 
   // Screen readers and the browser's own text-to-speech read the page in this language.
   useEffect(() => {

@@ -1,12 +1,45 @@
-import type { StringKey } from "./i18n";
+import type { Lang, StringKey } from "./i18n";
 import type { EntryType, Item, Mode } from "./types";
 
-const inr = new Intl.NumberFormat("en-IN", { maximumFractionDigits: 0 });
+/** Each language's own digits (Hindi १२३, Bengali ১২৩, Tamil ௧௨௩ ...). English and Hinglish keep 123. */
+const DIGITS: Partial<Record<Lang, string>> = {
+  hi: "deva",
+  mr: "deva",
+  gu: "gujr",
+  pa: "guru",
+  bn: "beng",
+  or: "orya",
+  ta: "tamldec",
+  te: "telu",
+  kn: "knda",
+  ml: "mlym",
+};
 
-/** ₹1,25,000 (Indian grouping). Negative amounts keep the sign in front of ₹. */
-export function formatINR(amount: number): string {
+const formatters = new Map<Lang, Intl.NumberFormat>();
+function numberFormat(lang: Lang): Intl.NumberFormat {
+  let f = formatters.get(lang);
+  if (!f) {
+    f = new Intl.NumberFormat("en-IN", { maximumFractionDigits: 2, numberingSystem: DIGITS[lang] ?? "latn" });
+    formatters.set(lang, f);
+  }
+  return f;
+}
+
+// The app's language, set by the LanguageProvider, so every number on screen follows it.
+let screenLang: Lang = "hinglish";
+export function setNumberLanguage(lang: Lang) {
+  screenLang = lang;
+}
+
+/** A count or quantity in the screen language's digits, Indian grouping: १,२५,००० / 2.5. */
+export function formatNumber(n: number, lang: Lang = screenLang): string {
+  return numberFormat(lang).format(n);
+}
+
+/** ₹1,25,000 (Indian grouping, the language's digits). Negative amounts keep the sign in front of ₹. */
+export function formatINR(amount: number, lang: Lang = screenLang): string {
   const sign = amount < 0 ? "−" : "";
-  return `${sign}₹${inr.format(Math.abs(Math.round(amount)))}`;
+  return `${sign}₹${formatNumber(Math.abs(Math.round(amount)), lang)}`;
 }
 
 /** Whole calendar days from a to b (local time). */

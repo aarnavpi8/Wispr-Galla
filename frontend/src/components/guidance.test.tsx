@@ -2,6 +2,7 @@ import { act, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+import { translate } from "@/lib/i18n";
 import { en } from "@/lib/locales/en";
 import { hi } from "@/lib/locales/hi";
 import type { Item } from "@/lib/types";
@@ -24,7 +25,7 @@ describe("HelpTip", () => {
     inLang("hi", <HelpTip title="receivable" body="helpReceivable" />);
     await user.click(screen.getByRole("button", { name: `${hi.whatIsThis} ${hi.receivable}` }));
     expect(screen.getByRole("dialog", { name: hi.receivable })).toBeInTheDocument();
-    expect(screen.getByText(hi.helpReceivable)).toBeInTheDocument();
+    expect(screen.getByText(translate("hi", "helpReceivable"))).toBeInTheDocument(); // ₹ amounts in Hindi digits
     await user.click(screen.getByRole("button", { name: hi.gotIt }));
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
   });

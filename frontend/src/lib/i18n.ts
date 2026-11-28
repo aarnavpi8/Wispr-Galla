@@ -1,3 +1,4 @@
+import { formatNumber } from "./format";
 import { bn } from "./locales/bn";
 import { en, type Locale, type StringKey } from "./locales/en";
 import { gu } from "./locales/gu";
@@ -69,7 +70,12 @@ export const LOCALES: Record<Lang, Locale> = { en, hinglish, hi, mr, gu, pa, bn,
 
 export function translate(lang: Lang, key: StringKey, vars: Record<string, string | number> = {}): string {
   let s = LOCALES[lang]?.[key] ?? en[key];
-  for (const [k, v] of Object.entries(vars)) s = s.replaceAll(`{${k}}`, String(v));
+  // Digits written in the text itself ("7 दिन") too, except in UPI IDs (always typed as 0-9).
+  s = s.replace(/\S*\d\S*/g, (word) => (word.includes("@") ? word : word.replace(/\d/g, (d) => formatNumber(Number(d), lang))));
+  for (const [k, v] of Object.entries(vars)) {
+    // Numbers are shown in the language's own digits; text (names, dates, amounts) is used as is.
+    s = s.replaceAll(`{${k}}`, typeof v === "number" ? formatNumber(v, lang) : v);
+  }
   return s;
 }
 

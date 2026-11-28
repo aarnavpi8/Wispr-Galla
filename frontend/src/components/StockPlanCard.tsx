@@ -3,7 +3,7 @@
 import { useState } from "react";
 
 import { postJSON, useApi } from "@/lib/api";
-import { formatINR } from "@/lib/format";
+import { formatINR, formatNumber } from "@/lib/format";
 import type { StringKey } from "@/lib/i18n";
 import type { InventoryAccount, Insights, ItemPlan, PlanStatus } from "@/lib/types";
 
@@ -66,7 +66,7 @@ export function StockPlanCard({ refreshKey = 0, onChanged }: { refreshKey?: numb
               onClick={() => setDays(d)}
               className={`rounded-full px-3 py-1 transition ${days === d ? "bg-brand-600 text-white" : "text-muted hover:text-ink-900"}`}
             >
-              {d}
+              {formatNumber(d)}
             </button>
           ))}
         </div>
@@ -145,7 +145,7 @@ export function StockPlanCard({ refreshKey = 0, onChanged }: { refreshKey?: numb
           >
             {[1, 2, 3, 5, 7, 14].map((d) => (
               <option key={d} value={d}>
-                {d}
+                {formatNumber(d)}
               </option>
             ))}
           </select>
