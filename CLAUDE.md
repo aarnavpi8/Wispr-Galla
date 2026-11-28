@@ -44,6 +44,10 @@ We build hands-free: prompts are dictated with Wispr Flow.
   Stock, Khata); each page scrolls by itself and the header stays on top. Desktop keeps two columns.
   The big mic opens a speaking bubble (`VoiceBubble.tsx`) that starts listening at once; pressing
   the mic again stops it and the entry card opens.
+- Done: hands-free mode (header toggle): the mic listens for "BolKhata"; what follows goes to the
+  entry card / a command / a question, "BolKhata" alone opens the speaking bubble. Browser or phone
+  speech (not Wispr), pauses while a card or sheet is open, keeps the screen awake, off after 10
+  idle minutes (`hooks/useHandsFree.ts`). Saving still needs a tap.
 - Done: optional Google login via Firebase (D14). Off without keys.
 - Done: tests (pytest 238, Vitest 122) and GitHub Actions CI incl. a Docker Compose smoke test (D16).
 - Next: flow 1 (one-line entries), starting with the rule-based extractor (D2). "Aage" on the

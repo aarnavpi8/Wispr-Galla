@@ -423,4 +423,8 @@ export const gu: Locale = {
   settleSupplier: "{name} ને પૈસા આપ્યા",
   gotBtn: "{x} મળ્યા",
   paidBtn: "{x} આપ્યા",
+
+  handsFree: "હાથ વગર",
+  handsFreeHint: "“BolKhata” બોલો, પછી તમારી એન્ટ્રી",
+  handsFreeOff: "હાથ વગરનો મોડ બંધ",
 };

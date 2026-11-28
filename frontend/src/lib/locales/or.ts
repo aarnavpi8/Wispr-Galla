@@ -423,4 +423,8 @@ export const or: Locale = {
   settleSupplier: "{name}ଙ୍କୁ ଟଙ୍କା ଦେଲି",
   gotBtn: "{x} ମିଳିଲା",
   paidBtn: "{x} ଦେଲି",
+
+  handsFree: "ହାତ ବିନା",
+  handsFreeHint: "“BolKhata” କୁହନ୍ତୁ, ତା’ପରେ ଆପଣଙ୍କ ଏଣ୍ଟ୍ରି",
+  handsFreeOff: "ହାତ ବିନା ମୋଡ୍ ବନ୍ଦ",
 };

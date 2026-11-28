@@ -423,4 +423,8 @@ export const te: Locale = {
   settleSupplier: "{name}కు డబ్బు ఇచ్చాను",
   gotBtn: "{x} వచ్చింది",
   paidBtn: "{x} ఇచ్చాను",
+
+  handsFree: "చేతులు లేకుండా",
+  handsFreeHint: "“BolKhata” అనండి, తర్వాత మీ ఎంట్రీ",
+  handsFreeOff: "చేతులు లేని మోడ్ ఆపబడింది",
 };

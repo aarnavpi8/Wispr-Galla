@@ -422,4 +422,8 @@ export const hinglish: Locale = {
   settleSupplier: "{name} ko paise diye",
   gotBtn: "{x} mile",
   paidBtn: "{x} diye",
+
+  handsFree: "Bina haath",
+  handsFreeHint: "“BolKhata” boliye, phir apni entry",
+  handsFreeOff: "Bina haath wala mode band",
 };

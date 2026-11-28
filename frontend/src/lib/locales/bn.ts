@@ -423,4 +423,8 @@ export const bn: Locale = {
   settleSupplier: "{name}-কে টাকা দিলাম",
   gotBtn: "{x} পেলাম",
   paidBtn: "{x} দিলাম",
+
+  handsFree: "হাত ছাড়া",
+  handsFreeHint: "“BolKhata” বলুন, তারপর আপনার এন্ট্রি",
+  handsFreeOff: "হাত ছাড়া মোড বন্ধ",
 };

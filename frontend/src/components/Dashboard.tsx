@@ -2,6 +2,7 @@
 
 import { type ReactNode, useCallback, useEffect, useRef, useState } from "react";
 
+import { useHandsFree } from "@/hooks/useHandsFree";
 import { postJSON, useApi } from "@/lib/api";
 import { readAloud } from "@/lib/speak";
 import { formatINR, formatNumber } from "@/lib/format";
@@ -209,6 +210,15 @@ export function Dashboard() {
     else setBubbleOpen(true);
   };
 
+  // Hands-free: say "BolKhata …" instead of pressing the mic. Pauses while anything is open.
+  const handsFree = useHandsFree({
+    lang: speechCode(lang),
+    paused: !!card || bubbleOpen || !!voiceSheet || !!openParty || !!undoAsk || picking || touring,
+    onHeard: (text) => void understand(text),
+    onWake: () => setBubbleOpen(true),
+    onIdleOff: () => setToast(t("handsFreeOff")),
+  });
+
   return (
     <div className="flex w-full flex-1 lg:min-h-dvh">
     <DesktopSidebar
@@ -233,19 +243,56 @@ export function Dashboard() {
             {shop.data?.name ?? <span className="skeleton inline-block h-7 w-48 rounded-lg align-middle" />}
           </h1>
         </div>
-        <div className="flex items-center gap-2 lg:hidden">
-          <button
-            type="button"
-            onClick={() => setPicking(true)}
-            aria-label={t("language")}
-            className="flex h-12 items-center gap-1.5 rounded-full border border-line bg-surface px-3 text-sm font-semibold text-ink-900 shadow-sm transition hover:-translate-y-0.5 hover:border-iris-500 hover:bg-iris-100"
-          >
-            <span aria-hidden>अ/A</span>
-            <span className="hidden sm:inline">{LANGS.find((l) => l.code === lang)?.name}</span>
-          </button>
-          <AccountMenu onShowTour={() => setTouring(true)} onLanguage={() => setPicking(true)} />
+        <div className="flex items-center gap-2">
+          {handsFree.supported && (
+            <button
+              type="button"
+              onClick={handsFree.toggle}
+              aria-pressed={handsFree.on}
+              aria-label={t("handsFree")}
+              title={t("handsFreeHint")}
+              className={`flex h-12 items-center gap-2 rounded-full border px-3 text-sm font-semibold shadow-sm transition hover:-translate-y-0.5 ${
+                handsFree.on ? "border-brand-600 bg-brand-600 text-white" : "border-line bg-surface text-ink-900 hover:border-iris-500 hover:bg-iris-100"
+              }`}
+            >
+              {handsFree.on ? (
+                <>
+                  {/* Pulses while it is listening for the wake word. */}
+                  <span aria-hidden className={`size-2.5 rounded-full bg-white ${handsFree.listening ? "animate-pulse" : "opacity-50"}`} />
+                  <span>BolKhata</span>
+                </>
+              ) : (
+                <>
+                  <EarIcon />
+                  <span className="hidden sm:inline">{t("handsFree")}</span>
+                </>
+              )}
+            </button>
+          )}
+          <div className="flex items-center gap-2 lg:hidden">
+            <button
+              type="button"
+              onClick={() => setPicking(true)}
+              aria-label={t("language")}
+              className="flex h-12 items-center gap-1.5 rounded-full border border-line bg-surface px-3 text-sm font-semibold text-ink-900 shadow-sm transition hover:-translate-y-0.5 hover:border-iris-500 hover:bg-iris-100"
+            >
+              <span aria-hidden>अ/A</span>
+              <span className="hidden sm:inline">{LANGS.find((l) => l.code === lang)?.name}</span>
+            </button>
+            <AccountMenu onShowTour={() => setTouring(true)} onLanguage={() => setPicking(true)} />
+          </div>
         </div>
       </header>
+      {handsFree.on && (
+        <p role="status" className="-mt-2 shrink-0 text-center text-sm font-semibold text-brand-700 lg:text-left">
+          {t("handsFreeHint")}
+        </p>
+      )}
+      {handsFree.error && (
+        <p role="alert" className="-mt-2 shrink-0 text-center text-sm text-pending lg:text-left">
+          {t(handsFree.error)}
+        </p>
+      )}
 
       {error && (
         <p role="alert" className="rounded-2xl bg-red-50 p-3 text-money-out ring-1 ring-red-200">
@@ -508,5 +555,14 @@ function Page({ id, children }: { id: NavId; children: ReactNode }) {
     >
       {children}
     </div>
+  );
+}
+
+function EarIcon() {
+  return (
+    <svg viewBox="0 0 24 24" className="size-5" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+      <path d="M7 9a5 5 0 0 1 10 0c0 3-3 4-3 7a3 3 0 0 1-5.5 1.6" />
+      <path d="M10 9.5a2 2 0 0 1 4 0" />
+    </svg>
   );
 }
