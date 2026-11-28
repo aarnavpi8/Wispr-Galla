@@ -11,7 +11,6 @@ import { BottomNav } from "./BottomNav";
 import { DayCloseSheet } from "./DayCloseSheet";
 import { InventoryCard } from "./InventoryCard";
 import { Reveal } from "./Reveal";
-import { StickySummary } from "./StickySummary";
 import { StockPlanCard } from "./StockPlanCard";
 import { PartySheet } from "./PartySheet";
 
@@ -222,17 +221,6 @@ describe("Scroll helpers", () => {
     expect(screen.getByText("hello").parentElement).toHaveClass("is-visible");
   });
 
-  it("StickySummary keeps key numbers and jumps to low stock", async () => {
-    const onLow = vi.fn();
-    const user = userEvent.setup();
-    render(
-      <StickySummary visible shopName="Shree Ganesh Kirana" expected={2000} receivable={1210} lowStock={3} onTap={() => {}} onLowStock={onLow} />,
-    );
-    expect(screen.getByText("₹2,000")).toBeInTheDocument();
-    expect(screen.getByText("₹1,210")).toBeInTheDocument();
-    await user.click(screen.getByRole("button", { name: /Kam stock/ }));
-    expect(onLow).toHaveBeenCalled();
-  });
 
   it("BottomNav jumps to sections, shows badges, and the mic button asks to speak", async () => {
     const onGo = vi.fn();
@@ -298,13 +286,6 @@ describe("Summary numbers open what they add up", () => {
     expect(onOpen.mock.calls.map((c) => c[0])).toEqual(["receivable", "payable"]);
   });
 
-  it("StickySummary: To collect is a button", async () => {
-    const onReceivable = vi.fn();
-    const user = userEvent.setup();
-    render(<StickySummary visible shopName="S" expected={0} receivable={1210} lowStock={0} onTap={() => {}} onLowStock={() => {}} onReceivable={onReceivable} />);
-    await user.click(screen.getByRole("button", { name: /₹1,210/ }));
-    expect(onReceivable).toHaveBeenCalled();
-  });
 
   it("InventoryCard reloads when stock changed elsewhere", async () => {
     let stock = 2;

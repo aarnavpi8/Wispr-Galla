@@ -423,4 +423,8 @@ export const pa: Locale = {
   settleSupplier: "{name} ਨੂੰ ਪੈਸੇ ਦਿੱਤੇ",
   gotBtn: "{x} ਮਿਲੇ",
   paidBtn: "{x} ਦਿੱਤੇ",
+
+  handsFree: "ਬਿਨਾਂ ਹੱਥ",
+  handsFreeHint: "“BolKhata” ਬੋਲੋ, ਫਿਰ ਆਪਣੀ ਐਂਟਰੀ",
+  handsFreeOff: "ਬਿਨਾਂ ਹੱਥ ਵਾਲਾ ਮੋਡ ਬੰਦ",
 };

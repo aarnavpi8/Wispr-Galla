@@ -32,8 +32,14 @@ export function CaptureCard({
   onCommand,
   parties = [],
   items = [],
+  micPresses = 0,
+  listenOnOpen = false,
 }: {
   onSubmit: (text: string) => void;
+  /** Goes up by one each time the big mic button in the bottom bar is pressed. */
+  micPresses?: number;
+  /** Start listening as soon as the card appears (the speaking bubble). */
+  listenOnOpen?: boolean;
   /** Run a voice command directly (from a suggestion or "Try saying" chip). */
   onCommand?: (command: Command, partyId?: number | null) => void;
   parties?: PartyBalance[];
@@ -61,6 +67,27 @@ export function CaptureCard({
     }
     wasBusy.current = busy;
   }, [busy, speech.error]);
+
+  // In the speaking bubble, the big mic button in the bottom bar works like this card's mic
+  // button: tap to start, tap to stop.
+  // Start from the current count so a fresh card (after an entry is saved) doesn't start by itself.
+  const handledPresses = useRef(micPresses);
+  const latestSpeech = useRef(speech);
+  useEffect(() => {
+    latestSpeech.current = speech;
+  });
+  useEffect(() => {
+    if (micPresses === handledPresses.current) return;
+    handledPresses.current = micPresses;
+    const mic = latestSpeech.current;
+    if (!mic.supported || mic.transcribing) return;
+    if (mic.listening) mic.stop();
+    else mic.start();
+  }, [micPresses]);
+
+  useEffect(() => {
+    if (listenOnOpen && latestSpeech.current.supported) latestSpeech.current.start();
+  }, [listenOnOpen]);
 
   // Tapping an example "types" it in, so it feels like dictation.
   const typeIn = (sample: string) => {

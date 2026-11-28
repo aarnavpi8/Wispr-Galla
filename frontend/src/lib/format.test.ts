@@ -4,8 +4,10 @@ import {
   daysBetween,
   entryMeta,
   formatINR,
+  formatNumber,
   initials,
   reminderLink,
+  setNumberLanguage,
   timeAgo,
   upiLink,
   weekdayShort,
@@ -31,6 +33,25 @@ describe("formatINR", () => {
   it("rounds to whole rupees", () => {
     expect(formatINR(99.6)).toBe("₹100");
   });
+
+  it("writes each language's own digits; English and Hinglish keep 0-9", () => {
+    expect(formatINR(125000, "hi")).toBe("₹१,२५,०००");
+    expect(formatINR(125000, "mr")).toBe("₹१,२५,०००");
+    expect(formatINR(125000, "gu")).toBe("₹૧,૨૫,૦૦૦");
+    expect(formatINR(125000, "bn")).toBe("₹১,২৫,০০০");
+    expect(formatINR(125000, "en")).toBe("₹1,25,000");
+    expect(formatINR(125000, "hinglish")).toBe("₹1,25,000");
+  });
+});
+
+describe("formatNumber", () => {
+  it("follows the screen language, with decimals for quantities", () => {
+    setNumberLanguage("hi");
+    expect(formatNumber(2.5)).toBe("२.५");
+    expect(formatINR(-500)).toBe("−₹५००");
+    setNumberLanguage("hinglish");
+    expect(formatNumber(2.5)).toBe("2.5");
+  });
 });
 
 describe("timeAgo", () => {
@@ -49,7 +70,7 @@ describe("timeAgo", () => {
     const then = new Date(2026, 10, 23, 12, 0).toISOString();
     const now = new Date(2026, 10, 27, 18, 0);
     expect(timeAgo(then, tEn, now)).toBe("4 days ago");
-    expect(timeAgo(then, tHi, now)).toBe("4 दिन पहले");
+    expect(timeAgo(then, tHi, now)).toBe("४ दिन पहले"); // Hindi digits
   });
 });
 

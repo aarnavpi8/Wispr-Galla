@@ -423,4 +423,8 @@ export const ta: Locale = {
   settleSupplier: "{name}க்குப் பணம் கொடுத்தேன்",
   gotBtn: "{x} வந்தது",
   paidBtn: "{x} கொடுத்தேன்",
+
+  handsFree: "கை இல்லாமல்",
+  handsFreeHint: "“BolKhata” சொல்லுங்கள், பிறகு உங்கள் பதிவு",
+  handsFreeOff: "கை இல்லா முறை நிறுத்தப்பட்டது",
 };

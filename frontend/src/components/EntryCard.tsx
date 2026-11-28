@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 
 import { postJSON } from "@/lib/api";
-import { formatINR } from "@/lib/format";
+import { formatINR, formatNumber } from "@/lib/format";
 import { speechCode, type StringKey } from "@/lib/i18n";
 import { readAloud, stopSpeaking } from "@/lib/speak";
 import type { EntryOut, EntryType, ExtractedEntry, Item, LineItem, Mode, PartyBalance } from "@/lib/types";
@@ -145,7 +145,7 @@ export function EntryCard({
   // Everything that must be fixed before saving, in one plain sentence each.
   const problems: string[] = [
     ...(totalMismatch ? [t("totalMustMatch", { x: formatINR(itemsTotal), y: formatINR(amountNum) })] : []),
-    ...shortLines.map((li) => `${li.name}: ${t("onlyInStock", { qty: `${onShelf(li)} ${li.unit}` })}. ${t("shortStockBlock")}`),
+    ...shortLines.map((li) => `${li.name}: ${t("onlyInStock", { qty: `${formatNumber(onShelf(li) ?? 0)} ${li.unit}` })}. ${t("shortStockBlock")}`),
     ...(overpay
       ? [
           owed === 0
@@ -328,8 +328,8 @@ export function EntryCard({
                         }`}
                       >
                         {takesStock && li.qty > (onShelf(li) ?? 0)
-                          ? t("onlyInStock", { qty: `${onShelf(li)} ${li.unit}` })
-                          : t("inStockQty", { qty: `${onShelf(li)} ${li.unit}` })}
+                          ? t("onlyInStock", { qty: `${formatNumber(onShelf(li) ?? 0)} ${li.unit}` })
+                          : t("inStockQty", { qty: `${formatNumber(onShelf(li) ?? 0)} ${li.unit}` })}
                       </span>
                     )}
                     {(li.options?.length ?? 0) > (li.item_id === null ? 0 : 1) && (
@@ -356,7 +356,7 @@ export function EntryCard({
                             >
                               {o.name}
                               {o.price ? ` · ${formatINR(o.price)}` : ""}
-                              {o.in_stock != null ? ` · ${o.in_stock} ${o.unit}` : ""}
+                              {o.in_stock != null ? ` · ${formatNumber(o.in_stock)} ${o.unit}` : ""}
                             </button>
                           ))}
                         </span>
@@ -407,7 +407,7 @@ export function EntryCard({
                   >
                     −
                   </button>
-                  <span className="w-8 text-center font-bold tabular-nums">{li.qty}</span>
+                  <span className="w-8 text-center font-bold tabular-nums">{formatNumber(li.qty)}</span>
                   <button
                     type="button"
                     aria-label={`${li.name} +1`}
@@ -454,7 +454,7 @@ export function EntryCard({
               <option value="">{t("attachItem")}</option>
               {stock.map((it) => (
                 <option key={it.id} value={it.id}>
-                  {it.variant ? `${it.name} ${it.variant}` : it.name} ({it.stock} {it.unit})
+                  {it.variant ? `${it.name} ${it.variant}` : it.name} ({formatNumber(it.stock)} {it.unit})
                 </option>
               ))}
             </select>

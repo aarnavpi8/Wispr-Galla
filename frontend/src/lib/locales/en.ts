@@ -440,6 +440,11 @@ export const en = {
   settleSupplier: "Money paid to {name}",
   gotBtn: "Received {x}",
   paidBtn: "Paid {x}",
+
+  // Hands-free (wake word)
+  handsFree: "Hands-free",
+  handsFreeHint: "Say “BolKhata”, then your entry",
+  handsFreeOff: "Hands-free turned off",
 };
 
 export type StringKey = keyof typeof en;

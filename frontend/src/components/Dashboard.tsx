@@ -1,10 +1,11 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { type ReactNode, useCallback, useEffect, useRef, useState } from "react";
 
+import { useHandsFree } from "@/hooks/useHandsFree";
 import { postJSON, useApi } from "@/lib/api";
 import { readAloud } from "@/lib/speak";
-import { formatINR } from "@/lib/format";
+import { formatINR, formatNumber } from "@/lib/format";
 import { greetingKey, LANGS, speechCode } from "@/lib/i18n";
 import type { Accounts, Command, EntryOut, ExtractedEntry, Item, PartyBalance, ShopSummary, Summary } from "@/lib/types";
 
@@ -28,10 +29,10 @@ import { Spotlight } from "./interactive";
 import { LanguagePicker } from "./LanguagePicker";
 import { useLang } from "./language";
 import { Reveal } from "./Reveal";
-import { StickySummary } from "./StickySummary";
 import { WeekChart } from "./WeekChart";
 import { ColorLegend } from "./HelpTip";
 import { Tour, tourSeen } from "./Tour";
+import { VoiceBubble } from "./VoiceBubble";
 
 type Tab = "hisaab" | "khata";
 
@@ -113,7 +114,7 @@ export function Dashboard() {
       if (entry.type === "command" && entry.command === "item_stock") {
         // "Cheeni kitni bachi hai?" -> "Cheeni: 12 kg left", on screen and spoken.
         setCaptureKey((k) => k + 1);
-        const answer = entry.items.map((li) => t("stockAnswer", { item: li.name, qty: `${li.in_stock ?? 0} ${li.unit}` })).join(" · ");
+        const answer = entry.items.map((li) => t("stockAnswer", { item: li.name, qty: `${formatNumber(li.in_stock ?? 0)} ${li.unit}` })).join(" · ");
         setToast(answer);
         readAloud(answer, speechCode(lang));
       } else if (entry.type === "command" && entry.command) {
@@ -143,8 +144,6 @@ export function Dashboard() {
       setToast((e as Error).message);
     }
   };
-  const [heroGone, setHeroGone] = useState(false);
-  const hero = useRef<HTMLDivElement>(null);
   const hasSummary = !!summary.data;
   const [touring, setTouring] = useState(false);
 
@@ -168,26 +167,28 @@ export function Dashboard() {
     return () => window.clearTimeout(id);
   }, [lastSaved]);
 
-  // Show the compact summary bar once the big money card has scrolled off the top.
-  useEffect(() => {
-    const el = hero.current;
-    if (!el || typeof IntersectionObserver === "undefined") return;
-    const io = new IntersectionObserver(
-      ([e]) => setHeroGone(!e.isIntersecting && e.boundingClientRect.top < 0),
-      { threshold: 0, rootMargin: "-40px 0px 0px 0px" },
-    );
-    io.observe(el);
-    return () => io.disconnect();
-  }, [hasSummary]);
-
   const closeSheet = useCallback(() => setOpenParty(null), []);
   const error = shop.error ?? summary.error;
   const overdue = khata.data?.filter((p) => p.overdue_since) ?? [];
 
+  // Phones: slide sideways to a page (and down to a section in it). Desktop: scroll the window.
+  const pages = useRef<HTMLDivElement>(null);
+  const slideTo = (page: NavId, sectionId?: string) => {
+    const pageEl = document.getElementById(`page-${page}`);
+    const section = sectionId ? document.getElementById(sectionId) : null;
+    if (!pageEl) return;
+    if (window.matchMedia?.("(min-width: 1024px)").matches) {
+      if (page === "aaj" && !section) window.scrollTo({ top: 0, behavior: "smooth" });
+      else (section ?? pageEl).scrollIntoView({ behavior: "smooth", block: "start" });
+      return;
+    }
+    pages.current?.scrollTo?.({ left: pageEl.offsetLeft, behavior: "smooth" });
+    pageEl.scrollTo?.({ top: section ? section.offsetTop - 8 : 0, behavior: "smooth" });
+  };
+
   const go = (id: NavId) => {
     if (id === "khata") setTab("khata");
-    if (id === "aaj") window.scrollTo({ top: 0, behavior: "smooth" });
-    else document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" });
+    slideTo(id);
   };
 
   // Summary numbers open what they add up.
@@ -197,14 +198,26 @@ export function Dashboard() {
   };
   const openEntries = () => {
     setTab("hisaab");
-    document.getElementById("khata")?.scrollIntoView({ behavior: "smooth", block: "start" });
+    slideTo("khata");
   };
 
+  // The big mic button opens the speaking bubble, which starts listening right away.
+  // Pressing it again while the bubble is open starts or stops listening.
+  const [bubbleOpen, setBubbleOpen] = useState(false);
+  const [micPresses, setMicPresses] = useState(0);
   const speak = () => {
-    const box = document.getElementById("capture") as HTMLTextAreaElement | null;
-    box?.scrollIntoView({ behavior: "smooth", block: "center" });
-    window.setTimeout(() => box?.focus({ preventScroll: true }), 350);
+    if (bubbleOpen) setMicPresses((n) => n + 1);
+    else setBubbleOpen(true);
   };
+
+  // Hands-free: say "BolKhata …" instead of pressing the mic. Pauses while anything is open.
+  const handsFree = useHandsFree({
+    lang: speechCode(lang),
+    paused: !!card || bubbleOpen || !!voiceSheet || !!openParty || !!undoAsk || picking || touring,
+    onHeard: (text) => void understand(text),
+    onWake: () => setBubbleOpen(true),
+    onIdleOff: () => setToast(t("handsFreeOff")),
+  });
 
   return (
     <div className="flex w-full flex-1 lg:min-h-dvh">
@@ -219,22 +232,8 @@ export function Dashboard() {
       onLanguage={() => setPicking(true)}
       onShowTour={() => setTouring(true)}
     />
-    <main className="mx-auto flex w-full max-w-md flex-1 flex-col gap-4 px-4 pb-36 pt-5 lg:max-w-6xl lg:gap-6 lg:px-10 lg:pb-12 lg:pt-8">
-      <div className="lg:hidden">
-      <StickySummary
-        visible={heroGone}
-        shopName={shop.data?.name ?? ""}
-        expected={summary.data?.expected_cash_today ?? 0}
-        receivable={accounts.data?.receivable ?? summary.data?.udhaar_outstanding ?? 0}
-        lowStock={accounts.data?.low_stock ?? 0}
-        onTap={() => go("aaj")}
-        onLowStock={() => go("maal")}
-        onReceivable={() => openKhata("customer")}
-        account={<AccountMenu compact onShowTour={() => setTouring(true)} onLanguage={() => setPicking(true)} />}
-      />
-      </div>
-
-      <header id="aaj" className="animate-rise flex items-center justify-between gap-3">
+    <main className="mx-auto flex h-dvh w-full max-w-md flex-1 flex-col gap-4 overflow-hidden px-4 pt-5 lg:h-auto lg:max-w-6xl lg:gap-6 lg:overflow-visible lg:px-10 lg:pb-12 lg:pt-8">
+      <header className="animate-rise flex shrink-0 items-center justify-between gap-3">
         <div className="min-w-0">
           <p className="text-sm text-muted">
             {t(greetingKey(new Date().getHours()))}
@@ -244,19 +243,56 @@ export function Dashboard() {
             {shop.data?.name ?? <span className="skeleton inline-block h-7 w-48 rounded-lg align-middle" />}
           </h1>
         </div>
-        <div className="flex items-center gap-2 lg:hidden">
-          <button
-            type="button"
-            onClick={() => setPicking(true)}
-            aria-label={t("language")}
-            className="flex h-12 items-center gap-1.5 rounded-full border border-line bg-surface px-3 text-sm font-semibold text-ink-900 shadow-sm transition hover:-translate-y-0.5 hover:border-iris-500 hover:bg-iris-100"
-          >
-            <span aria-hidden>अ/A</span>
-            <span className="hidden sm:inline">{LANGS.find((l) => l.code === lang)?.name}</span>
-          </button>
-          <AccountMenu onShowTour={() => setTouring(true)} onLanguage={() => setPicking(true)} />
+        <div className="flex items-center gap-2">
+          {handsFree.supported && (
+            <button
+              type="button"
+              onClick={handsFree.toggle}
+              aria-pressed={handsFree.on}
+              aria-label={t("handsFree")}
+              title={t("handsFreeHint")}
+              className={`flex h-12 items-center gap-2 rounded-full border px-3 text-sm font-semibold shadow-sm transition hover:-translate-y-0.5 ${
+                handsFree.on ? "border-brand-600 bg-brand-600 text-white" : "border-line bg-surface text-ink-900 hover:border-iris-500 hover:bg-iris-100"
+              }`}
+            >
+              {handsFree.on ? (
+                <>
+                  {/* Pulses while it is listening for the wake word. */}
+                  <span aria-hidden className={`size-2.5 rounded-full bg-white ${handsFree.listening ? "animate-pulse" : "opacity-50"}`} />
+                  <span>BolKhata</span>
+                </>
+              ) : (
+                <>
+                  <EarIcon />
+                  <span className="hidden sm:inline">{t("handsFree")}</span>
+                </>
+              )}
+            </button>
+          )}
+          <div className="flex items-center gap-2 lg:hidden">
+            <button
+              type="button"
+              onClick={() => setPicking(true)}
+              aria-label={t("language")}
+              className="flex h-12 items-center gap-1.5 rounded-full border border-line bg-surface px-3 text-sm font-semibold text-ink-900 shadow-sm transition hover:-translate-y-0.5 hover:border-iris-500 hover:bg-iris-100"
+            >
+              <span aria-hidden>अ/A</span>
+              <span className="hidden sm:inline">{LANGS.find((l) => l.code === lang)?.name}</span>
+            </button>
+            <AccountMenu onShowTour={() => setTouring(true)} onLanguage={() => setPicking(true)} />
+          </div>
         </div>
       </header>
+      {handsFree.on && (
+        <p role="status" className="-mt-2 shrink-0 text-center text-sm font-semibold text-brand-700 lg:text-left">
+          {t("handsFreeHint")}
+        </p>
+      )}
+      {handsFree.error && (
+        <p role="alert" className="-mt-2 shrink-0 text-center text-sm text-pending lg:text-left">
+          {t(handsFree.error)}
+        </p>
+      )}
 
       {error && (
         <p role="alert" className="rounded-2xl bg-red-50 p-3 text-money-out ring-1 ring-red-200">
@@ -270,129 +306,136 @@ export function Dashboard() {
         </p>
       )}
 
-      {/* Phones: one column in this order (display: contents + order). Desktop: two columns. */}
-      <div className="contents lg:grid lg:grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)] lg:items-start lg:gap-6">
-        <div className="contents lg:flex lg:flex-col lg:gap-6">
-      <div ref={hero} id="tour-hero" className="order-1 space-y-2 lg:order-none">
-        {summary.data ? (
-          <HeroCard
-            summary={summary.data}
-            onOpen={(what) => {
-              if (what === "udhaar") openKhata("customer");
-              else if (what === "out") setVoiceSheet("day_close");
-              else openEntries();
-            }}
-          />
-        ) : (
-          <div className="skeleton h-64 rounded-[28px]" />
-        )}
-        <ColorLegend className="justify-center" />
-      </div>
-      <div id="tour-capture" className="order-2 lg:order-none">
-        <CaptureCard
-          key={captureKey}
-          onSubmit={(text) => void understand(text)}
-          onCommand={(command, partyId) => {
-            setCaptureKey((k) => k + 1);
-            runCommand(command, partyId);
-          }}
-          parties={khata.data ?? []}
-          items={items.data ?? []}
-        />
-      </div>
-      {overdue.length > 0 && summary.data && (
-        <Spotlight
-          as="button"
-          type="button"
-          onClick={() => setOpenParty(overdue[0])}
-          className="animate-rise order-3 flex items-center gap-3 rounded-3xl lg:order-none border border-amber-200 bg-amber-50 p-4 text-left transition hover:-translate-y-0.5 hover:shadow-md [--spot:rgb(245_158_11/0.18)]"
-        >
-          <span className="text-2xl" aria-hidden>
-            ⏰
-          </span>
-          <span className="flex-1">
-            <span className="block font-bold text-pending">{t("overdue", { n: overdue.length })}</span>
-            <span className="text-sm text-muted">
-              {t("overdueSub", { x: formatINR(summary.data.udhaar_outstanding) })}
-            </span>
-          </span>
-          <span aria-hidden className="text-pending">
-            ›
-          </span>
-        </Spotlight>
-      )}
-      {summary.data && (
-        <Reveal className="order-5 lg:order-none">
-          <WeekChart days={summary.data.days} />
-        </Reveal>
-      )}
-      <Reveal id="khata" className="order-7 lg:order-none">
-        <section className="rounded-[28px] border border-line bg-surface p-4 shadow-sm">
-          <div role="tablist" aria-label="Hisaab ya khata" className="relative mb-3 grid grid-cols-2 rounded-2xl bg-surface-2 p-1">
-            <span
-              aria-hidden
-              className="absolute inset-y-1 left-1 w-[calc(50%-0.25rem)] rounded-xl bg-brand-600 shadow transition-transform duration-300 ease-out"
-              style={{ transform: tab === "khata" ? "translateX(100%)" : "none" }}
-            />
-            {(["hisaab", "khata"] as const).map((name) => (
-              <button
-                key={name}
-                role="tab"
-                aria-selected={tab === name}
-                onClick={() => setTab(name)}
-                className={`relative min-h-11 rounded-xl font-semibold transition-colors ${
-                  tab === name ? "text-white" : "text-muted hover:text-ink-900"
-                }`}
-              >
-                {name === "hisaab" ? t("tabEntries") : `${t("tabKhata")}${khata.data ? ` (${khata.data.length})` : ""}`}
-              </button>
-            ))}
-          </div>
-
-          {tab === "hisaab" &&
-            (entries.data ? (
-              <EntryList entries={entries.data} />
+      {/* Phones: swipe left and right between the four pages of the bottom bar. Desktop: two columns. */}
+      <div
+        ref={pages}
+        className="relative -mx-4 flex min-h-0 flex-1 snap-x snap-mandatory overflow-x-auto overscroll-x-contain [scrollbar-width:none] lg:mx-0 lg:block lg:columns-2 lg:gap-6 lg:overflow-visible"
+      >
+        <Page id="aaj">
+          <div id="tour-hero" className="scroll-mt-24 space-y-2">
+            {summary.data ? (
+              <HeroCard
+                summary={summary.data}
+                onOpen={(what) => {
+                  if (what === "udhaar") openKhata("customer");
+                  else if (what === "out") setVoiceSheet("day_close");
+                  else openEntries();
+                }}
+              />
             ) : (
-              <div className="space-y-2">
-                {[0, 1, 2, 3].map((i) => (
-                  <div key={i} className="skeleton h-14 rounded-2xl" />
+              <div className="skeleton h-64 rounded-[28px]" />
+            )}
+            <ColorLegend className="justify-center" />
+          </div>
+          <div id="tour-capture" className="scroll-mt-24">
+            <CaptureCard
+              key={captureKey}
+              onSubmit={(text) => void understand(text)}
+              onCommand={(command, partyId) => {
+                setCaptureKey((k) => k + 1);
+                runCommand(command, partyId);
+              }}
+              parties={khata.data ?? []}
+              items={items.data ?? []}
+            />
+          </div>
+          {overdue.length> 0 && summary.data && (
+            <Spotlight
+              as="button"
+              type="button"
+              onClick={() => setOpenParty(overdue[0])}
+              className="animate-rise flex items-center gap-3 rounded-3xl border border-amber-200 bg-amber-50 p-4 text-left transition hover:-translate-y-0.5 hover:shadow-md [--spot:rgb(245_158_11/0.18)]"
+            >
+              <span className="text-2xl" aria-hidden>
+                ⏰
+              </span>
+              <span className="flex-1">
+                <span className="block font-bold text-pending">{t("overdue", { n: overdue.length })}</span>
+                <span className="text-sm text-muted">
+                  {t("overdueSub", { x: formatINR(summary.data.udhaar_outstanding) })}
+                </span>
+              </span>
+              <span aria-hidden className="text-pending">
+                ›
+              </span>
+            </Spotlight>
+          )}
+          {summary.data && (
+            <Reveal>
+              <WeekChart days={summary.data.days} />
+            </Reveal>
+          )}
+        </Page>
+        <Page id="hisaab">
+          <Reveal id="hisaab">
+            <AccountsCard
+              refreshKey={refresh}
+              onChanged={bump}
+              onOpen={(what) => {
+                if (what === "receivable") openKhata("customer");
+                else if (what === "payable") openKhata("supplier");
+                else if (what === "stock") go("maal");
+                else slideTo("maal", "stockplan");
+              }}
+            />
+          </Reveal>
+        </Page>
+        <Page id="maal">
+          <Reveal id="maal">
+            <InventoryCard
+              refreshKey={refresh}
+              onChanged={bump}
+              onSold={(entry) => {
+                setLastSaved(entry);
+                refreshAll();
+              }}
+              parties={khata.data ?? []}
+            />
+          </Reveal>
+          <Reveal id="stockplan">
+            <StockPlanCard refreshKey={refresh} onChanged={bump} />
+          </Reveal>
+        </Page>
+        <Page id="khata">
+          <Reveal id="khata">
+            <section className="rounded-[28px] border border-line bg-surface p-4 shadow-sm">
+              <div role="tablist" aria-label="Hisaab ya khata" className="relative mb-3 grid grid-cols-2 rounded-2xl bg-surface-2 p-1">
+                <span
+                  aria-hidden
+                  className="absolute inset-y-1 left-1 w-[calc(50%-0.25rem)] rounded-xl bg-brand-600 shadow transition-transform duration-300 ease-out"
+                  style={{ transform: tab === "khata" ? "translateX(100%)" : "none" }}
+                />
+                {(["hisaab", "khata"] as const).map((name) => (
+                  <button
+                    key={name}
+                    role="tab"
+                    aria-selected={tab === name}
+                    onClick={() => setTab(name)}
+                    className={`relative min-h-11 rounded-xl font-semibold transition-colors ${
+                      tab === name ? "text-white" : "text-muted hover:text-ink-900"
+                    }`}
+                  >
+                    {name === "hisaab" ? t("tabEntries") : `${t("tabKhata")}${khata.data ? ` (${formatNumber(khata.data.length)})` : ""}`}
+                  </button>
                 ))}
               </div>
-            ))}
-          {tab === "khata" && khata.data && (
-            <KhataList parties={khata.data} onOpen={setOpenParty} filter={khataKind} onFilter={setKhataKind} />
-          )}
-        </section>
-      </Reveal>
-        </div>
-        <div className="contents lg:flex lg:flex-col lg:gap-6">
-      <Reveal id="hisaab" className="order-4 lg:order-none">
-        <AccountsCard
-          refreshKey={refresh}
-          onChanged={bump}
-          onOpen={(what) => {
-            if (what === "receivable") openKhata("customer");
-            else if (what === "payable") openKhata("supplier");
-            else if (what === "stock") go("maal");
-            else document.getElementById("stockplan")?.scrollIntoView({ behavior: "smooth", block: "start" });
-          }}
-        />
-      </Reveal>
-      <Reveal id="maal" className="order-6 lg:order-none">
-        <InventoryCard
-          refreshKey={refresh}
-          onChanged={bump}
-          onSold={(entry) => {
-            setLastSaved(entry);
-            refreshAll();
-          }}
-          parties={khata.data ?? []}
-        />
-      </Reveal>
-      <Reveal id="stockplan" className="order-7 lg:order-none">
-        <StockPlanCard refreshKey={refresh} onChanged={bump} />
-      </Reveal>
-        </div>
+
+              {tab === "hisaab" &&
+                (entries.data ? (
+                  <EntryList entries={entries.data} />
+                ) : (
+                  <div className="space-y-2">
+                    {[0, 1, 2, 3].map((i) => (
+                      <div key={i} className="skeleton h-14 rounded-2xl" />
+                    ))}
+                  </div>
+                ))}
+              {tab === "khata" && khata.data && (
+                <KhataList parties={khata.data} onOpen={setOpenParty} filter={khataKind} onFilter={setKhataKind} />
+              )}
+            </section>
+          </Reveal>
+        </Page>
       </div>
 
       <div className="lg:hidden">
@@ -433,6 +476,23 @@ export function Dashboard() {
             {t("undo")}
           </button>
         </div>
+      )}
+
+      {bubbleOpen && (
+        <VoiceBubble
+          micPresses={micPresses}
+          onClose={() => setBubbleOpen(false)}
+          onSubmit={(text) => {
+            setBubbleOpen(false);
+            void understand(text);
+          }}
+          onCommand={(command, partyId) => {
+            setBubbleOpen(false);
+            runCommand(command, partyId);
+          }}
+          parties={khata.data ?? []}
+          items={items.data ?? []}
+        />
       )}
 
       {card && (
@@ -483,5 +543,26 @@ export function Dashboard() {
       )}
     </main>
     </div>
+  );
+}
+
+/** One swipeable page on phones (scrolls up and down by itself); one block of the columns on desktop. */
+function Page({ id, children }: { id: NavId; children: ReactNode }) {
+  return (
+    <div
+      id={`page-${id}`}
+      className="relative flex w-full shrink-0 snap-start snap-always flex-col gap-4 overflow-y-auto overflow-x-hidden overscroll-y-contain px-4 pb-36 pt-1 lg:mb-6 lg:w-auto lg:break-inside-avoid lg:gap-6 lg:overflow-visible lg:p-0"
+    >
+      {children}
+    </div>
+  );
+}
+
+function EarIcon() {
+  return (
+    <svg viewBox="0 0 24 24" className="size-5" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+      <path d="M7 9a5 5 0 0 1 10 0c0 3-3 4-3 7a3 3 0 0 1-5.5 1.6" />
+      <path d="M10 9.5a2 2 0 0 1 4 0" />
+    </svg>
   );
 }

@@ -422,4 +422,8 @@ export const hi: Locale = {
   settleSupplier: "{name} को पैसे दिए",
   gotBtn: "{x} मिले",
   paidBtn: "{x} दिए",
+
+  handsFree: "बिना हाथ",
+  handsFreeHint: "“BolKhata” बोलिए, फिर अपनी एंट्री",
+  handsFreeOff: "बिना हाथ वाला मोड बंद",
 };

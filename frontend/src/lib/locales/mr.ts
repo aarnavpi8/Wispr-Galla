@@ -422,4 +422,8 @@ export const mr: Locale = {
   settleSupplier: "{name} ला पैसे दिले",
   gotBtn: "{x} मिळाले",
   paidBtn: "{x} दिले",
+
+  handsFree: "हात न लावता",
+  handsFreeHint: "“BolKhata” म्हणा, मग तुमची नोंद",
+  handsFreeOff: "हात न लावता मोड बंद",
 };

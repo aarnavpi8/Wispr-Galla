@@ -1,34 +1,34 @@
 @import "tailwindcss";
 
 /*
- * Galla theme: light. Warm white paper, slate text, sky-blue actions, a marigold accent. No green.
+ * Galla theme: warm white paper + forest greens (the original look).
  * Inspiration: Cash App's bold single-colour hero, Linear's cursor spotlight cards,
  * Khatabook's money-in / money-out clarity.
  */
 :root {
   --background: #faf6ee; /* warm white */
-  --foreground: #1f2a3d;
-  --surface: #fffdf9;
-  --surface-2: #f3efe6;
-  --line: #e7e0d2;
-  --muted: #5f6878;
+  --foreground: #1d2a22;
+  --surface: #fffdf8;
+  --surface-2: #f3eee2;
+  --line: #e8e0cf;
+  --muted: #6b7568;
 
-  /* Ink: soft slate for text. Calm, high contrast on paper, never pure black. */
-  --ink-950: #1f2a3d;
-  --ink-900: #2e3b52;
-  --ink-800: #45536b;
-  --ink-700: #5d6a82;
-  /* Brand: clear sky blue for buttons and selected things (trust, like a bank passbook). */
-  --brand-700: #1f5fbf;
-  --brand-600: #2a6dd3;
-  --brand-500: #3b80e3;
-  /* Iris: light blues for links, focus rings, soft tints. */
-  --iris-500: #2f76dc;
-  --iris-300: #a8ccf6;
-  --iris-100: #eaf3fe;
-  /* Marigold: the warm accent (highlights, active tabs, the logo bubble). */
-  --gold-300: #f3c262;
-  --gold-100: #fcf0d6;
+  /* Ink: deep green-black for text. */
+  --ink-950: #1d2a22;
+  --ink-900: #103a29;
+  --ink-800: #155238;
+  --ink-700: #3d5a48;
+  /* Brand: forest green for buttons and selected things. */
+  --brand-700: #155238;
+  --brand-600: #1b6a48;
+  --brand-500: #3fa56b;
+  /* Iris: leaf and mint greens for links, focus rings, soft tints. */
+  --iris-500: #3fa56b;
+  --iris-300: #9fd8b3;
+  --iris-100: #e3f3e8;
+  /* Lime: the bright accent (highlights, active tabs, the logo bubble). */
+  --gold-300: #d7f08a;
+  --gold-100: #f1f9d6;
 }
 
 @theme inline {
@@ -51,8 +51,8 @@
   --color-gold-300: var(--gold-300);
   --color-gold-100: var(--gold-100);
   /* Money colours used everywhere: in, out, pending. */
-  --color-money-in: #2563c4;
-  --color-money-out: #c0392b;
+  --color-money-in: #15803d;
+  --color-money-out: #b91c1c;
   /* Only for a positive galla balance (the user asked: minus red, plus green). */
   --color-balance-up: #17804c;
   --color-pending: #b45309;
@@ -113,8 +113,8 @@ body {
 /* Soft page glow that follows the cursor (set by <CursorGlow />). */
 .page-glow {
   background:
-    radial-gradient(600px circle at var(--gx, 50%) var(--gy, -10%), rgb(47 118 220 / 0.13), transparent 60%),
-    radial-gradient(900px circle at 100% 0%, rgb(243 194 98 / 0.18), transparent 55%);
+    radial-gradient(600px circle at var(--gx, 50%) var(--gy, -10%), rgb(63 165 107 / 0.13), transparent 60%),
+    radial-gradient(900px circle at 100% 0%, rgb(215 240 138 / 0.18), transparent 55%);
 }
 
 /*
@@ -136,7 +136,7 @@ body {
     transition: opacity 0.3s;
     background: radial-gradient(
       320px circle at var(--mx, 50%) var(--my, 50%),
-      var(--spot, rgb(47 118 220 / 0.14)),
+      var(--spot, rgb(63 165 107 / 0.14)),
       transparent 65%
     );
     z-index: -1;
@@ -156,7 +156,7 @@ body {
     transition: opacity 0.3s;
     background: radial-gradient(
       220px circle at var(--mx, 50%) var(--my, 50%),
-      rgb(47 118 220 / 0.7),
+      rgb(63 165 107 / 0.7),
       transparent 70%
     );
     mask: linear-gradient(#000 0 0) content-box exclude, linear-gradient(#000 0 0);

@@ -1,6 +1,6 @@
 "use client";
 
-import { balanceTone, formatINR } from "@/lib/format";
+import { balanceTone, formatINR, formatNumber } from "@/lib/format";
 import { LANGS } from "@/lib/i18n";
 
 import { AccountMenu } from "./AccountMenu";
@@ -82,7 +82,7 @@ export function DesktopSidebar({
                   <span className="flex-1">{t(item.key)}</span>
                   {!!badge[item.id] && (
                     <span className="grid min-w-6 place-items-center rounded-full bg-pending px-1.5 text-xs font-bold leading-6 text-white">
-                      {badge[item.id]}
+                      {formatNumber(badge[item.id] ?? 0)}
                     </span>
                   )}
                 </button>
@@ -104,7 +104,7 @@ export function DesktopSidebar({
           </button>
           <button type="button" onClick={() => onGo("maal")} className="rounded-2xl bg-surface-2 p-3 text-left transition hover:bg-line">
             <dt className="text-xs font-semibold text-muted">{t("lowStock")}</dt>
-            <dd className={`font-bold tabular-nums ${lowStock ? "text-pending" : "text-ink-900"}`}>{lowStock}</dd>
+            <dd className={`font-bold tabular-nums ${lowStock ? "text-pending" : "text-ink-900"}`}>{formatNumber(lowStock)}</dd>
           </button>
         </div>
       </dl>

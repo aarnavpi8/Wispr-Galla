@@ -423,4 +423,8 @@ export const kn: Locale = {
   settleSupplier: "{name} ಅವರಿಗೆ ಹಣ ಕೊಟ್ಟೆ",
   gotBtn: "{x} ಬಂತು",
   paidBtn: "{x} ಕೊಟ್ಟೆ",
+
+  handsFree: "ಕೈ ಇಲ್ಲದೆ",
+  handsFreeHint: "“BolKhata” ಹೇಳಿ, ನಂತರ ನಿಮ್ಮ ನಮೂದು",
+  handsFreeOff: "ಕೈ ಇಲ್ಲದ ಮೋಡ್ ನಿಲ್ಲಿಸಲಾಗಿದೆ",
 };

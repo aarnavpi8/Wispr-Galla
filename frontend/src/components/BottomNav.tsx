@@ -2,6 +2,7 @@
 
 import { type ReactNode, useEffect, useState } from "react";
 
+import { formatNumber } from "@/lib/format";
 import type { StringKey } from "@/lib/i18n";
 
 import { useLang } from "./language";
@@ -41,27 +42,34 @@ export const NAV_ITEMS: { id: NavId; key: StringKey; icon: ReactNode }[] = [
   },
 ];
 
-/** Which section is in the middle of the screen right now (scroll spy). */
+/** Which page is on screen right now: swiped to on phones, scrolled to on desktop. */
 export function useActiveSection(): NavId {
   const [active, setActive] = useState<NavId>("aaj");
   useEffect(() => {
-    if (typeof IntersectionObserver === "undefined") return;
-    const io = new IntersectionObserver(
-      (entries) => {
-        const hit = entries.filter((e) => e.isIntersecting).sort((a, b) => b.intersectionRatio - a.intersectionRatio)[0];
-        if (hit) setActive(hit.target.id as NavId);
-      },
-      { rootMargin: "-40% 0px -50% 0px", threshold: [0, 0.25, 0.5] },
-    );
-    NAV_ITEMS.forEach(({ id }) => {
-      const el = document.getElementById(id);
-      if (el) io.observe(el);
-    });
-    const top = () => window.scrollY < 120 && setActive("aaj");
-    window.addEventListener("scroll", top, { passive: true });
+    // Of the pages across the middle line of the screen, the one nearest the centre wins.
+    // On phones only the page swiped to is on screen; mid-swipe, the one more than half in.
+    const pick = () => {
+      // Desktop: the top of the page is "Today" (the window scrolls there, not the pages).
+      if (window.scrollY < 120 && window.matchMedia?.("(min-width: 1024px)").matches) return setActive("aaj");
+      const midX = window.innerWidth / 2;
+      const midY = window.innerHeight / 2;
+      let best: NavId | null = null;
+      let bestDistance = Infinity;
+      for (const { id } of NAV_ITEMS) {
+        const r = document.getElementById(`page-${id}`)?.getBoundingClientRect();
+        if (!r || r.top > midY || r.bottom <= midY || r.right <= 0 || r.left >= window.innerWidth) continue;
+        const distance = Math.abs((r.left + r.right) / 2 - midX);
+        if (distance < bestDistance) [best, bestDistance] = [id, distance];
+      }
+      if (best) setActive(best);
+    };
+    pick();
+    // Capture: the pages scroll by themselves, and their scroll events don't bubble.
+    window.addEventListener("scroll", pick, { passive: true, capture: true });
+    window.addEventListener("resize", pick);
     return () => {
-      io.disconnect();
-      window.removeEventListener("scroll", top);
+      window.removeEventListener("scroll", pick, { capture: true });
+      window.removeEventListener("resize", pick);
     };
   }, []);
   return active;
@@ -114,7 +122,7 @@ export function BottomNav({
           </svg>
           {!!badge[item.id] && (
             <span className="absolute -right-0.5 -top-0.5 grid min-w-4 place-items-center rounded-full bg-pending px-1 text-[10px] font-bold leading-4 text-white">
-              {badge[item.id]}
+              {formatNumber(badge[item.id] ?? 0)}
             </span>
           )}
         </span>
@@ -129,7 +137,7 @@ export function BottomNav({
       aria-label={t("navHome")}
       className="fixed inset-x-0 bottom-0 z-30 flex justify-center px-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]"
     >
-      <div className="relative flex w-full max-w-md items-end gap-1 rounded-[26px] border border-line bg-surface/90 px-2 pb-1.5 pt-1.5 shadow-[0_-8px_30px_-12px_rgb(42_109_211/0.25)] backdrop-blur-md">
+      <div className="relative flex w-full max-w-md items-end gap-1 rounded-[26px] border border-line bg-surface/90 px-2 pb-1.5 pt-1.5 shadow-[0_-8px_30px_-12px_rgb(27_106_72/0.25)] backdrop-blur-md">
         {NAV_ITEMS.slice(0, 2).map(button)}
         <div className="relative flex flex-1 justify-center">
           {/* Slow "breathing" ring: a visual cue that this is the main button. */}

@@ -3,7 +3,7 @@
 import { useState } from "react";
 
 import { postJSON, useApi } from "@/lib/api";
-import { formatINR, itemLabel, stockLevel } from "@/lib/format";
+import { formatINR, formatNumber, itemLabel, stockLevel } from "@/lib/format";
 import type { EntryOut, Item, PartyBalance, SellOut, StockReason } from "@/lib/types";
 
 import { AddItemSheet } from "./AddItemSheet";
@@ -192,7 +192,7 @@ export function InventoryCard({
                     className={`animate-pop w-12 text-center font-bold tabular-nums ${item.low ? "text-pending" : "text-ink-950"}`}
                     aria-label={t("left", { n: item.stock })}
                   >
-                    {item.stock}
+                    {formatNumber(item.stock)}
                     <span className="block text-[10px] font-normal text-muted">{item.unit}</span>
                   </span>
                   <button
@@ -216,7 +216,7 @@ export function InventoryCard({
           onClick={() => setShowAll(true)}
           className="mt-3 min-h-11 w-full rounded-2xl text-sm font-semibold text-ink-800 transition hover:bg-iris-100"
         >
-          {t("allItems")} ({filtered.length}) ↓
+          {t("allItems")} ({formatNumber(filtered.length)}) ↓
         </button>
       )}
 

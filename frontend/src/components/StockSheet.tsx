@@ -3,7 +3,7 @@
 import { useState } from "react";
 
 import { patchJSON, postJSON, useApi } from "@/lib/api";
-import { formatINR, itemLabel, stockLevel, timeAgo } from "@/lib/format";
+import { formatINR, formatNumber, itemLabel, stockLevel, timeAgo } from "@/lib/format";
 import type { StringKey } from "@/lib/i18n";
 import type { EntryOut, Item, Mode, PartyBalance, SellOut, StockMove, StockReason } from "@/lib/types";
 
@@ -124,7 +124,7 @@ export function StockSheet({
       <div className={`rounded-3xl p-4 ${item.low ? "bg-amber-50" : "bg-iris-100"}`}>
         <p className="text-sm text-muted">{t("inStock")}</p>
         <p key={item.stock} className={`animate-pop text-4xl font-extrabold tabular-nums ${item.low ? "text-pending" : "text-ink-900"}`}>
-          {item.stock} <span className="text-lg font-semibold">{item.unit}</span>
+          {formatNumber(item.stock)} <span className="text-lg font-semibold">{item.unit}</span>
         </p>
         <div className="mt-2 h-2 overflow-hidden rounded-full bg-white/70" aria-hidden>
           <div
@@ -133,7 +133,7 @@ export function StockSheet({
           />
         </div>
         <p className="mt-1 text-xs text-muted">
-          {t("alertAt")}: {item.low_stock_at} {item.unit}
+          {t("alertAt")}: {formatNumber(item.low_stock_at)} {item.unit}
         </p>
       </div>
 
@@ -309,9 +309,9 @@ export function StockSheet({
               </span>
               <span className={`font-bold tabular-nums ${m.delta >= 0 ? "text-money-in" : "text-money-out"}`}>
                 {m.delta >= 0 ? "+" : "−"}
-                {Math.abs(m.delta)}
+                {formatNumber(Math.abs(m.delta))}
               </span>
-              <span className="w-14 text-right text-sm tabular-nums text-muted">→ {m.stock_after}</span>
+              <span className="w-14 text-right text-sm tabular-nums text-muted">→ {formatNumber(m.stock_after)}</span>
             </li>
           ))}
         </ul>

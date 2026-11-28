@@ -191,7 +191,7 @@ function LanguageWheel({ value, onChange }: { value: Lang; onChange: (l: Lang) =
       {/* The turntable's floor: a soft elliptical shadow, no visible dial. */}
       <div
         aria-hidden
-        className="pointer-events-none absolute left-1/2 top-1/2 h-32 w-[20rem] -translate-x-1/2 -translate-y-[25%] rounded-[50%] bg-[radial-gradient(closest-side,rgb(59_128_227/0.14),rgb(79_94_214/0.05)_60%,transparent)]"
+        className="pointer-events-none absolute left-1/2 top-1/2 h-32 w-[20rem] -translate-x-1/2 -translate-y-[25%] rounded-[50%] bg-[radial-gradient(closest-side,rgb(63_165_107/0.14),rgb(27_106_72/0.05)_60%,transparent)]"
       />
 
       {LANGS.map((l, i) => {

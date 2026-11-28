@@ -3,7 +3,7 @@
 import { useState } from "react";
 
 import { useApi } from "@/lib/api";
-import { formatINR } from "@/lib/format";
+import { formatINR, formatNumber } from "@/lib/format";
 import type { Accounts } from "@/lib/types";
 
 import { DayCloseSheet } from "./DayCloseSheet";
@@ -48,7 +48,7 @@ export function AccountsCard({
               onClick={() => setDays(d)}
               className={`rounded-full px-3 py-1 transition ${days === d ? "bg-brand-600 text-white" : "text-muted hover:text-ink-900"}`}
             >
-              {d}
+              {formatNumber(d)}
             </button>
           ))}
         </div>
@@ -102,7 +102,7 @@ export function AccountsCard({
           as="button"
           type="button"
           onClick={() => setClosing(true)}
-          className="flex min-h-14 w-full items-center gap-3 rounded-2xl bg-brand-600 px-4 text-left text-white shadow-lg shadow-brand-600/20 transition hover:bg-brand-500 active:scale-[0.99] [--spot:rgb(243_194_98/0.18)]"
+          className="flex min-h-14 w-full items-center gap-3 rounded-2xl bg-brand-600 px-4 text-left text-white shadow-lg shadow-brand-600/20 transition hover:bg-brand-500 active:scale-[0.99] [--spot:rgb(215_240_138/0.18)]"
         >
           <span aria-hidden className="text-2xl">
             🔒

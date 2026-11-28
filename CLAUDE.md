@@ -33,12 +33,21 @@ We build hands-free: prompts are dictated with Wispr Flow.
   gap and the cash entries to check (flow 3, `/api/accounts`, `/api/day-close`).
 - Done: inventory (D18): stock per item, low-stock alerts, +/- steppers, stock in / sold /
   wasted / recount with history, add item. Bill scan by photo (D19).
-- Done: dashboard motion: circular reveal from "Get started", scroll reveals, compact summary
-  bar that appears when the money card scrolls away, bottom nav with a raised mic button.
+- Done: dashboard motion: circular reveal from "Get started", scroll reveals, bottom nav with
+  a raised mic button. (The compact summary bar was removed: with swipe pages the header stays on
+  top, and the bar covered it.)
   Scroll motion: tiles, rows, chips and chart bars inside `.reveal-stagger` containers rise in
   one after another as they enter the screen and replay when they come back from below
   (`ScrollMotion` in `components/Reveal.tsx`, one IntersectionObserver for the whole app, web
   and Android WebView alike; off for reduced motion).
+- Done: phones swipe left/right between four pages, the same as the bottom bar (Today, Accounts,
+  Stock, Khata); each page scrolls by itself and the header stays on top. Desktop keeps two columns.
+  The big mic opens a speaking bubble (`VoiceBubble.tsx`) that starts listening at once; pressing
+  the mic again stops it and the entry card opens.
+- Done: hands-free mode (header toggle): the mic listens for "BolKhata"; what follows goes to the
+  entry card / a command / a question, "BolKhata" alone opens the speaking bubble. Browser or phone
+  speech (not Wispr), pauses while a card or sheet is open, keeps the screen awake, off after 10
+  idle minutes (`hooks/useHandsFree.ts`). Saving still needs a tap.
 - Done: optional Google login via Firebase (D14). Off without keys.
 - Done: tests (pytest 238, Vitest 122) and GitHub Actions CI incl. a Docker Compose smoke test (D16).
 - Next: flow 1 (one-line entries), starting with the rule-based extractor (D2). "Aage" on the
@@ -340,7 +349,10 @@ Must happen before 30 Nov either way.
   `docker compose up --build` with no `.env` and curl checks on port 3000.
 
 ### D17. Visual design — `BUILT`
-- Light theme everywhere. Warm white paper (`#faf6ee`), soft slate text (`ink-*`), sky-blue
+- **Back to the original green (28 Nov, team request).** Same token names, green values:
+  forest green actions (`brand-*`), leaf/mint tints (`iris-*`), lime accent (`gold-*`), green-black
+  text (`ink-*`), money in = green `#15803d`, out = red `#b91c1c`. The blue version below is kept for reference.
+- (Previous) Light theme everywhere. Warm white paper (`#faf6ee`), soft slate text (`ink-*`), sky-blue
   actions (`brand-*`: buttons, selected chips, the mic), light blue tints (`iris-*`) and a
   marigold accent (`gold-*`). Big cards (money card, splash, day close, desktop panel, sticky
   bar) are light blue-to-cream gradients with dark text. Why blue: it reads as trust and money
@@ -544,6 +556,10 @@ Kept here so they aren't lost; mention as finale work in the deck.
 - GST (output, input, net payable, threshold progress), P&L, balance sheet, depreciation, loans.
 - "Galla se poocho" voice Q&A; "Samjhao" picture cards; "Khud padhna seekho" lessons.
 - Data on the phone first with encrypted backup.
+- Customer login (discussed 28 Nov, not built): a customer sees what they owe at each shop. Link a
+  login to a khata through a private link/QR the shopkeeper sends (e.g. in the WhatsApp reminder),
+  not by phone-number matching (SMS cost, unsaved/recycled numbers would show debts to strangers).
+  "Nearby stores" would need a shop location; show balances only for linked shops. ~1–1.5 days.
 
 ## Change log (original spec -> current)
 
@@ -568,6 +584,7 @@ Kept here so they aren't lost; mention as finale work in the deck.
 | Speech-to-text | Indian STT API (Sarvam/Bhashini) | D23: Wispr Flow API, browser/native fallback | Hackathon partner; team request |
 | Hosting | Optional live link | D21/D22: GCP VM with nginx, Android app shell | Team request |
 | Sanity checks | "Ask which is right" on mismatches | Refuse anything that doesn't add up (total, stock, overpay) | Team request: no logical fallacies |
+| Colours | Green + warm white | Blue, then back to green (D17) | Team preferred the original green |
 | Net | Sales − purchases − expenses | Profit = sales + credit sales − COGS − wastage − expenses; UPI spending counted | Restocking looked like a loss; UPI out was dropped |
 
 ## Working agreements

@@ -423,4 +423,8 @@ export const ml: Locale = {
   settleSupplier: "{name}ന് കൊടുത്ത പണം",
   gotBtn: "{x} കിട്ടി",
   paidBtn: "{x} കൊടുത്തു",
+
+  handsFree: "കൈ തൊടാതെ",
+  handsFreeHint: "“BolKhata” എന്ന് പറയൂ, പിന്നെ നിങ്ങളുടെ എൻട്രി",
+  handsFreeOff: "കൈ തൊടാത്ത മോഡ് നിർത്തി",
 };
