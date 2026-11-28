@@ -11,7 +11,7 @@ import { Sheet } from "./Sheet";
 const UNITS = ["pc", "kg", "packet", "litre", "dozen", "tray", "box"];
 
 const field =
-  "mt-1 min-h-12 w-full rounded-2xl border-2 border-line bg-background px-4 text-base transition focus:border-leaf-500 focus:outline-none focus:ring-4 focus:ring-leaf-500/15";
+  "mt-1 min-h-12 w-full rounded-2xl border-2 border-line bg-background px-4 text-base transition focus:border-iris-500 focus:outline-none focus:ring-4 focus:ring-iris-500/15";
 
 /** Add an item to the price list with its opening stock. Saves only on the button tap. */
 export function AddItemSheet({
@@ -69,17 +69,17 @@ export function AddItemSheet({
   return (
     <Sheet title={t("addItem")} onClose={onClose} closeLabel={t("close")}>
       <form onSubmit={submit} className="space-y-3">
-        <label className="block text-sm font-semibold text-forest-950">
+        <label className="block text-sm font-semibold text-ink-950">
           {t("itemName")}
           <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Dettol" className={field} required />
         </label>
-        <label className="block text-sm font-semibold text-forest-950">
+        <label className="block text-sm font-semibold text-ink-950">
           {t("itemVariant")}
           <input value={variant} onChange={(e) => setVariant(e.target.value)} placeholder="125 ml" className={field} />
         </label>
 
         <fieldset>
-          <legend className="text-sm font-semibold text-forest-950">{t("unit")}</legend>
+          <legend className="text-sm font-semibold text-ink-950">{t("unit")}</legend>
           <div className="mt-1 flex flex-wrap gap-2">
             {units.map((u) => (
               <button
@@ -88,7 +88,7 @@ export function AddItemSheet({
                 aria-pressed={unit === u}
                 onClick={() => setUnit(u)}
                 className={`min-h-10 rounded-full px-4 text-sm font-semibold transition ${
-                  unit === u ? "bg-forest-900 text-white" : "bg-surface-2 text-forest-900 hover:bg-mint-100"
+                  unit === u ? "bg-brand-600 text-white" : "bg-surface-2 text-ink-900 hover:bg-iris-100"
                 }`}
               >
                 {u}
@@ -98,12 +98,12 @@ export function AddItemSheet({
         </fieldset>
 
         <div className={`grid gap-2 ${stockFromEntry ? "grid-cols-2" : "grid-cols-3"}`}>
-          <label className="block text-sm font-semibold text-forest-950">
+          <label className="block text-sm font-semibold text-ink-950">
             {t("price")}
             <input inputMode="numeric" value={price} onChange={(e) => setPrice(digits(e.target.value))} className={field} required />
           </label>
           {!stockFromEntry && (
-            <label className="block text-sm font-semibold text-forest-950">
+            <label className="block text-sm font-semibold text-ink-950">
               {t("inStock")}
               <input
                 inputMode="numeric"
@@ -114,7 +114,7 @@ export function AddItemSheet({
               />
             </label>
           )}
-          <label className="block text-sm font-semibold text-forest-950">
+          <label className="block text-sm font-semibold text-ink-950">
             {t("alertAt")}
             <input inputMode="numeric" value={lowAt} onChange={(e) => setLowAt(digits(e.target.value))} className={field} />
           </label>
@@ -124,7 +124,7 @@ export function AddItemSheet({
         <button
           type="submit"
           disabled={!ready || busy}
-          className="min-h-14 w-full rounded-2xl bg-forest-900 text-lg font-semibold text-white shadow-lg transition hover:bg-forest-800 active:scale-[0.98] disabled:bg-line disabled:text-muted disabled:shadow-none"
+          className="min-h-14 w-full rounded-2xl bg-brand-600 text-lg font-semibold text-white shadow-lg transition hover:bg-brand-500 active:scale-[0.98] disabled:bg-line disabled:text-muted disabled:shadow-none"
         >
           {t("save")}
         </button>

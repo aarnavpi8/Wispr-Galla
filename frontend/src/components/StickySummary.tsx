@@ -38,23 +38,23 @@ export function StickySummary({
         visible ? "translate-y-0 opacity-100" : "pointer-events-none -translate-y-full opacity-0"
       }`}
     >
-      <div className="flex w-full max-w-md items-center gap-2 rounded-2xl bg-forest-900/95 px-3 py-2 text-white shadow-xl shadow-forest-950/20 ring-1 ring-white/10 backdrop-blur-md">
+      <div className="flex w-full max-w-md items-center gap-2 rounded-2xl bg-surface/95 px-3 py-2 text-ink-950 shadow-xl shadow-ink-950/20 ring-1 ring-line backdrop-blur-md">
         <button type="button" onClick={onTap} tabIndex={visible ? 0 : -1} className="min-w-0 flex-1 text-left">
-          <span className="block truncate text-[11px] text-leaf-300">
+          <span className="block truncate text-[11px] text-muted">
             {shopName} · {t("expectedCash")}
           </span>
           <span className="block text-lg font-extrabold leading-tight tabular-nums">{formatINR(expected)}</span>
         </button>
-        <span className="rounded-xl bg-white/10 px-2.5 py-1 text-right">
-          <span className="block text-[10px] text-white/60">{t("receivable")}</span>
-          <span className="block text-sm font-bold tabular-nums text-amber-300">{formatINR(receivable)}</span>
+        <span className="rounded-xl bg-surface-2 px-2.5 py-1 text-right">
+          <span className="block text-[10px] text-muted">{t("receivable")}</span>
+          <span className="block text-sm font-bold tabular-nums text-pending">{formatINR(receivable)}</span>
         </span>
         {lowStock > 0 && (
           <button
             type="button"
             onClick={onLowStock}
             tabIndex={visible ? 0 : -1}
-            className="rounded-xl bg-amber-400/90 px-2.5 py-1 text-right text-forest-950 transition hover:bg-amber-300"
+            className="rounded-xl bg-gold-100 px-2.5 py-1 text-right text-ink-950 ring-1 ring-gold-300 transition hover:bg-gold-300"
           >
             <span className="block text-[10px] font-semibold">{t("lowStock")}</span>
             <span className="block text-sm font-extrabold">{lowStock}</span>

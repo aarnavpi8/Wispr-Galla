@@ -115,7 +115,7 @@ export const pa: Locale = {
   reminderNote: "WhatsApp ਖੁੱਲ੍ਹੇਗਾ, ਮੈਸੇਜ ਵੇਖ ਕੇ ਤੁਸੀਂ Send ਦਬਾਓ।",
   noPartyEntries: "ਕੋਈ ਐਂਟਰੀ ਨਹੀਂ।",
   history: "ਇਤਿਹਾਸ",
-  reminderMsg: "ਸਤ ਸ੍ਰੀ ਅਕਾਲ {name}, {shop} ਵੱਲੋਂ ਯਾਦ ਕਰਵਾ ਰਹੇ ਹਾਂ: ਤੁਹਾਡੇ {x} ਬਾਕੀ ਹਨ। ਸਹੂਲਤ ਹੋਵੇ ਤਾਂ UPI ਨਾਲ ਭੇਜ ਦਿਓ: {upi} ਧੰਨਵਾਦ 🙏",
+  reminderMsg: "ਸਤ ਸ੍ਰੀ ਅਕਾਲ {name}, {shop} ਵੱਲੋਂ ਯਾਦ ਕਰਵਾ ਰਹੇ ਹਾਂ: ਤੁਹਾਡੇ {x} ਬਾਕੀ ਹਨ। ਸਹੂਲਤ ਹੋਵੇ ਤਾਂ UPI ਨਾਲ ਭੇਜ ਦਿਓ: {upi} ਧੰਨਵਾਦ",
 
   navHome: "ਅੱਜ",
   navAccounts: "ਹਿਸਾਬ",
@@ -214,7 +214,7 @@ export const pa: Locale = {
   tourDone: "BolKhata ਵਰਤਣਾ ਸ਼ੁਰੂ ਕਰੋ",
   tourStep: "{i} / {n}",
   tour1Title: "ਤੁਹਾਡਾ ਪੈਸਾ, ਇੱਕ ਨਜ਼ਰ ਵਿੱਚ",
-  tour1Body: "ਇਹ ਵੱਡਾ ਹਰਾ ਕਾਰਡ ਦੱਸਦਾ ਹੈ ਗੱਲੇ ਵਿੱਚ ਕਿੰਨਾ ਨਕਦ ਹੋਣਾ ਚਾਹੀਦਾ। ਹਰੇ ਅੰਕ ਆਏ, ਲਾਲ ਗਏ।",
+  tour1Body: "ਇਹ ਵੱਡਾ ਗੂੜ੍ਹਾ ਕਾਰਡ ਦੱਸਦਾ ਹੈ ਕਿ ਗੱਲੇ ਵਿੱਚ ਕਿੰਨੀ ਨਕਦੀ ਹੋਣੀ ਚਾਹੀਦੀ ਹੈ। ਨੀਲੇ ਅੰਕ ਆਏ, ਲਾਲ ਗਏ।",
   tour2Title: "ਬਸ ਬੋਲੋ",
   tour2Body: "ਮਾਈਕ ਦਬਾਓ ਤੇ ਕਾਊਂਟਰ ਵਾਂਗ ਬੋਲੋ: “ਰਮੇਸ਼ ਨੂੰ 200 ਉਧਾਰ”। BolKhata ਐਂਟਰੀ ਬਣਾ ਦੇਵੇਗਾ। ਤੁਸੀਂ ਵੇਖ ਕੇ ਸੇਵ ਕਰੋ।",
   tour3Title: "ਹਿਸਾਬ, ਸੌਖੀ ਭਾਸ਼ਾ ਵਿੱਚ",
@@ -266,6 +266,8 @@ export const pa: Locale = {
   fPaidNow: "ਹੁਣ ਦਿੱਤੇ",
   askAmount: "ਕਿੰਨੇ ਰੁਪਏ?",
   askWho: "ਕਿਸਦੇ ਨਾਮ?",
+
+  askWhatSold: "ਕੀ ਵੇਚਿਆ? ਚੀਜ਼ ਅਤੇ ਕਿੰਨਾ, ਜੋੜੋ।",
   didYouMean: "ਕੀ ਇਹ ਹੈ?",
   newPerson: "ਨਵਾਂ: {name}",
   saveEntry: "ਸੇਵ ਕਰੋ",
@@ -337,4 +339,6 @@ export const pa: Locale = {
   noStockYet: "ਸਟਾਕ ਵਿੱਚ ਹਾਲੇ ਕੋਈ ਚੀਜ਼ ਨਹੀਂ। ਚੀਜ਼ ਜੋੜੋ, ਤਾਂ ਜੋ ਵੇਚਣ ਤੇ ਸਟਾਕ ਆਪੇ ਘਟੇ।",
   newItem: "+ ਨਵੀਂ ਚੀਜ਼",
   notInStockAdd: "ਸਟਾਕ ਵਿੱਚ ਨਹੀਂ · ਜੋੜੋ",
+
+  whichItem: "ਕਿਹੜਾ?",
 };

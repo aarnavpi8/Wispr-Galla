@@ -24,7 +24,7 @@ const KINDS: { kind: Kind; key: StringKey; icon: string }[] = [
 const STEPS = 3;
 
 const field =
-  "mt-2 min-h-14 w-full rounded-2xl border-2 border-line bg-surface px-4 text-xl text-forest-950 transition placeholder:text-muted/60 focus:border-leaf-500 focus:outline-none focus:ring-4 focus:ring-leaf-500/15";
+  "mt-2 min-h-14 w-full rounded-2xl border-2 border-line bg-surface px-4 text-xl text-ink-950 transition placeholder:text-muted/60 focus:border-iris-500 focus:outline-none focus:ring-4 focus:ring-iris-500/15";
 
 /**
  * First run on a new install: a few questions about the shop, one per step, then the shop is
@@ -76,23 +76,23 @@ export function SetupScreen({ onDone }: { onDone: () => void }) {
   return (
     <main className="mx-auto flex min-h-dvh w-full max-w-md flex-col gap-5 px-5 py-6">
       <div className="animate-rise flex items-center justify-between">
-        <div className="flex items-center gap-2 text-forest-900">
+        <div className="flex items-center gap-2 text-ink-900">
           <Logo size={40} />
         </div>
-        <span className="rounded-full bg-mint-100 px-3 py-1 text-xs font-bold text-forest-800">
+        <span className="rounded-full bg-iris-100 px-3 py-1 text-xs font-bold text-ink-800">
           {t("setupStep", { i: step, n: STEPS })}
         </span>
       </div>
 
       <header className="animate-rise [animation-delay:60ms]">
-        <h1 className="text-3xl font-extrabold tracking-tight text-forest-950">
-          {user ? `${t(greetingFor())}, ${user.name.split(" ")[0]} 🙏` : t("setupTitle")}
+        <h1 className="text-3xl font-extrabold tracking-tight text-ink-950">
+          {user ? `${t(greetingFor())}, ${user.name.split(" ")[0]}` : t("setupTitle")}
         </h1>
         <p className="mt-1 text-muted">{t("setupSub")}</p>
         {/* Progress bar */}
         <div className="mt-4 flex gap-1.5" aria-hidden>
           {Array.from({ length: STEPS }, (_, i) => (
-            <span key={i} className={`h-1.5 flex-1 rounded-full transition-colors duration-500 ${i < step ? "bg-leaf-500" : "bg-line"}`} />
+            <span key={i} className={`h-1.5 flex-1 rounded-full transition-colors duration-500 ${i < step ? "bg-iris-500" : "bg-line"}`} />
           ))}
         </div>
       </header>
@@ -100,7 +100,7 @@ export function SetupScreen({ onDone }: { onDone: () => void }) {
       <form onSubmit={next} className="flex flex-1 flex-col">
         <div key={step} className="animate-rise flex-1">
           <div className="flex items-start justify-between gap-3">
-            <h2 className="text-2xl font-bold text-forest-950">{question}</h2>
+            <h2 className="text-2xl font-bold text-ink-950">{question}</h2>
             <ListenButton text={question} className="shrink-0" />
           </div>
 
@@ -129,8 +129,8 @@ export function SetupScreen({ onDone }: { onDone: () => void }) {
                     onClick={() => setKind(k.kind)}
                     className={`flex min-h-32 flex-col items-center justify-center gap-2 rounded-3xl border-2 p-3 text-center font-semibold transition hover:-translate-y-0.5 active:scale-[0.98] ${
                       on
-                        ? "border-forest-800 bg-forest-900 text-white shadow-xl shadow-forest-900/20"
-                        : "border-line bg-surface text-forest-950 hover:border-leaf-500"
+                        ? "border-brand-600 bg-brand-600 text-white shadow-xl shadow-brand-600/20"
+                        : "border-line bg-surface text-ink-950 hover:border-iris-500"
                     }`}
                   >
                     <span aria-hidden className={`text-4xl transition ${on ? "scale-110" : ""}`}>
@@ -145,7 +145,7 @@ export function SetupScreen({ onDone }: { onDone: () => void }) {
 
           {step === 3 && (
             <div className="mt-2 space-y-4">
-              <label className="block font-semibold text-forest-950">
+              <label className="block font-semibold text-ink-950">
                 {t("setupUpi")} <span className="font-normal text-muted">({t("optional")})</span>
                 <input
                   value={vpa}
@@ -157,7 +157,7 @@ export function SetupScreen({ onDone }: { onDone: () => void }) {
                   className={field}
                 />
               </label>
-              <label className="block font-semibold text-forest-950">
+              <label className="block font-semibold text-ink-950">
                 {t("setupCash")} <span className="font-normal text-muted">({t("optional")})</span>
                 <input
                   value={cash}
@@ -168,12 +168,12 @@ export function SetupScreen({ onDone }: { onDone: () => void }) {
                 />
               </label>
               {kind !== "other" && (
-                <label className="flex min-h-14 cursor-pointer items-center gap-3 rounded-2xl bg-mint-100 px-4 py-3 font-semibold text-forest-900">
+                <label className="flex min-h-14 cursor-pointer items-center gap-3 rounded-2xl bg-iris-100 px-4 py-3 font-semibold text-ink-900">
                   <input
                     type="checkbox"
                     checked={starter}
                     onChange={(e) => setStarter(e.target.checked)}
-                    className="size-6 shrink-0 accent-[var(--forest-800)]"
+                    className="size-6 shrink-0 accent-[var(--ink-800)]"
                   />
                   {t("setupStarter")}
                 </label>
@@ -194,7 +194,7 @@ export function SetupScreen({ onDone }: { onDone: () => void }) {
               <button
                 type="button"
                 onClick={() => setStep(step - 1)}
-                className="min-h-14 rounded-2xl bg-surface-2 px-5 font-semibold text-forest-900 transition hover:bg-line"
+                className="min-h-14 rounded-2xl bg-surface-2 px-5 font-semibold text-ink-900 transition hover:bg-line"
               >
                 {t("tourBack")}
               </button>
@@ -204,7 +204,7 @@ export function SetupScreen({ onDone }: { onDone: () => void }) {
                 <button
                   type="submit"
                   disabled={!canNext}
-                  className="min-h-14 w-full rounded-2xl bg-forest-900 text-lg font-semibold text-white shadow-lg shadow-forest-900/20 transition hover:bg-forest-800 active:scale-[0.98] disabled:bg-line disabled:text-muted disabled:shadow-none"
+                  className="min-h-14 w-full rounded-2xl bg-brand-600 text-lg font-semibold text-white shadow-lg shadow-brand-600/20 transition hover:bg-brand-500 active:scale-[0.98] disabled:bg-line disabled:text-muted disabled:shadow-none"
                 >
                   {t("next")} →
                 </button>
@@ -216,7 +216,7 @@ export function SetupScreen({ onDone }: { onDone: () => void }) {
                     const r = e.currentTarget.getBoundingClientRect();
                     void finish(e.clientX || r.left + r.width / 2, e.clientY || r.top + r.height / 2);
                   }}
-                  className="min-h-14 w-full rounded-2xl bg-forest-900 text-lg font-semibold text-white shadow-lg shadow-forest-900/20 transition hover:bg-forest-800 active:scale-[0.98] disabled:opacity-60"
+                  className="min-h-14 w-full rounded-2xl bg-brand-600 text-lg font-semibold text-white shadow-lg shadow-brand-600/20 transition hover:bg-brand-500 active:scale-[0.98] disabled:opacity-60"
                 >
                   {t("setupStart")} ✓
                 </button>
@@ -228,7 +228,7 @@ export function SetupScreen({ onDone }: { onDone: () => void }) {
               type="button"
               disabled={busy}
               onClick={(e) => void finish(e.clientX || window.innerWidth / 2, e.clientY || window.innerHeight - 60, true)}
-              className="min-h-12 w-full rounded-2xl text-sm font-semibold text-forest-800 underline-offset-4 transition hover:bg-mint-100 hover:underline"
+              className="min-h-12 w-full rounded-2xl text-sm font-semibold text-ink-800 underline-offset-4 transition hover:bg-iris-100 hover:underline"
             >
               {t("setupDemo")}
             </button>

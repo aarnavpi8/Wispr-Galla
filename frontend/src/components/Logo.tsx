@@ -3,8 +3,8 @@
  * double margin rule of an Indian ledger book), with a voice wave that ends in a tick:
  * "say it, and it's written down".
  *
- * `tile`: the mark on a forest-green rounded square (app icon, headers).
- * `bare`: just the mark, for placing on an already-green background.
+ * `tile`: the mark on an indigo rounded square (app icon, headers).
+ * `bare`: just the mark, for placing on an already-dark background.
  */
 export function LogoMark({
   size = 40,
@@ -21,8 +21,8 @@ export function LogoMark({
         <>
           <defs>
             <linearGradient id="bk-tile" x1="0" y1="0" x2="1" y2="1">
-              <stop offset="0" stopColor="#1f7a52" />
-              <stop offset="1" stopColor="#0b2a1e" />
+              <stop offset="0" stopColor="#4f93ec" />
+              <stop offset="1" stopColor="#1f5fbf" />
             </linearGradient>
           </defs>
           <rect width="64" height="64" rx="16" fill="url(#bk-tile)" />
@@ -31,12 +31,12 @@ export function LogoMark({
       {/* Speech bubble = khata page */}
       <path
         d="M20 12h24a10 10 0 0 1 10 10v16a10 10 0 0 1-10 10H27l-8.6 6.6a1.4 1.4 0 0 1-2.3-1.1V47.2A10 10 0 0 1 10 38V22a10 10 0 0 1 10-10Z"
-        fill="#d7f08a"
+        fill="#f3c262"
       />
       {/* The ledger's red double margin */}
       <path d="M16.6 20.5v19M18.8 20.5v19" stroke="#d2553f" strokeOpacity="0.8" strokeWidth="1.1" strokeLinecap="round" />
       {/* Voice wave that ends in a tick: spoken, then saved */}
-      <g stroke="#0b2a1e" strokeWidth="3.6" strokeLinecap="round" strokeLinejoin="round" fill="none">
+      <g stroke="#1f2a3d" strokeWidth="3.6" strokeLinecap="round" strokeLinejoin="round" fill="none">
         <path d="M23.5 27v6" />
         <path d="M29.5 22.5v15" />
         <path d="M35.5 25.5v9" />
@@ -46,7 +46,7 @@ export function LogoMark({
   );
 }
 
-/** Mark + "BolKhata" wordmark ("Bol" in leaf green, "Khata" in forest). */
+/** Mark + "BolKhata" wordmark ("Bol" in iris, "Khata" in ink). */
 export function Logo({
   size = 40,
   tone = "light",
@@ -59,8 +59,8 @@ export function Logo({
   return (
     <span className={`inline-flex items-center gap-2.5 ${className}`}>
       <LogoMark size={size} />
-      <span className={`font-extrabold tracking-tight ${tone === "dark" ? "text-white" : "text-forest-950"}`} style={{ fontSize: size * 0.5 }}>
-        <span className={tone === "dark" ? "text-lime-300" : "text-leaf-500"}>Bol</span>Khata
+      <span className={`font-extrabold tracking-tight ${tone === "dark" ? "text-white" : "text-ink-950"}`} style={{ fontSize: size * 0.5 }}>
+        <span className={tone === "dark" ? "text-gold-300" : "text-iris-500"}>Bol</span>Khata
       </span>
     </span>
   );

@@ -23,7 +23,7 @@ export function AccountsCard({ refreshKey = 0, onChanged }: { refreshKey?: numbe
     <section aria-labelledby="accounts-title" className="rounded-[28px] border border-line bg-surface p-4 shadow-sm">
       <div className="flex items-center justify-between gap-3">
         <div>
-          <h2 id="accounts-title" className="text-lg font-bold text-forest-950">
+          <h2 id="accounts-title" className="text-lg font-bold text-ink-950">
             {t("accountsTitle")}
           </h2>
           <p className="text-sm text-muted">{t("accountsSub", { n: days })}</p>
@@ -35,7 +35,7 @@ export function AccountsCard({ refreshKey = 0, onChanged }: { refreshKey?: numbe
               type="button"
               aria-pressed={days === d}
               onClick={() => setDays(d)}
-              className={`rounded-full px-3 py-1 transition ${days === d ? "bg-forest-900 text-white" : "text-muted hover:text-forest-900"}`}
+              className={`rounded-full px-3 py-1 transition ${days === d ? "bg-brand-600 text-white" : "text-muted hover:text-ink-900"}`}
             >
               {d}
             </button>
@@ -44,14 +44,14 @@ export function AccountsCard({ refreshKey = 0, onChanged }: { refreshKey?: numbe
       </div>
 
       {!a ? (
-        <div className="mt-4 grid grid-cols-2 gap-2">
+        <div className="reveal-stagger mt-4 grid grid-cols-2 gap-2">
           {[0, 1, 2, 3].map((i) => (
             <div key={i} className="skeleton h-24 rounded-2xl" />
           ))}
         </div>
       ) : (
         <>
-          <div className="mt-4 grid grid-cols-2 gap-2">
+          <div className="reveal-stagger mt-4 grid grid-cols-2 gap-2">
             <Tile label={t("receivable")} help={["receivable", "helpReceivable"]} sub={t("receivableSub")} value={a.receivable} tone="text-pending" bg="bg-amber-50" />
             <Tile label={t("payable")} help={["payable", "helpPayable"]} sub={t("payableSub")} value={a.payable} tone="text-money-out" bg="bg-red-50" />
             <Tile
@@ -60,9 +60,9 @@ export function AccountsCard({ refreshKey = 0, onChanged }: { refreshKey?: numbe
               sub={t("netSub")}
               value={a.net}
               tone={a.net >= 0 ? "text-money-in" : "text-money-out"}
-              bg={a.net >= 0 ? "bg-mint-100" : "bg-red-50"}
+              bg={a.net >= 0 ? "bg-iris-100" : "bg-red-50"}
             />
-            <Tile label={t("stockValue")} help={["stockValue", "helpStock"]} sub={t("itemsCount", { n: a.stock_items })} value={a.stock_value} tone="text-forest-900" bg="bg-surface-2" />
+            <Tile label={t("stockValue")} help={["stockValue", "helpStock"]} sub={t("itemsCount", { n: a.stock_items })} value={a.stock_value} tone="text-ink-900" bg="bg-surface-2" />
           </div>
 
           {/* Cash book vs UPI book: what came in and went out of each. */}
@@ -74,7 +74,7 @@ export function AccountsCard({ refreshKey = 0, onChanged }: { refreshKey?: numbe
             <Book label={t("upiBook")} inLabel={t("moneyIn")} outLabel={t("moneyOut")} inValue={a.upi_in} outValue={0} />
           </div>
 
-          <dl className="mt-4 divide-y divide-line/70 rounded-2xl bg-background px-3 text-sm">
+          <dl className="reveal-stagger mt-4 divide-y divide-line/70 rounded-2xl bg-background px-3 text-sm">
             <Row label={t("purchases")} value={a.purchases} />
             <Row label={t("expenses")} value={a.expenses} />
             <Row label={t("withdrawals")} value={a.withdrawals} />
@@ -90,7 +90,7 @@ export function AccountsCard({ refreshKey = 0, onChanged }: { refreshKey?: numbe
           as="button"
           type="button"
           onClick={() => setClosing(true)}
-          className="flex min-h-14 w-full items-center gap-3 rounded-2xl bg-forest-900 px-4 text-left text-white shadow-lg shadow-forest-900/20 transition hover:bg-forest-800 active:scale-[0.99] [--spot:rgb(215_240_138/0.18)]"
+          className="flex min-h-14 w-full items-center gap-3 rounded-2xl bg-brand-600 px-4 text-left text-white shadow-lg shadow-brand-600/20 transition hover:bg-brand-500 active:scale-[0.99] [--spot:rgb(243_194_98/0.18)]"
         >
           <span aria-hidden className="text-2xl">
             🔒
@@ -159,7 +159,7 @@ function Book({
   return (
     <div>
       <div className="flex items-baseline justify-between text-sm">
-        <span className="font-semibold text-forest-950">{label}</span>
+        <span className="font-semibold text-ink-950">{label}</span>
         <span className="text-muted">
           <span className="text-money-in">+{formatINR(inValue)}</span>
           {outValue > 0 && <span className="text-money-out"> · −{formatINR(outValue)}</span>}
@@ -167,7 +167,7 @@ function Book({
       </div>
       <div className="mt-1.5 space-y-1" aria-hidden>
         <div className="h-2 overflow-hidden rounded-full bg-surface-2" title={inLabel}>
-          <div className="h-full rounded-full bg-leaf-500 transition-[width] duration-700" style={{ width: `${(inValue / max) * 100}%` }} />
+          <div className="h-full rounded-full bg-iris-500 transition-[width] duration-700" style={{ width: `${(inValue / max) * 100}%` }} />
         </div>
         {outValue > 0 && (
           <div className="h-2 overflow-hidden rounded-full bg-surface-2" title={outLabel}>
@@ -183,7 +183,7 @@ function Row({ label, value }: { label: string; value: number }) {
   return (
     <div className="flex justify-between py-2">
       <dt className="text-muted">{label}</dt>
-      <dd className="font-semibold tabular-nums text-forest-950">{formatINR(value)}</dd>
+      <dd className="font-semibold tabular-nums text-ink-950">{formatINR(value)}</dd>
     </div>
   );
 }

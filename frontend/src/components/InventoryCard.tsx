@@ -77,7 +77,7 @@ export function InventoryCard({
     <section aria-labelledby="stock-title" className="rounded-[28px] border border-line bg-surface p-4 shadow-sm">
       <div className="flex items-start justify-between gap-3">
         <div>
-          <h2 id="stock-title" className="flex items-center gap-2 text-lg font-bold text-forest-950">
+          <h2 id="stock-title" className="flex items-center gap-2 text-lg font-bold text-ink-950">
             {t("stockTitle")} <HelpTip title="stockTitle" body="helpStock" />
           </h2>
           <p className="text-sm text-muted">
@@ -87,7 +87,7 @@ export function InventoryCard({
         <button
           type="button"
           onClick={() => setAdding(true)}
-          className="flex h-11 shrink-0 items-center gap-1 rounded-full bg-forest-900 px-4 text-sm font-semibold text-white shadow-md transition hover:-translate-y-0.5 hover:bg-forest-800 active:scale-95"
+          className="flex h-11 shrink-0 items-center gap-1 rounded-full bg-brand-600 px-4 text-sm font-semibold text-white shadow-md transition hover:-translate-y-0.5 hover:bg-brand-500 active:scale-95"
         >
           <span aria-hidden className="text-lg leading-none">
             +
@@ -101,9 +101,9 @@ export function InventoryCard({
         type="button"
         onClick={() => setScanning(true)}
         disabled={!items}
-        className="group mt-3 flex w-full items-center gap-3 rounded-2xl bg-gradient-to-r from-forest-800 to-forest-700 p-3 text-left text-white shadow-md transition hover:-translate-y-0.5 hover:shadow-lg active:scale-[0.99] disabled:opacity-60"
+        className="group mt-3 flex w-full items-center gap-3 rounded-2xl bg-gradient-to-r from-brand-600 to-brand-500 p-3 text-left text-white shadow-md transition hover:-translate-y-0.5 hover:shadow-lg active:scale-[0.99] disabled:opacity-60"
       >
-        <span className="grid size-11 shrink-0 place-items-center rounded-xl bg-lime-300 text-forest-950 transition group-hover:rotate-[-6deg] group-hover:scale-105">
+        <span className="grid size-11 shrink-0 place-items-center rounded-xl bg-gold-300 text-ink-950 transition group-hover:rotate-[-6deg] group-hover:scale-105">
           <svg viewBox="0 0 24 24" className="size-6" fill="none" stroke="currentColor" strokeWidth={1.9} strokeLinecap="round" strokeLinejoin="round" aria-hidden>
             <path d="M4 8.5A2.5 2.5 0 0 1 6.5 6H8l1.5-2h5L16 6h1.5A2.5 2.5 0 0 1 20 8.5v8a2.5 2.5 0 0 1-2.5 2.5h-11A2.5 2.5 0 0 1 4 16.5z" />
             <circle cx="12" cy="12.5" r="3.5" />
@@ -139,7 +139,7 @@ export function InventoryCard({
         onChange={(e) => setQuery(e.target.value)}
         placeholder={t("searchItems")}
         aria-label={t("searchItems")}
-        className="mt-3 min-h-12 w-full rounded-2xl border border-line bg-background px-4 text-base transition focus:border-leaf-500 focus:outline-none focus:ring-4 focus:ring-leaf-500/15"
+        className="mt-3 min-h-12 w-full rounded-2xl border border-line bg-background px-4 text-base transition focus:border-iris-500 focus:outline-none focus:ring-4 focus:ring-iris-500/15"
       />
       {error && <p className="mt-2 text-sm text-money-out">{error}</p>}
 
@@ -150,7 +150,7 @@ export function InventoryCard({
           ))}
         </div>
       ) : (
-        <ul className="mt-3 grid gap-2">
+        <ul className="reveal-stagger mt-3 grid gap-2">
           {visible.map((item, idx) => (
             <li key={item.id} className="animate-rise" style={{ animationDelay: `${Math.min(idx, 8) * 35}ms` }}>
               <Spotlight
@@ -160,7 +160,7 @@ export function InventoryCard({
                 }`}
               >
                 <button type="button" onClick={() => setOpen(item)} className="min-w-0 flex-1 text-left">
-                  <span className="block truncate font-semibold text-forest-950">{itemLabel(item)}</span>
+                  <span className="block truncate font-semibold text-ink-950">{itemLabel(item)}</span>
                   <span className="flex items-center gap-2 text-xs text-muted">
                     {formatINR(item.price)}/{item.unit}
                     {item.low && (
@@ -169,7 +169,7 @@ export function InventoryCard({
                   </span>
                   <span className="mt-1.5 block h-1.5 w-full overflow-hidden rounded-full bg-surface-2" aria-hidden>
                     <span
-                      className={`block h-full rounded-full transition-[width] duration-500 ${item.low ? "bg-pending" : "bg-leaf-500"}`}
+                      className={`block h-full rounded-full transition-[width] duration-500 ${item.low ? "bg-pending" : "bg-iris-500"}`}
                       style={{ width: `${stockLevel(item) * 100}%` }}
                     />
                   </span>
@@ -180,13 +180,13 @@ export function InventoryCard({
                     aria-label={`${itemLabel(item)}: ${t("stockSold")} 1`}
                     disabled={item.stock === 0}
                     onClick={() => void step(item, "sale")}
-                    className="grid size-10 place-items-center rounded-xl bg-surface-2 text-xl font-bold text-forest-900 transition hover:bg-red-50 hover:text-money-out active:scale-90 disabled:opacity-30"
+                    className="grid size-10 place-items-center rounded-xl bg-surface-2 text-xl font-bold text-ink-900 transition hover:bg-red-50 hover:text-money-out active:scale-90 disabled:opacity-30"
                   >
                     −
                   </button>
                   <span
                     key={item.stock}
-                    className={`animate-pop w-12 text-center font-bold tabular-nums ${item.low ? "text-pending" : "text-forest-950"}`}
+                    className={`animate-pop w-12 text-center font-bold tabular-nums ${item.low ? "text-pending" : "text-ink-950"}`}
                     aria-label={t("left", { n: item.stock })}
                   >
                     {item.stock}
@@ -196,7 +196,7 @@ export function InventoryCard({
                     type="button"
                     aria-label={`${itemLabel(item)}: ${t("stockIn")} 1`}
                     onClick={() => void step(item, "purchase")}
-                    className="grid size-10 place-items-center rounded-xl bg-mint-100 text-xl font-bold text-forest-900 transition hover:bg-leaf-300 active:scale-90"
+                    className="grid size-10 place-items-center rounded-xl bg-iris-100 text-xl font-bold text-ink-900 transition hover:bg-iris-300 active:scale-90"
                   >
                     +
                   </button>
@@ -211,7 +211,7 @@ export function InventoryCard({
         <button
           type="button"
           onClick={() => setShowAll(true)}
-          className="mt-3 min-h-11 w-full rounded-2xl text-sm font-semibold text-forest-800 transition hover:bg-mint-100"
+          className="mt-3 min-h-11 w-full rounded-2xl text-sm font-semibold text-ink-800 transition hover:bg-iris-100"
         >
           {t("allItems")} ({filtered.length}) ↓
         </button>

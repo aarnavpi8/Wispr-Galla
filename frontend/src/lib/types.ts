@@ -34,12 +34,23 @@ export interface PartyRef {
   match_id: number | null;
 }
 
+export interface ItemOption {
+  item_id: number;
+  name: string;
+  unit: string;
+  price: number | null;
+}
+
 export interface LineItem {
   name: string;
   item_id: number | null;
   qty: number;
   unit: string;
   price: number | null;
+  /** Several stock items fit what was said: the card asks "which one?" (mirrors schemas.ItemOption). */
+  options?: ItemOption[];
+  /** The words heard for this line; saved as the picked item's alias. */
+  heard?: string | null;
 }
 
 export interface PartyOption {

@@ -38,7 +38,7 @@ export function Sheet({
           tabIndex={-1}
           aria-label={closeLabel}
           onClick={onClose}
-          className="animate-[rise_0.2s_both] absolute inset-0 bg-forest-950/40 backdrop-blur-[2px]"
+          className="animate-[rise_0.2s_both] absolute inset-0 bg-ink-950/25 backdrop-blur-[3px]"
         />
         <div
           ref={panel}
@@ -47,7 +47,7 @@ export function Sheet({
           <div aria-hidden className="mx-auto mb-4 h-1.5 w-12 rounded-full bg-line sm:hidden" />
           <div className="mb-4 flex items-start gap-3">
             <div className="min-w-0 flex-1">
-              <h2 id={titleId} className="text-xl font-bold text-forest-950">
+              <h2 id={titleId} className="text-xl font-bold text-ink-950">
                 {title}
               </h2>
               {subtitle && <p className="text-sm text-muted">{subtitle}</p>}

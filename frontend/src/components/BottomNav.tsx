@@ -92,12 +92,12 @@ export function BottomNav({
         onClick={() => onGo(item.id)}
         aria-current={on ? "true" : undefined}
         className={`group relative flex flex-1 flex-col items-center gap-0.5 rounded-2xl py-1.5 text-xs font-semibold transition ${
-          on ? "text-forest-900" : "text-muted hover:text-forest-800"
+          on ? "text-ink-900" : "text-muted hover:text-ink-800"
         }`}
       >
         <span
           className={`relative grid h-8 w-12 place-items-center rounded-full transition-all duration-300 ${
-            on ? "bg-mint-100" : "group-hover:bg-surface-2"
+            on ? "bg-iris-100" : "group-hover:bg-surface-2"
           }`}
         >
           <svg
@@ -129,16 +129,16 @@ export function BottomNav({
       aria-label={t("navHome")}
       className="fixed inset-x-0 bottom-0 z-30 flex justify-center px-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]"
     >
-      <div className="relative flex w-full max-w-md items-end gap-1 rounded-[26px] border border-line bg-surface/90 px-2 pb-1.5 pt-1.5 shadow-[0_-8px_30px_-12px_rgb(16_58_41/0.25)] backdrop-blur-md">
+      <div className="relative flex w-full max-w-md items-end gap-1 rounded-[26px] border border-line bg-surface/90 px-2 pb-1.5 pt-1.5 shadow-[0_-8px_30px_-12px_rgb(42_109_211/0.25)] backdrop-blur-md">
         {NAV_ITEMS.slice(0, 2).map(button)}
         <div className="relative flex flex-1 justify-center">
           {/* Slow "breathing" ring: a visual cue that this is the main button. */}
-          <span aria-hidden className="pointer-events-none absolute -top-7 size-16 animate-[ring_2.8s_ease-out_infinite] rounded-full bg-leaf-500/40" />
+          <span aria-hidden className="pointer-events-none absolute -top-7 size-16 animate-[ring_2.8s_ease-out_infinite] rounded-full bg-iris-500/40" />
           <button
             type="button"
             onClick={onSpeak}
             aria-label={t("speak")}
-            className="group relative -mt-7 grid size-16 place-items-center rounded-full bg-gradient-to-b from-forest-700 to-forest-950 text-white shadow-xl shadow-forest-900/40 ring-4 ring-background transition hover:-translate-y-1 hover:shadow-2xl active:scale-95"
+            className="group relative -mt-7 grid size-16 place-items-center rounded-full bg-gradient-to-b from-brand-500 to-brand-700 text-white shadow-xl shadow-brand-600/40 ring-4 ring-background transition hover:-translate-y-1 hover:shadow-2xl active:scale-95"
           >
             <svg viewBox="0 0 24 24" className="size-7 transition-transform group-hover:scale-110" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden>
               <rect x="9" y="3" width="6" height="11" rx="3" />

@@ -114,7 +114,7 @@ export const hinglish: Locale = {
   reminderNote: "WhatsApp khulega, message check karke aap Send dabayein.",
   noPartyEntries: "Koi entry nahi.",
   history: "Itihaas",
-  reminderMsg: "Namaste {name}, {shop} se yaad dila rahe hain: aapka {x} baaki hai. Suvidha ho toh UPI se bhej dijiye: {upi} Dhanyavaad 🙏",
+  reminderMsg: "Namaste {name}, {shop} se yaad dila rahe hain: aapka {x} baaki hai. Suvidha ho toh UPI se bhej dijiye: {upi} Dhanyavaad",
 
   navHome: "Aaj",
   navAccounts: "Hisaab",
@@ -213,7 +213,7 @@ export const hinglish: Locale = {
   tourDone: "BolKhata chalana shuru karein",
   tourStep: "{i} / {n}",
   tour1Title: "Aapka paisa, ek nazar mein",
-  tour1Body: "Ye bada hara card batata hai galle mein kitna cash hona chahiye. Hare number aaye, laal gaye.",
+  tour1Body: "Ye bada gehra card batata hai galle mein kitna cash hona chahiye. Neele number aaye, laal gaye.",
   tour2Title: "Bas boliye",
   tour2Body: "Mic dabaiye aur counter jaise boliye: “Ramesh ko 200 udhaar”. BolKhata entry bana dega. Aap check karke save kariye.",
   tour3Title: "Hisaab, aasaan bhasha mein",
@@ -265,6 +265,8 @@ export const hinglish: Locale = {
   fPaidNow: "Abhi diye",
   askAmount: "Kitne rupaye?",
   askWho: "Kiske naam?",
+
+  askWhatSold: "Kya becha? Item aur kitna, jodiye.",
   didYouMean: "Kya ye hai?",
   newPerson: "Naya: {name}",
   saveEntry: "Save karo",
@@ -336,4 +338,6 @@ export const hinglish: Locale = {
   noStockYet: "Stock mein abhi koi item nahi. Item jodiye, taaki bechne par stock apne aap ghate.",
   newItem: "+ Naya item",
   notInStockAdd: "Stock mein nahi · Jodiye",
+
+  whichItem: "Kaunsa?",
 };

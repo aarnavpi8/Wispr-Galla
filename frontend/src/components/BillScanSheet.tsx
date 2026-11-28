@@ -113,7 +113,7 @@ export function BillScanSheet({
       {step === "pick" && (
         <div className="space-y-3">
           <div className="flex items-start gap-3 rounded-2xl bg-surface-2 p-3">
-            <ol className="flex-1 space-y-1 text-sm text-forest-950/85">
+            <ol className="flex-1 space-y-1 text-sm text-ink-950/85">
               <li>① {t("takePhoto")}</li>
               <li>② {t("checkLines")}</li>
               <li>③ {t("stockIn")} ✓</li>
@@ -125,8 +125,8 @@ export function BillScanSheet({
               {error}
             </p>
           )}
-          <label className="group flex min-h-40 cursor-pointer flex-col items-center justify-center gap-3 rounded-3xl border-2 border-dashed border-leaf-500/50 bg-mint-100/60 text-forest-900 transition hover:border-leaf-500 hover:bg-mint-100">
-            <span className="grid size-16 place-items-center rounded-full bg-forest-900 text-white shadow-lg transition group-hover:scale-105">
+          <label className="group flex min-h-40 cursor-pointer flex-col items-center justify-center gap-3 rounded-3xl border-2 border-dashed border-iris-500/50 bg-iris-100/60 text-ink-900 transition hover:border-iris-500 hover:bg-iris-100">
+            <span className="grid size-16 place-items-center rounded-full bg-brand-600 text-white shadow-lg transition group-hover:scale-105">
               <svg viewBox="0 0 24 24" className="size-8" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" aria-hidden>
                 <path d="M4 8.5A2.5 2.5 0 0 1 6.5 6H8l1.5-2h5L16 6h1.5A2.5 2.5 0 0 1 20 8.5v8a2.5 2.5 0 0 1-2.5 2.5h-11A2.5 2.5 0 0 1 4 16.5z" />
                 <circle cx="12" cy="12.5" r="3.5" />
@@ -142,7 +142,7 @@ export function BillScanSheet({
               onChange={(e) => void start(e.target.files?.[0])}
             />
           </label>
-          <label className="flex min-h-12 cursor-pointer items-center justify-center rounded-2xl text-sm font-semibold text-forest-800 transition hover:bg-mint-100">
+          <label className="flex min-h-12 cursor-pointer items-center justify-center rounded-2xl text-sm font-semibold text-ink-800 transition hover:bg-iris-100">
             {t("fromGallery")}
             <input
               type="file"
@@ -162,12 +162,12 @@ export function BillScanSheet({
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src={photo} alt="" className="size-full object-cover opacity-80" />
               {/* Scanner line sweeping the photo */}
-              <div className="animate-[scan_1.6s_ease-in-out_infinite_alternate] absolute inset-x-0 h-1 bg-lime-300 shadow-[0_0_20px_4px_rgb(215_240_138/0.7)]" />
+              <div className="animate-[scan_1.6s_ease-in-out_infinite_alternate] absolute inset-x-0 h-1 bg-gold-300 shadow-[0_0_20px_4px_rgb(243_194_98/0.7)]" />
             </div>
           )}
-          <p className="font-semibold text-forest-950">{t("reading")}</p>
+          <p className="font-semibold text-ink-950">{t("reading")}</p>
           <div className="h-2 w-full overflow-hidden rounded-full bg-surface-2">
-            <div className="h-full rounded-full bg-leaf-500 transition-[width] duration-300" style={{ width: `${Math.round(progress * 100)}%` }} />
+            <div className="h-full rounded-full bg-iris-500 transition-[width] duration-300" style={{ width: `${Math.round(progress * 100)}%` }} />
           </div>
           <p className="text-xs text-muted">{t("readingFirst")}</p>
         </div>
@@ -175,7 +175,7 @@ export function BillScanSheet({
 
       {step === "review" && (
         <div>
-          <p className="mb-2 text-sm font-semibold text-forest-950">{t("checkLines")}</p>
+          <p className="mb-2 text-sm font-semibold text-ink-950">{t("checkLines")}</p>
           <ul className="space-y-2">
             {rows.map((r) => {
               const sure = r.itemId !== null && r.confidence >= 0.8;
@@ -194,7 +194,7 @@ export function BillScanSheet({
                       disabled={!r.itemId}
                       onChange={(e) => update(r.key, { on: e.target.checked })}
                       aria-label={r.raw}
-                      className="size-6 shrink-0 accent-[var(--forest-800)]"
+                      className="size-6 shrink-0 accent-[var(--ink-800)]"
                     />
                     <div className="min-w-0 flex-1">
                       <select
@@ -204,7 +204,7 @@ export function BillScanSheet({
                           update(r.key, { itemId: id, on: !!id, confidence: id ? 1 : 0 });
                         }}
                         aria-label={`${t("pickItem")}: ${r.raw}`}
-                        className="w-full truncate rounded-xl border border-line bg-background px-2 py-1.5 font-semibold text-forest-950"
+                        className="w-full truncate rounded-xl border border-line bg-background px-2 py-1.5 font-semibold text-ink-950"
                       >
                         <option value="">{t("notRecognised")}</option>
                         {items.map((i) => (
@@ -235,7 +235,7 @@ export function BillScanSheet({
                         type="button"
                         aria-label="+1"
                         onClick={() => update(r.key, { qty: r.qty + 1 })}
-                        className="grid size-9 place-items-center rounded-xl bg-mint-100 font-bold active:scale-90"
+                        className="grid size-9 place-items-center rounded-xl bg-iris-100 font-bold active:scale-90"
                       >
                         +
                       </button>
@@ -249,7 +249,7 @@ export function BillScanSheet({
                           key={id}
                           type="button"
                           onClick={() => update(r.key, { itemId: id, confidence: 1 })}
-                          className="rounded-full bg-white px-2.5 py-1 text-xs font-semibold text-forest-800 ring-1 ring-amber-300 transition hover:bg-mint-100"
+                          className="rounded-full bg-white px-2.5 py-1 text-xs font-semibold text-ink-800 ring-1 ring-amber-300 transition hover:bg-iris-100"
                         >
                           {byId.get(id) ? itemLabel(byId.get(id)!) : id}
                         </button>
@@ -266,7 +266,7 @@ export function BillScanSheet({
               type="button"
               disabled={!chosen.length || saving}
               onClick={() => void save()}
-              className="min-h-14 w-full rounded-2xl bg-forest-900 text-lg font-semibold text-white shadow-lg transition hover:bg-forest-800 active:scale-[0.98] disabled:bg-line disabled:text-muted"
+              className="min-h-14 w-full rounded-2xl bg-brand-600 text-lg font-semibold text-white shadow-lg transition hover:bg-brand-500 active:scale-[0.98] disabled:bg-line disabled:text-muted"
             >
               {t("addToStock", { n: chosen.length })}
             </button>
@@ -276,10 +276,10 @@ export function BillScanSheet({
 
       {step === "done" && (
         <div className="flex flex-col items-center gap-3 py-6 text-center" role="status">
-          <span className="animate-pop grid size-20 place-items-center rounded-full bg-leaf-500 text-4xl text-white shadow-xl shadow-leaf-500/30">
+          <span className="animate-pop grid size-20 place-items-center rounded-full bg-iris-500 text-4xl text-white shadow-xl shadow-iris-500/30">
             ✓
           </span>
-          <p className="text-xl font-bold text-forest-950">{t("scanDone", { n: doneCount })}</p>
+          <p className="text-xl font-bold text-ink-950">{t("scanDone", { n: doneCount })}</p>
           <div className="flex w-full gap-2">
             <button
               type="button"
@@ -287,14 +287,14 @@ export function BillScanSheet({
                 setRows([]);
                 setStep("pick");
               }}
-              className="min-h-12 flex-1 rounded-2xl bg-surface-2 font-semibold text-forest-900 transition hover:bg-mint-100"
+              className="min-h-12 flex-1 rounded-2xl bg-surface-2 font-semibold text-ink-900 transition hover:bg-iris-100"
             >
               {t("scanAgain")}
             </button>
             <button
               type="button"
               onClick={onClose}
-              className="min-h-12 flex-1 rounded-2xl bg-forest-900 font-semibold text-white transition hover:bg-forest-800"
+              className="min-h-12 flex-1 rounded-2xl bg-brand-600 font-semibold text-white transition hover:bg-brand-500"
             >
               {t("close")}
             </button>

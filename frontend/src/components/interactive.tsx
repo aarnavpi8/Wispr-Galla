@@ -83,7 +83,7 @@ export function TiltCard({
       ref={ref}
       onPointerMove={move}
       onPointerLeave={leave}
-      className={`spotlight transition-transform duration-300 ease-out will-change-transform [--spot:rgb(215_240_138/0.22)] ${className}`}
+      className={`spotlight transition-transform duration-300 ease-out will-change-transform [--spot:rgb(243_194_98/0.22)] ${className}`}
       style={{ transformStyle: "preserve-3d" }}
     >
       {children}
@@ -123,7 +123,7 @@ export function Magnetic({
   );
 }
 
-/** A soft green glow on the page background that trails the cursor. */
+/** A soft glow on the page background that trails the cursor. */
 export function CursorGlow() {
   const ref = useRef<HTMLDivElement>(null);
   useEffect(() => {

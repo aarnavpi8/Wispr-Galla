@@ -20,8 +20,9 @@ from app.config import settings
 from app.models import Item, Party, Shop
 from app.commands import _has as has_words
 from app.commands import detect_command
+from app.itemwords import expanded_names
 from app.numbers import replace_number_words
-from app.schemas import ExtractedEntry, LineItem, PartyOption, PartyRef
+from app.schemas import ExtractedEntry, ItemOption, LineItem, PartyOption, PartyRef
 
 MATCH_OK = 0.8
 
@@ -59,7 +60,7 @@ WEEKDAYS = {
     "शुक्रवार": 4, "shanivar": 5, "saturday": 5, "शनिवार": 5, "ravivar": 6, "sunday": 6, "रविवार": 6,
 }
 
-TOKEN = re.compile(r"[\wऀ-ॿ.]+", re.UNICODE)
+TOKEN = re.compile(r"[\wऀ-෿.]+", re.UNICODE)  # all Indian scripts (Devanagari … Malayalam), with vowel signs
 
 
 @dataclass
@@ -230,9 +231,30 @@ def _bad_gram(words: list[str]) -> bool:
     return any(w.replace(".", "").isdigit() or w in UNIT_ALIASES for w in words) or bool(edge & STOP)
 
 
-def match_items(text: str, items: list[Item]) -> list[tuple[Item, float, float]]:
-    """(item, qty, confidence) for items mentioned, with the quantity spoken before them."""
+# A match through the five-language word list (itemwords.py) counts a little less than the
+# item's own name or a learned alias, so a word the shopkeeper taught us wins.
+SYNONYM_WEIGHT = 0.95
+# Two items closer than this for the same spoken word: ask which one.
+AMBIGUOUS_GAP = 0.05
+
+
+def _item_names(it: Item) -> tuple[list[str], list[str]]:
+    own = [it.name.lower(), f"{it.name} {it.variant or ''}".lower().strip(), *(a.lower() for a in (it.aliases or []))]
+    return own, expanded_names(own)
+
+
+def match_items(
+    text: str, items: list[Item], details: dict[int, tuple[list[Item], str]] | None = None
+) -> list[tuple[Item, float, float]]:
+    """(item, qty, confidence) for items mentioned, with the quantity spoken before them.
+
+    Names are matched by spelling against the item's name, aliases and its everyday words in five
+    languages. When a spoken word fits several items about equally ("dal", "tel"), the best one is
+    kept with low confidence and details[item.id] gets (up to 3 options, the words heard), so the
+    card can ask "which one?".
+    """
     tokens = [m.group().lower().strip(".") for m in TOKEN.finditer(text)]
+    names = {it.id: _item_names(it) for it in items}
     found: list[tuple[Item, float, float]] = []
     used: set[int] = set()
     i = 0
@@ -245,15 +267,20 @@ def match_items(text: str, items: list[Item]) -> list[tuple[Item, float, float]]
             gram = " ".join(words)
             if _bad_gram(words) or len(gram) < 3:
                 continue
-            best, score = None, 0.0
+            scored: list[tuple[float, Item]] = []
             for it in items:
                 if it.id in used:
                     continue
-                names = [it.name.lower(), f"{it.name} {it.variant or ''}".lower().strip(), *(a.lower() for a in (it.aliases or []))]
-                sc = max(similarity(gram, nm) for nm in names)
-                if sc > score:
-                    best, score = it, sc
-            if best is not None and score >= 0.8:
+                own, extra = names[it.id]
+                sc = max(similarity(gram, nm) for nm in own)
+                if extra:
+                    sc = max(sc, SYNONYM_WEIGHT * max(similarity(gram, nm) for nm in extra))
+                if sc >= 0.8:
+                    scored.append((sc, it))
+            if scored:
+                scored.sort(key=lambda x: -x[0])
+                score, best = scored[0]
+                close = [it for sc, it in scored if score - sc < AMBIGUOUS_GAP - 1e-9]
                 qty = 1.0
                 j = i - 1
                 unit_word = None
@@ -267,12 +294,28 @@ def match_items(text: str, items: list[Item]) -> list[tuple[Item, float, float]]
                         pass
                 if unit_word in ("dozen", "darjan", "दर्जन") and best.unit != "dozen":
                     qty *= 12
-                found.append((best, qty, round(score, 2)))
+                conf = round(score, 2)
+                if len(close) > 1:
+                    conf = min(conf, 0.6)  # several fit: ask
+                    if details is not None:
+                        details[best.id] = (close[:3], gram)
+                found.append((best, qty, conf))
                 used.add(best.id)
                 matched = n
                 break
         i += matched or 1
     return found
+
+
+def _label(it: Item) -> str:
+    return it.name if not it.variant else f"{it.name} {it.variant}"
+
+
+def line_for(it: Item, qty: float, choice: tuple[list[Item], str] | None = None) -> LineItem:
+    """A card line for a matched item; with the other close matches when we need to ask."""
+    options = [ItemOption(item_id=o.id, name=_label(o), unit=o.unit, price=o.price) for o in choice[0]] if choice else []
+    return LineItem(name=_label(it), item_id=it.id, qty=qty, unit=it.unit, price=it.price,
+                    options=options, heard=choice[1] if choice else None)
 
 
 def item_words(text: str, items: list[tuple[Item, float, float]]) -> set[str]:
@@ -330,7 +373,8 @@ def extract_rules(text: str, ctx: ShopContext) -> ExtractedEntry:
     clean = replace_number_words(text.strip())
     t = clean.lower()
 
-    items = match_items(clean, ctx.items)
+    choices: dict[int, tuple[list[Item], str]] = {}
+    items = match_items(clean, ctx.items, choices)
     matched = [it for it, _, _ in items]
     # A unit + name we don't stock; skip names that are just another spelling of a matched item (eggs = Anda).
     new_items = [n for n in guess_new_items(clean, item_words(clean, items)) if not match_items(n[0], matched)]
@@ -425,8 +469,7 @@ def extract_rules(text: str, ctx: ShopContext) -> ExtractedEntry:
     return ExtractedEntry(
         type=type_,
         party=party_ref,
-        items=[LineItem(name=it.name if not it.variant else f"{it.name} {it.variant}", item_id=it.id, qty=q, unit=it.unit, price=it.price)
-               for it, q, _ in items]
+        items=[line_for(it, q, choices.get(it.id)) for it, q, _ in items]
         + [LineItem(name=n, item_id=None, qty=q, unit=u) for n, q, u in new_items],
         amount=amount,
         paid_now=paid_now,

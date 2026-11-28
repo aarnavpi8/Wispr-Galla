@@ -39,16 +39,16 @@ export function PartySheet({
         tabIndex={-1}
         aria-label={t("close")}
         onClick={onClose}
-        className="animate-[rise_0.2s_both] absolute inset-0 bg-forest-950/40 backdrop-blur-[2px]"
+        className="animate-[rise_0.2s_both] absolute inset-0 bg-ink-950/25 backdrop-blur-[3px]"
       />
       <div ref={panel} className="animate-sheet sm:animate-pop relative max-h-[85dvh] w-full max-w-md overflow-y-auto overscroll-contain rounded-t-[32px] bg-surface p-5 pb-8 shadow-2xl sm:max-w-lg sm:rounded-[32px] sm:p-7">
         <div aria-hidden className="mx-auto mb-4 h-1.5 w-12 rounded-full bg-line sm:hidden" />
         <div className="flex items-center gap-3">
-          <span className="grid size-14 place-items-center rounded-full bg-forest-900 text-lg font-bold text-lime-300">
+          <span className="grid size-14 place-items-center rounded-full bg-brand-600 text-lg font-bold text-gold-300">
             {initials(party.name)}
           </span>
           <div className="flex-1">
-            <h2 className="text-xl font-bold text-forest-950">{party.name}</h2>
+            <h2 className="text-xl font-bold text-ink-950">{party.name}</h2>
             <p className="text-sm text-muted">
               {party.kind === "customer" ? t("customer") : t("supplier")}
               {party.phone && ` · ${party.phone}`}
@@ -65,7 +65,7 @@ export function PartySheet({
         </div>
 
         <div
-          className={`mt-4 rounded-3xl p-4 ${party.overdue_since ? "bg-amber-50 ring-1 ring-amber-200" : "bg-mint-100"}`}
+          className={`mt-4 rounded-3xl p-4 ${party.overdue_since ? "bg-amber-50 ring-1 ring-amber-200" : "bg-iris-100"}`}
         >
           <p className="text-sm text-muted">
             {party.kind === "customer"
@@ -100,7 +100,7 @@ export function PartySheet({
               )}
               target="_blank"
               rel="noopener noreferrer"
-              className="flex min-h-14 w-full items-center justify-center gap-2 rounded-2xl bg-[#1fa855] text-lg font-semibold text-white shadow-lg shadow-green-700/20 transition hover:brightness-110 active:scale-[0.98]"
+              className="flex min-h-14 w-full items-center justify-center gap-2 rounded-2xl bg-brand-600 text-lg font-semibold text-white shadow-lg shadow-brand-600/20 transition hover:brightness-110 active:scale-[0.98]"
             >
               {t("makeReminder")}
             </a>
@@ -110,7 +110,7 @@ export function PartySheet({
           <p className="mt-2 text-center text-xs text-muted">{t("reminderNote")}</p>
         )}
 
-        <h3 className="mt-5 font-bold text-forest-950">{t("history")}</h3>
+        <h3 className="mt-5 font-bold text-ink-950">{t("history")}</h3>
         {entries ? (
           <ul className="mt-1 divide-y divide-line/60">
             {entries.map((e, i) => (

@@ -98,13 +98,13 @@ export function VoiceSuggestions({
     return (
       <div className="mt-3">
         <p className="text-xs font-semibold uppercase tracking-wide text-muted">{t("trySaying")}</p>
-        <div className="mt-1.5 flex flex-wrap gap-2">
+        <div className="reveal-stagger mt-1.5 flex flex-wrap gap-2">
           {TRY.map((x) => (
             <button
               key={x.key}
               type="button"
               onClick={() => onCommand(x.command)}
-              className={`${chip} bg-mint-100 text-forest-900 hover:bg-leaf-300`}
+              className={`${chip} bg-iris-100 text-ink-900 hover:bg-iris-300`}
             >
               <span aria-hidden>{x.icon}</span>“{t(x.key)}”
             </button>
@@ -121,7 +121,7 @@ export function VoiceSuggestions({
     suggestions.push({
       label: `▶ ${commandLabel(t, preview.command, name)}`,
       run: () => onCommand(preview.command!, preview.party?.match_id ?? null),
-      tone: "bg-forest-900 text-white hover:bg-forest-800",
+      tone: "bg-brand-600 text-white hover:bg-brand-500",
     });
   } else {
     const party = preview.party?.match_id ? parties.find((p) => p.id === preview.party!.match_id) : undefined;
@@ -148,7 +148,7 @@ export function VoiceSuggestions({
   return (
     <div className="mt-3 space-y-2" aria-live="polite">
       {meta && (
-        <p className="flex flex-wrap items-center gap-x-2 rounded-2xl bg-surface-2 px-3 py-2 text-sm text-forest-950">
+        <p className="flex flex-wrap items-center gap-x-2 rounded-2xl bg-surface-2 px-3 py-2 text-sm text-ink-950">
           <span aria-hidden>{meta.icon}</span>
           <span className="font-semibold">{t(meta.key)}</span>
           {preview.party && <span>· {preview.party.name}</span>}

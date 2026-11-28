@@ -82,3 +82,66 @@ describe("EntryCard: buying from a supplier", () => {
     expect(screen.getByRole("button", { name: "Save karo ✓" })).toBeDisabled();
   });
 });
+
+describe("EntryCard: a sale says what was sold", () => {
+  const SALE: ExtractedEntry = { ...PURCHASE, type: "sale", party: null, items: [], amount: 60, mode: "cash", raw_text: "60 ki bikri" };
+  const KURKURE = { id: 4, name: "Kurkure", variant: null, unit: "pc", price: 20, stock: 10, low_stock_at: 5, low: false, value: 200 };
+
+  it("won't save until a stock item with a quantity is added", async () => {
+    const user = userEvent.setup();
+    render(<EntryCard entry={SALE} parties={[]} stock={[KURKURE] as never} onClose={() => {}} onSaved={() => {}} />);
+    expect(screen.getAllByText("Kya becha? Item aur kitna, jodiye.").length).toBeGreaterThan(0);
+    expect(screen.getByRole("button", { name: "Save karo ✓" })).toBeDisabled();
+    await user.selectOptions(screen.getByRole("combobox"), String(KURKURE.id));
+    expect(screen.getByRole("button", { name: "Save karo ✓" })).toBeEnabled();
+  });
+
+  it("a spoken item that isn't in stock must be added first", () => {
+    const entry = { ...SALE, items: [{ name: "Kesar", item_id: null, qty: 1, unit: "pc", price: null }] };
+    render(<EntryCard entry={entry} parties={[]} onClose={() => {}} onSaved={() => {}} />);
+    expect(screen.getByRole("button", { name: "Save karo ✓" })).toBeDisabled();
+  });
+});
+
+describe("EntryCard: a word that fits several items", () => {
+  it("asks which one, and the pick is saved with the heard word", async () => {
+    const posted: Record<string, unknown>[] = [];
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (_url: string, init?: RequestInit) => {
+        posted.push(JSON.parse(String(init?.body)));
+        return Response.json({ id: 1, type: "sale", amount: 130, mode: "cash", raw_text: "", reversed: false, created_at: "" }, { status: 201 });
+      }),
+    );
+    const entry: ExtractedEntry = {
+      ...PURCHASE,
+      type: "sale",
+      party: null,
+      mode: "cash",
+      amount: null,
+      raw_text: "1 kilo daal becha",
+      items: [
+        {
+          name: "Toor dal",
+          item_id: 8,
+          qty: 1,
+          unit: "kg",
+          price: 160,
+          heard: "daal",
+          options: [
+            { item_id: 8, name: "Toor dal", unit: "kg", price: 160 },
+            { item_id: 9, name: "Moong dal", unit: "kg", price: 130 },
+          ],
+        },
+      ],
+    };
+    const user = userEvent.setup();
+    render(<EntryCard entry={entry} parties={[]} onClose={() => {}} onSaved={() => {}} />);
+    expect(screen.getByText("Kaunsa?")).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: /Moong dal/ }));
+    expect(screen.queryByText("Kaunsa?")).not.toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Save karo ✓" }));
+    await waitFor(() => expect(posted[0]).toBeTruthy());
+    expect(posted[0]).toMatchObject({ amount: 130, items: [{ item_id: 9, name: "Moong dal", heard: "daal" }] });
+  });
+});

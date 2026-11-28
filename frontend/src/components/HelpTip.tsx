@@ -42,7 +42,7 @@ export function ListenButton({ text, className = "" }: { text: string; className
         token.current = readAloud(text, speechCode(lang), () => setOn(false));
       }}
       className={`inline-flex min-h-11 items-center gap-1.5 rounded-full px-4 font-semibold transition active:scale-95 ${
-        on ? "bg-forest-900 text-white" : "bg-mint-100 text-forest-900 hover:bg-leaf-300"
+        on ? "bg-brand-600 text-white" : "bg-iris-100 text-ink-900 hover:bg-iris-300"
       } ${className}`}
     >
       <span aria-hidden className={on ? "animate-pulse" : ""}>
@@ -83,7 +83,7 @@ export function HelpTip({
         className={`relative inline-grid size-6 shrink-0 place-items-center rounded-full text-xs font-bold transition before:absolute before:-inset-2.5 before:content-[''] hover:scale-110 active:scale-95 ${
           tone === "dark"
             ? "bg-white/15 text-white ring-1 ring-white/25 hover:bg-white/25"
-            : "bg-forest-900/8 text-forest-800 ring-1 ring-forest-800/20 hover:bg-mint-100"
+            : "bg-ink-900/8 text-ink-800 ring-1 ring-brand-600/20 hover:bg-iris-100"
         }`}
       >
         ?
@@ -109,25 +109,25 @@ function HelpDialog({ title, body, onClose }: { title: StringKey; body: StringKe
           tabIndex={-1}
           aria-label={t("close")}
           onClick={onClose}
-          className="absolute inset-0 bg-forest-950/40 backdrop-blur-[2px]"
+          className="absolute inset-0 bg-ink-950/25 backdrop-blur-[3px]"
         />
-        <div ref={panel} className="animate-pop relative w-full max-w-sm rounded-[28px] bg-surface p-5 text-left text-forest-950 shadow-2xl sm:max-w-md sm:p-6">
+        <div ref={panel} className="animate-pop relative w-full max-w-sm rounded-[28px] bg-surface p-5 text-left text-ink-950 shadow-2xl sm:max-w-md sm:p-6">
           <div className="flex items-center gap-2">
-            <span aria-hidden className="grid size-9 place-items-center rounded-full bg-lime-300 text-lg">
+            <span aria-hidden className="grid size-9 place-items-center rounded-full bg-gold-300 text-lg">
               💡
             </span>
             <h3 id={titleId} className="text-lg font-bold">
               {t(title)}
             </h3>
           </div>
-          <p className="mt-3 text-base leading-relaxed text-forest-950/85">{t(body)}</p>
+          <p className="mt-3 text-base leading-relaxed text-ink-950/85">{t(body)}</p>
           <div className="mt-4 flex gap-2">
             <ListenButton text={`${t(title)}. ${t(body)}`} />
             <button
               type="button"
               data-autofocus
               onClick={onClose}
-              className="min-h-11 flex-1 rounded-full bg-forest-900 font-semibold text-white transition hover:bg-forest-800 active:scale-95"
+              className="min-h-11 flex-1 rounded-full bg-brand-600 font-semibold text-white transition hover:bg-brand-500 active:scale-95"
             >
               {t("gotIt")}
             </button>
@@ -138,11 +138,11 @@ function HelpDialog({ title, body, onClose }: { title: StringKey; body: StringKe
   );
 }
 
-/** Colour key used across the app: green = in, red = out, amber = still pending. */
+/** Colour key used across the app: blue = in, red = out, amber = still pending. */
 export function ColorLegend({ className = "" }: { className?: string }) {
   const { t } = useLang();
   const items = [
-    { cls: "bg-mint-100 text-money-in", icon: "↓", label: t("legendIn") },
+    { cls: "bg-iris-100 text-money-in", icon: "↓", label: t("legendIn") },
     { cls: "bg-red-50 text-money-out", icon: "↑", label: t("legendOut") },
     { cls: "bg-amber-50 text-pending", icon: "⏳", label: t("legendPending") },
   ];

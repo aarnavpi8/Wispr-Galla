@@ -23,12 +23,25 @@ class PartyRef(BaseModel):
     match_id: int | None = None
 
 
+class ItemOption(BaseModel):
+    """Another stock item the spoken word could mean (the card asks "which one?")."""
+
+    item_id: int
+    name: str
+    unit: str = "pc"
+    price: int | None = None
+
+
 class LineItem(BaseModel):
     name: str
     item_id: int | None = None
     qty: float = 1
     unit: str = "pc"
     price: int | None = None
+    # Several stock items fit what was said: up to 3 to pick from (empty when sure).
+    options: list[ItemOption] = []
+    # The words heard for this line, so a pick can be remembered as an alias.
+    heard: str | None = None
 
 
 class PartyOption(BaseModel):

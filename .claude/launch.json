@@ -37,7 +37,7 @@
       "env": {
         "PORT": "3002",
         "HOSTNAME": "0.0.0.0",
-        "API_URL": "http://localhost:8001"
+        "API_URL": "http://localhost:8000"
       },
       "autoPort": false
     }

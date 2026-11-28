@@ -33,6 +33,14 @@ const config: CapacitorConfig = {
   android: {
     allowMixedContent: false,
   },
+  plugins: {
+    // Native Google sign-in only; the web Firebase SDK does the Firebase login itself
+    // (lib/firebase.ts), so the token the server checks is the same as on the website.
+    FirebaseAuthentication: {
+      skipNativeAuth: true,
+      providers: ["google.com"],
+    },
+  },
 };
 
 export default config;

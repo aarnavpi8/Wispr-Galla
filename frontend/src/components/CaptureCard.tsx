@@ -20,6 +20,7 @@ const LANGS = [
   { code: "hi-IN", label: "हिं" },
   { code: "en-IN", label: "EN" },
   { code: "mr-IN", label: "मरा" },
+  { code: "gu-IN", label: "ગુ" },
 ];
 
 /**
@@ -90,7 +91,7 @@ export function CaptureCard({
     >
       <div className="flex items-center justify-between">
         <span className="flex items-center gap-2">
-          <label id="capture-label" htmlFor="capture" className="text-lg font-bold text-forest-950">
+          <label id="capture-label" htmlFor="capture" className="text-lg font-bold text-ink-950">
             {t("speakOrType")}
           </label>
           <HelpTip title="speakOrType" body="helpCapture" />
@@ -103,7 +104,7 @@ export function CaptureCard({
               aria-pressed={lang === l.code}
               onClick={() => setLang(l.code)}
               className={`rounded-full px-2.5 py-1 transition ${
-                lang === l.code ? "bg-forest-900 text-white" : "text-muted hover:text-forest-900"
+                lang === l.code ? "bg-brand-600 text-white" : "text-muted hover:text-ink-900"
               }`}
             >
               {l.label}
@@ -126,27 +127,27 @@ export function CaptureCard({
           }}
           rows={3}
           placeholder={t("ex1")}
-          className="w-full resize-none rounded-2xl border-2 border-line bg-background p-4 pr-10 text-xl text-forest-950 placeholder:text-muted/60 transition focus:border-leaf-500 focus:bg-surface focus:outline-none focus:ring-4 focus:ring-leaf-500/15"
+          className="w-full resize-none rounded-2xl border-2 border-line bg-background p-4 pr-10 text-xl text-ink-950 placeholder:text-muted/60 transition focus:border-iris-500 focus:bg-surface focus:outline-none focus:ring-4 focus:ring-iris-500/15"
         />
         {text && (
           <button
             type="button"
             aria-label={t("clear")}
             onClick={() => setText("")}
-            className="absolute right-3 top-3 grid size-7 place-items-center rounded-full bg-surface-2 text-muted transition hover:bg-line hover:text-forest-950"
+            className="absolute right-3 top-3 grid size-7 place-items-center rounded-full bg-surface-2 text-muted transition hover:bg-line hover:text-ink-950"
           >
             ×
           </button>
         )}
       </div>
 
-      <div className="mt-2 flex flex-wrap gap-2">
+      <div className="reveal-stagger mt-2 flex flex-wrap gap-2">
         {EXAMPLE_KEYS.map((k) => t(k)).map((ex) => (
           <button
             key={ex}
             type="button"
             onClick={() => typeIn(ex)}
-            className="shrink-0 rounded-full border border-line bg-background px-3 py-2 text-sm text-forest-800 transition hover:-translate-y-0.5 hover:border-leaf-500 hover:bg-mint-100 active:translate-y-0"
+            className="max-w-full rounded-2xl border border-line bg-background px-3 py-2 text-left text-sm text-ink-800 transition hover:-translate-y-0.5 hover:border-iris-500 hover:bg-iris-100 active:translate-y-0"
           >
             {ex}
           </button>
@@ -167,7 +168,7 @@ export function CaptureCard({
               className={`relative grid size-14 place-items-center rounded-full text-2xl transition active:scale-95 ${
                 speech.listening
                   ? "bg-money-out text-white"
-                  : "bg-mint-100 text-forest-900 hover:bg-leaf-300"
+                  : "bg-iris-100 text-ink-900 hover:bg-iris-300"
               }`}
             >
               {speech.listening && (
@@ -182,23 +183,23 @@ export function CaptureCard({
             type="button"
             disabled={!text.trim()}
             onClick={submit}
-            className="group min-h-14 w-full rounded-2xl bg-forest-900 text-lg font-semibold text-white shadow-lg shadow-forest-900/20 transition hover:bg-forest-800 hover:shadow-xl active:scale-[0.98] disabled:bg-line disabled:text-muted disabled:shadow-none"
+            className="group min-h-14 w-full rounded-2xl bg-brand-600 text-lg font-semibold text-white shadow-lg shadow-brand-600/20 transition hover:bg-brand-500 hover:shadow-xl active:scale-[0.98] disabled:bg-line disabled:text-muted disabled:shadow-none"
           >
             {t("next")} <span className="inline-block transition group-hover:translate-x-1 group-disabled:translate-x-0">→</span>
           </button>
         </Magnetic>
       </div>
       {speech.error && <p className="mt-2 text-sm text-pending">{t(speech.error)}</p>}
-      {speech.listening && <p className="mt-2 text-sm text-forest-700">{t("listening")}</p>}
+      {speech.listening && <p className="mt-2 text-sm text-ink-700">{t("listening")}</p>}
       {speech.transcribing && (
-        <p role="status" className="mt-2 flex items-center gap-2 text-sm text-forest-700">
-          <span aria-hidden className="size-3 animate-spin rounded-full border-2 border-leaf-500 border-t-transparent" />
+        <p role="status" className="mt-2 flex items-center gap-2 text-sm text-ink-700">
+          <span aria-hidden className="size-3 animate-spin rounded-full border-2 border-iris-500 border-t-transparent" />
           {t("transcribing")}
         </p>
       )}
       {speech.engine === "wispr" && !speech.listening && !speech.transcribing && (
-        <p className="mt-2 flex items-center gap-1.5 text-xs font-semibold text-leaf-500">
-          <span aria-hidden className="size-1.5 rounded-full bg-leaf-500" /> {t("wisprOn")}
+        <p className="mt-2 flex items-center gap-1.5 text-xs font-semibold text-iris-500">
+          <span aria-hidden className="size-1.5 rounded-full bg-iris-500" /> {t("wisprOn")}
         </p>
       )}
     </Spotlight>

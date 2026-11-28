@@ -38,6 +38,8 @@ class EntryItemIn(BaseModel):
     qty: float = Field(default=1, gt=0, le=100_000)
     unit: str = "pc"
     price: int | None = None
+    # The words heard for this line ("dal"): saved as the item's alias, so next time it's found directly.
+    heard: str | None = Field(default=None, max_length=60)
 
 
 class EntryIn(BaseModel):
@@ -108,6 +110,20 @@ def _resolve_party(db: Session, shop: models.Shop, body: EntryIn) -> models.Part
     return party
 
 
+def _learn_item_words(db: Session, shop: models.Shop, lines: list[EntryItemIn]) -> None:
+    """Learning from corrections: the word heard for a line becomes that item's alias."""
+    for li in lines:
+        heard = (li.heard or "").strip().lower()
+        if not heard or not li.item_id:
+            continue
+        item = db.get(models.Item, li.item_id)
+        if item is None or item.shop_id != shop.id:
+            continue
+        known = {item.name.lower(), f"{item.name} {item.variant or ''}".strip().lower(), *(a.lower() for a in item.aliases or [])}
+        if heard not in known:
+            item.aliases = [*(item.aliases or []), heard]
+
+
 def _move_stock(db: Session, shop: models.Shop, entry_type: str, items: list[dict], undo: bool = False) -> None:
     """Sales (and goods given on udhaar) take known items off the shelf, purchases put them on.
     Undo does the opposite."""
@@ -133,6 +149,11 @@ def _move_stock(db: Session, shop: models.Shop, entry_type: str, items: list[dic
 def save_entry(body: EntryIn, db: Session = Depends(get_db), shop: models.Shop = Depends(current_shop)) -> EntryOut:
     if body.type in {"udhaar", "payment"} and body.party_id is None and not (body.party_name or "").strip():
         raise HTTPException(422, "Kiska hai? Naam batayiye.")
+    if body.type == "sale":
+        # A sale says what left the shelf and how much: stock and "most demanded" depend on it.
+        known = {i for i in db.scalars(select(models.Item.id).where(models.Item.shop_id == shop.id))}
+        if not body.items or any(li.item_id not in known for li in body.items):
+            raise HTTPException(422, "Kya becha? Stock se item aur kitna, batayiye.")
     party = _resolve_party(db, shop, body)
     if body.type == "udhaar" and party is not None and party.kind == "supplier":
         # Udhaar with a supplier means we bought on credit: we owe them, not the other way round.
@@ -161,7 +182,8 @@ def save_entry(body: EntryIn, db: Session = Depends(get_db), shop: models.Shop =
             raise HTTPException(409, {"code": "duplicate", "entry_id": dup.id, "detail": "Same entry was saved just now. Save again?"})
 
     mode = body.mode or ("udhaar" if body.type == "udhaar" else "cash")
-    items = [li.model_dump() for li in body.items]
+    _learn_item_words(db, shop, body.items)
+    items = [li.model_dump(exclude={"heard"}) for li in body.items]
     entry = models.Entry(
         shop_id=shop.id,
         type=body.type,

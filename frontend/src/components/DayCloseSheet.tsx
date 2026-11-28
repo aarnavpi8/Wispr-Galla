@@ -42,15 +42,15 @@ export function DayCloseSheet({ onClose, onSaved }: { onClose: () => void; onSav
         <div className="skeleton h-40 rounded-3xl" />
       ) : (
         <>
-          <div className="rounded-3xl bg-gradient-to-br from-forest-800 to-forest-950 p-4 text-white">
-            <p className="text-sm text-leaf-300">{t("expected")}</p>
+          <div className="rounded-3xl bg-gradient-to-br from-iris-100 to-gold-100 p-4 text-ink-950 ring-1 ring-line">
+            <p className="text-sm text-ink-700">{t("expected")}</p>
             <p className="text-4xl font-extrabold tabular-nums">{formatINR(view.expected)}</p>
-            <p className="mt-1 text-xs text-white/60">
+            <p className="mt-1 text-xs text-muted">
               {formatINR(view.opening)} + {formatINR(view.cash_in)} − {formatINR(view.cash_out)}
             </p>
           </div>
 
-          <label htmlFor="counted" className="mt-4 block font-semibold text-forest-950">
+          <label htmlFor="counted" className="mt-4 block font-semibold text-ink-950">
             {t("howMuch")}
           </label>
           <div className="mt-2 flex gap-2">
@@ -64,14 +64,14 @@ export function DayCloseSheet({ onClose, onSaved }: { onClose: () => void; onSav
                 onChange={(e) => setCounted(e.target.value.replace(/[^\d]/g, ""))}
                 onKeyDown={(e) => e.key === "Enter" && void save()}
                 placeholder={String(view.expected)}
-                className="min-h-14 w-full rounded-2xl border-2 border-line bg-background pl-10 pr-4 text-2xl font-bold tabular-nums transition focus:border-leaf-500 focus:outline-none focus:ring-4 focus:ring-leaf-500/15"
+                className="min-h-14 w-full rounded-2xl border-2 border-line bg-background pl-10 pr-4 text-2xl font-bold tabular-nums transition focus:border-iris-500 focus:outline-none focus:ring-4 focus:ring-iris-500/15"
               />
             </div>
             <button
               type="button"
               disabled={!counted || saving}
               onClick={() => void save()}
-              className="min-h-14 rounded-2xl bg-forest-900 px-5 font-semibold text-white transition hover:bg-forest-800 active:scale-95 disabled:bg-line disabled:text-muted"
+              className="min-h-14 rounded-2xl bg-brand-600 px-5 font-semibold text-white transition hover:bg-brand-500 active:scale-95 disabled:bg-line disabled:text-muted"
             >
               {t("save")}
             </button>
@@ -83,7 +83,7 @@ export function DayCloseSheet({ onClose, onSaved }: { onClose: () => void; onSav
               key={shown.id}
               role="status"
               className={`animate-pop mt-4 rounded-3xl p-4 ${
-                shown.difference === 0 ? "bg-mint-100" : shown.difference < 0 ? "bg-red-50" : "bg-amber-50"
+                shown.difference === 0 ? "bg-iris-100" : shown.difference < 0 ? "bg-red-50" : "bg-amber-50"
               }`}
             >
               <p className="text-sm text-muted">{t("lastClose", { x: formatINR(shown.counted) })}</p>
@@ -103,7 +103,7 @@ export function DayCloseSheet({ onClose, onSaved }: { onClose: () => void; onSav
 
           {shown && shown.difference !== 0 && (
             <div className="mt-4">
-              <p className="text-sm font-semibold text-forest-950">{t("gapHint")}</p>
+              <p className="text-sm font-semibold text-ink-950">{t("gapHint")}</p>
               {view.entries.length === 0 ? (
                 <p className="mt-2 text-sm text-muted">{t("noCashToday")}</p>
               ) : (

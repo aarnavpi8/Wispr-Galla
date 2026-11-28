@@ -37,7 +37,7 @@ MULTIPLIERS: dict[str, int] = {
     "lakh": 100000, "lac": 100000, "लाख": 100000,
 }
 
-WORD = re.compile(r"[\wऀ-ॿ]+", re.UNICODE)
+WORD = re.compile(r"[\wऀ-෿]+", re.UNICODE)  # all Indian scripts (Devanagari … Malayalam)
 
 
 def _is_number_word(tok: str) -> bool:

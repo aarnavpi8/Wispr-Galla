@@ -20,7 +20,34 @@ export function getFirebaseAuth(config: FirebaseWebConfig): Promise<Auth> {
   return authPromise;
 }
 
+/**
+ * Inside the Android app, Google blocks its sign-in popup (WebViews aren't allowed), so the phone's
+ * own account picker signs in natively and hands us a Google ID token; the same web Firebase login
+ * then takes over, so the server sees the same account (and the same shop) as on the website.
+ */
+async function signInNative(config: FirebaseWebConfig): Promise<User> {
+  const auth = await getFirebaseAuth(config);
+  const [{ FirebaseAuthentication }, { GoogleAuthProvider, signInWithCredential }] = await Promise.all([
+    import("@capacitor-firebase/authentication"),
+    import("firebase/auth"),
+  ]);
+  let idToken: string | undefined;
+  try {
+    const res = await FirebaseAuthentication.signInWithGoogle();
+    idToken = res.credential?.idToken;
+  } catch (e) {
+    // Closing the account picker is not an error.
+    if (/cancel/i.test(String((e as Error)?.message ?? e))) throw Object.assign(new Error("cancelled"), { code: "auth/popup-closed-by-user" });
+    throw e;
+  }
+  if (!idToken) throw Object.assign(new Error("No Google token"), { code: "auth/popup-closed-by-user" });
+  const result = await signInWithCredential(auth, GoogleAuthProvider.credential(idToken));
+  return result.user;
+}
+
 export async function signInWithGoogle(config: FirebaseWebConfig): Promise<User> {
+  const { isNativeApp } = await import("./native");
+  if (isNativeApp()) return signInNative(config);
   const auth = await getFirebaseAuth(config);
   const { GoogleAuthProvider, signInWithPopup } = await import("firebase/auth");
   const provider = new GoogleAuthProvider();
@@ -33,6 +60,12 @@ export async function signOutUser(config: FirebaseWebConfig): Promise<void> {
   const auth = await getFirebaseAuth(config);
   const { signOut } = await import("firebase/auth");
   await signOut(auth);
+  const { isNativeApp } = await import("./native");
+  if (isNativeApp()) {
+    // Also forget the phone's Google choice, so the account picker shows next time.
+    const { FirebaseAuthentication } = await import("@capacitor-firebase/authentication");
+    await FirebaseAuthentication.signOut().catch(() => undefined);
+  }
 }
 
 export async function watchUser(

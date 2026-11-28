@@ -62,7 +62,8 @@ jobs:
             if curl -fsS http://localhost:3000/ > /dev/null; then echo "web is up"; break; fi
             sleep 3
           done
-          curl -fsS http://localhost:3000/ | grep -q "<title>Galla</title>"
+          # Our page, not a default server page (the app is called BolKhata).
+          curl -fsS http://localhost:3000/ | grep -q "<title>BolKhata</title>"
       - name: API works through the web proxy without keys
         run: |
           curl -fsS http://localhost:3000/api/health | grep -q '"llm_configured":false'

@@ -12,7 +12,7 @@ import httpx
 
 from app.commands import COMMANDS
 from app.config import settings
-from app.extract import MATCH_OK, ShopContext, match_items, match_party
+from app.extract import MATCH_OK, ShopContext, line_for, match_items, match_party
 from app.schemas import ExtractedEntry, LineItem, PartyOption, PartyRef
 
 GEMINI_URL = "https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent"
@@ -143,11 +143,11 @@ def extract_llm(text: str, ctx: ShopContext, fallback, client: httpx.Client | No
     line_items: list[LineItem] = []
     item_conf: list[float] = []
     for it in data.get("items") or []:
-        found = match_items(f"{it.get('qty') or 1} {it.get('name', '')}", ctx.items)
+        choices: dict = {}
+        found = match_items(f"{it.get('qty') or 1} {it.get('name', '')}", ctx.items, choices)
         if found:
             item, qty, conf = found[0]
-            line_items.append(LineItem(name=item.name if not item.variant else f"{item.name} {item.variant}",
-                                       item_id=item.id, qty=float(it.get("qty") or qty), unit=item.unit, price=item.price))
+            line_items.append(line_for(item, float(it.get("qty") or qty), choices.get(item.id)))
             item_conf.append(conf)
         elif it.get("name"):
             # Not in stock yet: keep it, so the card can offer to add it.

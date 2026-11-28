@@ -219,9 +219,9 @@ export function Dashboard() {
         <div className="min-w-0">
           <p className="text-sm text-muted">
             {t(greetingKey(new Date().getHours()))}
-            {user ? `, ${user.name.split(" ")[0]}` : ""} 🙏
+            {user ? `, ${user.name.split(" ")[0]}` : ""}
           </p>
-          <h1 className="truncate text-2xl font-extrabold tracking-tight text-forest-950 lg:text-4xl">
+          <h1 className="truncate text-2xl font-extrabold tracking-tight text-ink-950 lg:text-4xl">
             {shop.data?.name ?? <span className="skeleton inline-block h-7 w-48 rounded-lg align-middle" />}
           </h1>
         </div>
@@ -230,7 +230,7 @@ export function Dashboard() {
             type="button"
             onClick={() => setPicking(true)}
             aria-label={t("language")}
-            className="flex h-12 items-center gap-1.5 rounded-full border border-line bg-surface px-3 text-sm font-semibold text-forest-900 shadow-sm transition hover:-translate-y-0.5 hover:border-leaf-500 hover:bg-mint-100"
+            className="flex h-12 items-center gap-1.5 rounded-full border border-line bg-surface px-3 text-sm font-semibold text-ink-900 shadow-sm transition hover:-translate-y-0.5 hover:border-iris-500 hover:bg-iris-100"
           >
             <span aria-hidden>अ/A</span>
             <span className="hidden sm:inline">{LANGS.find((l) => l.code === lang)?.name}</span>
@@ -247,7 +247,7 @@ export function Dashboard() {
 
       {shop.data && !shop.data.llm_configured && (
         <p className="animate-rise flex items-center gap-2 rounded-2xl bg-surface-2 px-3 py-2 text-sm text-muted">
-          <span className="size-2 rounded-full bg-leaf-500" /> {t("aiOff")}
+          <span className="size-2 rounded-full bg-iris-500" /> {t("aiOff")}
         </p>
       )}
 
@@ -301,7 +301,7 @@ export function Dashboard() {
           <div role="tablist" aria-label="Hisaab ya khata" className="relative mb-3 grid grid-cols-2 rounded-2xl bg-surface-2 p-1">
             <span
               aria-hidden
-              className="absolute inset-y-1 left-1 w-[calc(50%-0.25rem)] rounded-xl bg-forest-900 shadow transition-transform duration-300 ease-out"
+              className="absolute inset-y-1 left-1 w-[calc(50%-0.25rem)] rounded-xl bg-brand-600 shadow transition-transform duration-300 ease-out"
               style={{ transform: tab === "khata" ? "translateX(100%)" : "none" }}
             />
             {(["hisaab", "khata"] as const).map((name) => (
@@ -311,7 +311,7 @@ export function Dashboard() {
                 aria-selected={tab === name}
                 onClick={() => setTab(name)}
                 className={`relative min-h-11 rounded-xl font-semibold transition-colors ${
-                  tab === name ? "text-white" : "text-muted hover:text-forest-900"
+                  tab === name ? "text-white" : "text-muted hover:text-ink-900"
                 }`}
               >
                 {name === "hisaab" ? t("tabEntries") : `${t("tabKhata")}${khata.data ? ` (${khata.data.length})` : ""}`}
@@ -372,7 +372,7 @@ export function Dashboard() {
       {voiceSheet === "add_item" && <AddItemSheet onClose={() => setVoiceSheet(null)} onAdded={refreshAll} />}
 
       {undoAsk && (
-        <div role="alertdialog" aria-live="assertive" className="animate-pop fixed inset-x-4 bottom-28 z-50 mx-auto flex max-w-md items-center gap-3 rounded-2xl bg-forest-950 px-4 py-3 text-white shadow-2xl lg:inset-x-auto lg:bottom-8 lg:right-8 lg:mx-0 lg:w-[28rem]">
+        <div role="alertdialog" aria-live="assertive" className="animate-pop fixed inset-x-4 bottom-28 z-50 mx-auto flex max-w-md items-center gap-3 rounded-2xl bg-ink-950 px-4 py-3 text-white shadow-2xl lg:inset-x-auto lg:bottom-8 lg:right-8 lg:mx-0 lg:w-[28rem]">
           <span className="flex-1">
             {t("undoLastAsk", { x: `${undoAsk.party_name ? `${undoAsk.party_name} ` : ""}${formatINR(undoAsk.amount)}` })}
           </span>
@@ -386,7 +386,7 @@ export function Dashboard() {
               setUndoAsk(null);
               void undo(e);
             }}
-            className="min-h-10 rounded-xl bg-lime-300 px-4 font-bold text-forest-950 active:scale-95"
+            className="min-h-10 rounded-xl bg-gold-300 px-4 font-bold text-ink-950 active:scale-95"
           >
             {t("undo")}
           </button>
@@ -410,9 +410,9 @@ export function Dashboard() {
       )}
 
       {lastSaved && (
-        <div role="status" className="animate-pop fixed inset-x-4 bottom-28 z-50 mx-auto lg:inset-x-auto lg:bottom-8 lg:right-8 lg:mx-0 lg:w-[28rem] flex max-w-md items-center gap-3 rounded-2xl bg-forest-950 px-4 py-3 text-white shadow-2xl">
+        <div role="status" className="animate-pop fixed inset-x-4 bottom-28 z-50 mx-auto lg:inset-x-auto lg:bottom-8 lg:right-8 lg:mx-0 lg:w-[28rem] flex max-w-md items-center gap-3 rounded-2xl bg-ink-950 px-4 py-3 text-white shadow-2xl">
           <span className="flex-1">{t("savedToast", { x: formatINR(lastSaved.amount) })}</span>
-          <button type="button" onClick={() => void undo(lastSaved)} className="min-h-10 rounded-xl bg-lime-300 px-4 font-bold text-forest-950 active:scale-95">
+          <button type="button" onClick={() => void undo(lastSaved)} className="min-h-10 rounded-xl bg-gold-300 px-4 font-bold text-ink-950 active:scale-95">
             {t("undo")}
           </button>
         </div>
@@ -423,7 +423,7 @@ export function Dashboard() {
       {toast && (
         <div
           role="status"
-          className="animate-pop fixed inset-x-4 bottom-28 z-50 mx-auto lg:inset-x-auto lg:bottom-8 lg:right-8 lg:mx-0 lg:w-[28rem] max-w-md rounded-2xl bg-forest-950 px-4 py-3 text-white shadow-2xl"
+          className="animate-pop fixed inset-x-4 bottom-28 z-50 mx-auto lg:inset-x-auto lg:bottom-8 lg:right-8 lg:mx-0 lg:w-[28rem] max-w-md rounded-2xl bg-ink-950 px-4 py-3 text-white shadow-2xl"
         >
           {toast}
         </div>

@@ -115,35 +115,35 @@ export function Tour({ onClose }: { onClose: () => void }) {
       {box ? (
         <div
           aria-hidden
-          className="pointer-events-none absolute rounded-[30px] ring-4 ring-lime-300 transition-all duration-500 ease-[cubic-bezier(0.2,0.8,0.2,1)]"
-          style={{ ...box, boxShadow: "0 0 0 9999px rgb(11 42 30 / 0.72), 0 0 40px 8px rgb(215 240 138 / 0.45)" }}
+          className="pointer-events-none absolute rounded-[30px] ring-4 ring-gold-300 transition-all duration-500 ease-[cubic-bezier(0.2,0.8,0.2,1)]"
+          style={{ ...box, boxShadow: "0 0 0 9999px rgb(31 42 61 / 0.5), 0 0 40px 8px rgb(243 194 98 / 0.45)" }}
         />
       ) : (
-        <div aria-hidden className="absolute inset-0 bg-forest-950/70" />
+        <div aria-hidden className="absolute inset-0 bg-ink-950/45" />
       )}
       {/* Clicks outside the card do nothing (no accidental taps on the app underneath). */}
       <div className="absolute inset-0" />
 
       <div
         key={i}
-        className="animate-pop absolute inset-x-3 mx-auto max-w-sm rounded-[28px] bg-surface p-5 text-forest-950 shadow-2xl"
+        className="animate-pop absolute inset-x-3 mx-auto max-w-sm rounded-[28px] bg-surface p-5 text-ink-950 shadow-2xl"
         style={cardStyle}
       >
         <div className="flex items-center justify-between">
-          <span className="rounded-full bg-mint-100 px-2.5 py-1 text-xs font-bold text-forest-800">
+          <span className="rounded-full bg-iris-100 px-2.5 py-1 text-xs font-bold text-ink-800">
             {t("tourStep", { i: i + 1, n: TOUR_STEPS.length })}
           </span>
-          <button type="button" onClick={finish} className="min-h-10 rounded-full px-3 text-sm font-semibold text-muted hover:text-forest-900">
+          <button type="button" onClick={finish} className="min-h-10 rounded-full px-3 text-sm font-semibold text-muted hover:text-ink-900">
             {t("tourSkip")}
           </button>
         </div>
         <h2 className="mt-2 text-xl font-extrabold">{t(step.title)}</h2>
-        <p className="mt-1.5 text-base leading-relaxed text-forest-950/85">{t(step.body)}</p>
+        <p className="mt-1.5 text-base leading-relaxed text-ink-950/85">{t(step.body)}</p>
 
         {/* Progress dots */}
         <div className="mt-3 flex gap-1.5" aria-hidden>
           {TOUR_STEPS.map((s, n) => (
-            <span key={s.target} className={`h-1.5 rounded-full transition-all ${n === i ? "w-6 bg-forest-800" : n < i ? "w-1.5 bg-leaf-500" : "w-1.5 bg-line"}`} />
+            <span key={s.target} className={`h-1.5 rounded-full transition-all ${n === i ? "w-6 bg-brand-500" : n < i ? "w-1.5 bg-iris-500" : "w-1.5 bg-line"}`} />
           ))}
         </div>
 
@@ -154,7 +154,7 @@ export function Tour({ onClose }: { onClose: () => void }) {
               <button
                 type="button"
                 onClick={() => setI(i - 1)}
-                className="min-h-11 rounded-full bg-surface-2 px-4 font-semibold text-forest-900 transition hover:bg-line"
+                className="min-h-11 rounded-full bg-surface-2 px-4 font-semibold text-ink-900 transition hover:bg-line"
               >
                 {t("tourBack")}
               </button>
@@ -162,7 +162,7 @@ export function Tour({ onClose }: { onClose: () => void }) {
             <button
               type="button"
               onClick={() => (last ? finish() : setI(i + 1))}
-              className="min-h-11 rounded-full bg-forest-900 px-5 font-semibold text-white shadow-lg transition hover:bg-forest-800 active:scale-95"
+              className="min-h-11 rounded-full bg-brand-600 px-5 font-semibold text-white shadow-lg transition hover:bg-brand-500 active:scale-95"
             >
               {last ? t("tourDone") : `${t("tourNext")} →`}
             </button>

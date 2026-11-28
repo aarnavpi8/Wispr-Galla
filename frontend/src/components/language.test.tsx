@@ -107,7 +107,9 @@ describe("Splash", () => {
     expect(screen.getByRole("heading")).toHaveTextContent(GREETINGS[1].text);
 
     act(() => vi.advanceTimersByTime(GREETINGS.length * 340)); // through every greeting
-    expect(screen.getByRole("heading")).toHaveTextContent("🙏"); // personal greeting
+    // Personal greeting: no longer one of the cycling hellos, and no emoji.
+    expect(screen.getByRole("heading")).not.toHaveTextContent(GREETINGS[GREETINGS.length - 1].text);
+    expect(screen.getByRole("heading").textContent).not.toContain("🙏");
     act(() => vi.advanceTimersByTime(2_000)); // hold, then fade out
     expect(screen.queryByRole("heading")).not.toBeInTheDocument();
   });

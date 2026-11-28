@@ -35,6 +35,10 @@ We build hands-free: prompts are dictated with Wispr Flow.
   wasted / recount with history, add item. Bill scan by photo (D19).
 - Done: dashboard motion: circular reveal from "Get started", scroll reveals, compact summary
   bar that appears when the money card scrolls away, bottom nav with a raised mic button.
+  Scroll motion: tiles, rows, chips and chart bars inside `.reveal-stagger` containers rise in
+  one after another as they enter the screen and replay when they come back from below
+  (`ScrollMotion` in `components/Reveal.tsx`, one IntersectionObserver for the whole app, web
+  and Android WebView alike; off for reduced motion).
 - Done: optional Google login via Firebase (D14). Off without keys.
 - Done: tests (pytest 45, Vitest 80) and GitHub Actions CI incl. a Docker Compose smoke test (D16).
 - Next: flow 1 (one-line entries), starting with the rule-based extractor (D2). "Aage" on the
@@ -45,6 +49,18 @@ We build hands-free: prompts are dictated with Wispr Flow.
   Written and validated, not applied yet.
 - Done: Android app shell with Capacitor around the same frontend (D22). Generated project in
   `frontend/android/`; not built here (no Android SDK on this machine).
+- Done: a sale must name what was sold: at least one stock item with a quantity (card asks
+  "What was sold?", API returns 422 otherwise), so stock and demand numbers stay true.
+- Done: item words in five languages (`backend/app/itemwords.py`): English, Hinglish, Hindi, Marathi,
+  Gujarati (script + Roman) for ~40 everyday items, so "khand"/"साखर"/"ખાંડ" find the sugar item.
+  A word that fits several items ("dal", "dudh") makes the card ask "Which one?" with up to 3 chips;
+  the word heard is saved as the picked item's alias, so it isn't asked again. The tokenizer now
+  reads all Indian scripts (it used to split Gujarati words). Gujarati added to the mic language switch.
+- Done: the mic keeps listening through pauses until stop is tapped (Android and browser restart
+  after a silence and keep the words; 5-minute safety cap; Wispr recording cap 60 s -> 5 min).
+- Done: phone performance and fit. No live background blur or blurred glows on touch screens
+  (janky frames while scrolling went 27% -> 1.2% on a Galaxy A55); a long example chip that pushed
+  the page 18 px off-screen now wraps, and `overflow-x: clip` stops any future sideways overflow.
 - Done: per-user data (D14 B). Each Google account and each browser sees only its own shop.
 - Done: first-run shop setup (D24). New installs start empty and ask: shop name, what you sell
   (kirana / sabzi / medical / other), UPI and cash (optional); starter items at ₹0 with a price
@@ -263,7 +279,6 @@ Must happen before 30 Nov either way.
   "demo shop" loads a private copy). Requests with no identity (curl, tests) see the old shared
   shop (`owner` NULL). Not done: moving a guest shop into a Google account on first sign-in.
 - **Option C: no login** (original spec). Simplest for the judges' path.
-- **Option C: no login** (original spec). Simplest for the judges' path.
 
 ### D15. UI languages — `BUILT`
 - First open shows a language ring (turntable seen from front-top; scroll wheel, swipe, drag,
@@ -286,10 +301,17 @@ Must happen before 30 Nov either way.
   `docker compose up --build` with no `.env` and curl checks on port 3000.
 
 ### D17. Visual design — `BUILT`
-- Warm white paper (`#faf6ee`) + forest greens, lime accent; tokens in `globals.css`.
+- Light theme everywhere. Warm white paper (`#faf6ee`), soft slate text (`ink-*`), sky-blue
+  actions (`brand-*`: buttons, selected chips, the mic), light blue tints (`iris-*`) and a
+  marigold accent (`gold-*`). Big cards (money card, splash, day close, desktop panel, sticky
+  bar) are light blue-to-cream gradients with dark text. Why blue: it reads as trust and money
+  to Indian shopkeepers (bank passbooks, SBI, Paytm, GPay), stays calm on cheap screens, and is
+  told apart from the red "money out" by colour-blind users. Green was dropped (team found it
+  hard on the eyes), then dark indigo (too dark). Money colours: in = blue, out = brick red,
+  pending = amber; gold is for highlights only, never money values. Tokens in `globals.css`.
 - Cursor effects only on devices with a fine pointer, off for touch and reduced motion
-  (`components/interactive.tsx`): card spotlight + glowing rim, hero card 3D tilt, magnetic
-  buttons, page glow that trails the cursor.
+  (`components/interactive.tsx`): card spotlight + rim, hero card 3D tilt, magnetic buttons, a
+  faint page glow. Tried and removed: ripple rings and a ring follower behind the cursor.
 
 ### D18. Inventory — `BUILT`
 Was a parked idea; the team asked for it. `items.stock` + `items.low_stock_at`, and a
@@ -334,7 +356,11 @@ key under the money card, numbered steps in the bill scan, breathing ring on the
   `output: "export"`, the `/api` proxy route removed, an absolute API URL and CORS. Do this only
   with offline queueing (robustness rule "baad mein").
 - **Option C: Trusted Web Activity / PWA install.** Lightest, but no native speech plugins.
-- Known gap: Google sign-in popup is blocked in WebViews; needs a native sign-in plugin.
+- Google sign-in in the app: native account picker via `@capacitor-firebase/authentication`
+  (`skipNativeAuth: true`): the phone returns a Google ID token, then the web Firebase SDK signs
+  in with it (`lib/firebase.ts`), so the server sees the same account and shop as on the website.
+  Needs `frontend/android/app/google-services.json` (git-ignored; download from Firebase) with the
+  build machine's SHA-1 registered for `in.galla.app`. Verified on a Galaxy A55 (28 Nov).
 
 ### D23. In-app speech-to-text — `BUILT: A` (replaces D6 order)
 - **Option A (built): Wispr Flow API** behind `transcribe()` (`backend/app/speech.py`,

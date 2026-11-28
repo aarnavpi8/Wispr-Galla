@@ -37,7 +37,7 @@ export function AccountMenu({
         className={`grid shrink-0 place-items-center overflow-hidden rounded-full font-bold transition hover:scale-105 active:scale-95 ${
           compact
             ? "size-9 bg-white/15 text-xs text-white ring-1 ring-white/30"
-            : "size-12 border-2 border-surface bg-mint-100 text-forest-800 shadow-sm ring-1 ring-line hover:ring-leaf-500"
+            : "size-12 border-2 border-surface bg-iris-100 text-ink-800 shadow-sm ring-1 ring-line hover:ring-iris-500"
         }`}
       >
         <Avatar />
@@ -81,12 +81,12 @@ function ProfileSheet({
 
   return (
     <Sheet title={t("account")} onClose={onClose}>
-      <div className="flex items-center gap-4 rounded-3xl bg-mint-100 p-4">
-        <span className="grid size-16 shrink-0 place-items-center overflow-hidden rounded-full bg-forest-900 text-xl font-bold text-lime-300 ring-4 ring-surface">
+      <div className="flex items-center gap-4 rounded-3xl bg-iris-100 p-4">
+        <span className="grid size-16 shrink-0 place-items-center overflow-hidden rounded-full bg-brand-600 text-xl font-bold text-gold-300 ring-4 ring-surface">
           <Avatar big />
         </span>
         <div className="min-w-0">
-          <p className="truncate text-lg font-bold text-forest-950">
+          <p className="truncate text-lg font-bold text-ink-950">
             {user?.name ?? (status === "disabled" || status === "loading" ? t("demoShop") : t("demoMode"))}
           </p>
           {user?.email && <p className="truncate text-sm text-muted">{user.email}</p>}
@@ -106,7 +106,7 @@ function ProfileSheet({
               onClose();
               onLanguage();
             }}
-            className={`${row} bg-surface-2 text-forest-900 hover:bg-line`}
+            className={`${row} bg-surface-2 text-ink-900 hover:bg-line`}
           >
             <span aria-hidden className="text-xl">
               अ/A
@@ -122,7 +122,7 @@ function ProfileSheet({
               onClose();
               onShowTour();
             }}
-            className={`${row} bg-surface-2 text-forest-900 hover:bg-line`}
+            className={`${row} bg-surface-2 text-ink-900 hover:bg-line`}
           >
             <span aria-hidden className="text-xl">
               🧭
@@ -137,7 +137,7 @@ function ProfileSheet({
             <button
               type="button"
               onClick={() => void signIn()}
-              className={`${row} justify-center border-2 border-line bg-surface text-forest-950 hover:border-leaf-500 hover:bg-mint-100`}
+              className={`${row} justify-center border-2 border-line bg-surface text-ink-950 hover:border-iris-500 hover:bg-iris-100`}
             >
               <GoogleIcon /> {t("googleLogin")}
             </button>

@@ -2,7 +2,8 @@
 // the API wants (16 kHz mono PCM WAV, base64). No library: the browser decodes and resamples.
 
 export const TARGET_RATE = 16000;
-export const MAX_SECONDS = 60; // a khata entry is one sentence; Wispr allows up to 6 minutes
+// Recording runs until stop is tapped; this is only a battery safety net (Wispr allows 6 minutes).
+export const MAX_SECONDS = 300;
 
 /** 16-bit PCM mono WAV from float samples in [-1, 1]. */
 export function encodeWav(samples: Float32Array, sampleRate = TARGET_RATE): ArrayBuffer {

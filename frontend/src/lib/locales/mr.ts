@@ -114,7 +114,7 @@ export const mr: Locale = {
   reminderNote: "WhatsApp उघडेल, मेसेज तपासून तुम्ही Send दाबा.",
   noPartyEntries: "नोंद नाही.",
   history: "इतिहास",
-  reminderMsg: "नमस्कार {name}, {shop} कडून आठवण: तुमचे {x} बाकी आहे. सोयीनुसार UPI ने पाठवा: {upi} धन्यवाद 🙏",
+  reminderMsg: "नमस्कार {name}, {shop} कडून आठवण: तुमचे {x} बाकी आहे. सोयीनुसार UPI ने पाठवा: {upi} धन्यवाद",
 
   navHome: "आज",
   navAccounts: "हिशोब",
@@ -213,7 +213,7 @@ export const mr: Locale = {
   tourDone: "BolKhata वापरायला सुरुवात करा",
   tourStep: "{i} / {n}",
   tour1Title: "तुमचे पैसे, एका नजरेत",
-  tour1Body: "हे मोठे हिरवे कार्ड सांगते गल्ल्यात किती रोख असायला हवी. हिरवे आकडे आले, लाल गेले.",
+  tour1Body: "हे मोठे गडद कार्ड सांगते गल्ल्यात किती रोख असायला हवी. निळे आकडे आले, लाल गेले.",
   tour2Title: "फक्त बोला",
   tour2Body: "माइक दाबा आणि काउंटरवर बोलता तसे बोला: “रमेशला 200 उधार”. BolKhata नोंद बनवेल. तुम्ही तपासून सेव्ह करा.",
   tour3Title: "हिशोब, सोप्या भाषेत",
@@ -265,6 +265,8 @@ export const mr: Locale = {
   fPaidNow: "आता दिले",
   askAmount: "किती रुपये?",
   askWho: "कोणाच्या नावावर?",
+
+  askWhatSold: "काय विकलं? वस्तू आणि किती, ते जोडा.",
   didYouMean: "हे आहे का?",
   newPerson: "नवीन: {name}",
   saveEntry: "सेव्ह करा",
@@ -336,4 +338,6 @@ export const mr: Locale = {
   noStockYet: "स्टॉकमध्ये अजून एकही वस्तू नाही. वस्तू जोडा, म्हणजे विकल्यावर स्टॉक आपोआप कमी होईल.",
   newItem: "+ नवी वस्तू",
   notInStockAdd: "स्टॉकमध्ये नाही · जोडा",
+
+  whichItem: "कोणते?",
 };

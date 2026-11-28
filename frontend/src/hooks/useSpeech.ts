@@ -9,7 +9,7 @@
 import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
 
 import { postJSON } from "@/lib/api";
-import { isNativeApp, nativeListen, nativeSpeechAvailable } from "@/lib/native";
+import { isNativeApp, joinSpeech, nativeListen, nativeSpeechAvailable } from "@/lib/native";
 import { blobToWav16k, canRecord, MAX_SECONDS, toBase64, wisprLanguages } from "@/lib/recorder";
 
 interface RecognitionResult {
@@ -108,24 +108,48 @@ export function useSpeech(onText: (text: string) => void, lang = "hi-IN", wispr 
     setListening(true);
   }, [lang]);
 
+  // Browser speech: keeps listening through pauses until stop is tapped (the browser ends a
+  // session after a silence; we start a new one and keep the words already heard).
   const startBrowser = useCallback(() => {
     const Ctor = getCtor();
     if (!Ctor) return;
-    const r = new Ctor();
-    r.lang = lang;
-    r.interimResults = true;
-    r.continuous = false;
-    r.onresult = (e) => {
-      let text = "";
-      for (let i = 0; i < e.results.length; i++) text += e.results[i][0].transcript;
-      cb.current(text);
+    let stopped = false;
+    let heard = "";
+    let current = "";
+    let r: Recognition;
+    const cap = window.setTimeout(() => stopRef.current?.(), 5 * 60 * 1000);
+    const session = () => {
+      r = new Ctor();
+      r.lang = lang;
+      r.interimResults = true;
+      r.continuous = true;
+      r.onresult = (e) => {
+        let text = "";
+        for (let i = 0; i < e.results.length; i++) text += e.results[i][0].transcript;
+        current = text;
+        cb.current(joinSpeech(heard, current));
+      };
+      r.onerror = (e) => {
+        if (e.error === "no-speech" || e.error === "aborted") return; // a pause: carry on
+        stopped = true;
+        setError(e.error === "not-allowed" ? "micDenied" : "micFailed");
+      };
+      r.onend = () => {
+        heard = joinSpeech(heard, current);
+        current = "";
+        if (stopped) {
+          window.clearTimeout(cap);
+          setListening(false);
+          if (!heard) setError("micNoSpeech");
+        } else session();
+      };
+      r.start();
     };
-    r.onerror = (e) => {
-      setError(e.error === "no-speech" ? "micNoSpeech" : e.error === "not-allowed" ? "micDenied" : "micFailed");
+    stopRef.current = () => {
+      stopped = true;
+      r.stop();
     };
-    r.onend = () => setListening(false);
-    stopRef.current = () => r.stop();
-    r.start();
+    session();
     setListening(true);
   }, [lang]);
 

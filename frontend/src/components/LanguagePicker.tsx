@@ -19,7 +19,7 @@ function MoneyRoll() {
   }, []);
   const word = (n: number) => MONEY_WORDS[((n % MONEY_WORDS.length) + MONEY_WORDS.length) % MONEY_WORDS.length];
   const cls =
-    "absolute inset-0 flex items-center justify-center bg-gradient-to-b from-forest-700 to-leaf-500 bg-clip-text text-5xl font-black tracking-tight text-transparent";
+    "absolute inset-0 flex items-center justify-center bg-gradient-to-b from-ink-700 to-iris-500 bg-clip-text text-5xl font-black tracking-tight text-transparent";
   return (
     <p aria-hidden className="relative h-16 overflow-hidden [mask-image:linear-gradient(transparent,#000_25%,#000_75%,transparent)]">
       {i > 0 && (
@@ -186,12 +186,12 @@ function LanguageWheel({ value, onChange }: { value: Lang; onChange: (l: Lang) =
       onPointerUp={release}
       onPointerLeave={() => drag.current?.moved && release()}
       onPointerCancel={release}
-      className="relative mx-auto h-64 w-full max-w-[24rem] overflow-hidden touch-none cursor-grab select-none rounded-[40px] outline-none active:cursor-grabbing focus-visible:ring-4 focus-visible:ring-leaf-500/20"
+      className="relative mx-auto h-64 w-full max-w-[24rem] overflow-hidden touch-none cursor-grab select-none rounded-[40px] outline-none active:cursor-grabbing focus-visible:ring-4 focus-visible:ring-iris-500/20"
     >
       {/* The turntable's floor: a soft elliptical shadow, no visible dial. */}
       <div
         aria-hidden
-        className="pointer-events-none absolute left-1/2 top-1/2 h-32 w-[20rem] -translate-x-1/2 -translate-y-[25%] rounded-[50%] bg-[radial-gradient(closest-side,rgb(27_106_72/0.14),rgb(63_165_107/0.05)_60%,transparent)]"
+        className="pointer-events-none absolute left-1/2 top-1/2 h-32 w-[20rem] -translate-x-1/2 -translate-y-[25%] rounded-[50%] bg-[radial-gradient(closest-side,rgb(59_128_227/0.14),rgb(79_94_214/0.05)_60%,transparent)]"
       />
 
       {LANGS.map((l, i) => {
@@ -217,7 +217,7 @@ function LanguageWheel({ value, onChange }: { value: Lang; onChange: (l: Lang) =
             {/* Just the word. It lifts on hover; the button's own transform belongs to the ring. */}
             <span
               className={`flex flex-col items-center transition-[transform,color] duration-300 ease-out group-hover:-translate-y-2 ${
-                selected ? "text-forest-900" : "text-forest-950/70 group-hover:text-leaf-500"
+                selected ? "text-ink-900" : "text-ink-950/70 group-hover:text-iris-500"
               }`}
             >
               <span className={`font-extrabold leading-tight tracking-tight ${selected ? "text-3xl" : "text-xl"}`}>
@@ -225,14 +225,14 @@ function LanguageWheel({ value, onChange }: { value: Lang; onChange: (l: Lang) =
               </span>
               <span
                 className={`mt-1 text-[10px] font-semibold uppercase tracking-[0.2em] transition-opacity ${
-                  selected ? "text-leaf-500 opacity-100" : "opacity-0 group-hover:opacity-70"
+                  selected ? "text-iris-500 opacity-100" : "opacity-0 group-hover:opacity-70"
                 }`}
               >
                 {l.code === "hinglish" ? "Roman Hindi" : l.english}
               </span>
               <span
                 aria-hidden
-                className={`mt-1.5 h-1 rounded-full bg-lime-300 transition-all duration-300 ${selected ? "w-8" : "w-0"}`}
+                className={`mt-1.5 h-1 rounded-full bg-gold-300 transition-all duration-300 ${selected ? "w-8" : "w-0"}`}
               />
             </span>
           </button>
@@ -251,14 +251,14 @@ export function LanguagePicker({ onDone }: { onDone?: () => void }) {
 
   return (
     <main className="mx-auto flex min-h-dvh w-full max-w-md flex-col gap-3 px-5 py-6">
-      <div className="animate-rise flex items-center gap-2 text-forest-900">
+      <div className="animate-rise flex items-center gap-2 text-ink-900">
         <Logo size={40} />
       </div>
 
       <MoneyRoll />
 
       <header className="animate-rise text-center [animation-delay:60ms]">
-        <h1 key={pick} className="word-in text-3xl font-extrabold tracking-tight text-forest-950">
+        <h1 key={pick} className="word-in text-3xl font-extrabold tracking-tight text-ink-950">
           {t("chooseLanguage")}
         </h1>
         <p key={`s-${pick}`} className="word-in mt-2 text-muted">
@@ -287,7 +287,7 @@ export function LanguagePicker({ onDone }: { onDone?: () => void }) {
                 onDone?.();
               });
             }}
-            className="group min-h-14 w-full rounded-2xl bg-forest-900 text-lg font-semibold text-white shadow-lg shadow-forest-900/20 transition hover:bg-forest-800 active:scale-[0.98]"
+            className="group min-h-14 w-full rounded-2xl bg-brand-600 text-lg font-semibold text-white shadow-lg shadow-brand-600/20 transition hover:bg-brand-500 active:scale-[0.98]"
           >
             <span key={pick} className="word-in inline-block">
               {t("start")}

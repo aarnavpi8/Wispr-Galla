@@ -125,7 +125,7 @@ export const en = {
   reminderNote: "WhatsApp opens. Check the message, then you tap Send.",
   noPartyEntries: "No entries.",
   history: "History",
-  reminderMsg: "Namaste {name}, a reminder from {shop}: {x} is pending. If convenient, please pay by UPI: {upi} Thank you 🙏",
+  reminderMsg: "Namaste {name}, a reminder from {shop}: {x} is pending. If convenient, please pay by UPI: {upi} Thank you",
 
   // Bottom bar
   navHome: "Today",
@@ -231,7 +231,7 @@ export const en = {
   tourDone: "Start using BolKhata",
   tourStep: "{i} of {n}",
   tour1Title: "Your money, at a glance",
-  tour1Body: "This big green card shows how much cash should be in your galla. Green numbers came in, red went out.",
+  tour1Body: "This big dark card shows how much cash should be in your galla. Blue numbers came in, red went out.",
   tour2Title: "Just speak",
   tour2Body: "Tap the mic and talk like at the counter: “Ramesh ko 200 udhaar”. BolKhata turns it into an entry. You check it, then save.",
   tour3Title: "Your accounts, made simple",
@@ -283,6 +283,8 @@ export const en = {
   fPaidNow: "Paid now",
   askAmount: "How much?",
   askWho: "Who is this for?",
+
+  askWhatSold: "What was sold? Add the item and how many.",
   didYouMean: "Did you mean?",
   newPerson: "New: {name}",
   saveEntry: "Save",
@@ -354,6 +356,8 @@ export const en = {
   noStockYet: "No items in your stock yet. Add the item so the shelf count goes down when you sell.",
   newItem: "+ New item",
   notInStockAdd: "Not in stock · Add it",
+
+  whichItem: "Which one?",
 };
 
 export type StringKey = keyof typeof en;

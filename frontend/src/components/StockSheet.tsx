@@ -11,8 +11,8 @@ import { useLang } from "./language";
 import { Sheet } from "./Sheet";
 
 const ACTIONS: { reason: StockReason; key: StringKey; style: string }[] = [
-  { reason: "purchase", key: "stockIn", style: "bg-forest-900 text-white hover:bg-forest-800" },
-  { reason: "sale", key: "stockSold", style: "bg-surface-2 text-forest-950 hover:bg-line" },
+  { reason: "purchase", key: "stockIn", style: "bg-brand-600 text-white hover:bg-brand-500" },
+  { reason: "sale", key: "stockSold", style: "bg-surface-2 text-ink-950 hover:bg-line" },
   { reason: "wastage", key: "stockWasted", style: "bg-red-50 text-money-out hover:bg-red-100" },
   { reason: "count", key: "stockCount", style: "bg-amber-50 text-pending hover:bg-amber-100" },
 ];
@@ -115,14 +115,14 @@ export function StockSheet({
       onClose={onClose}
       closeLabel={t("close")}
     >
-      <div className={`rounded-3xl p-4 ${item.low ? "bg-amber-50" : "bg-mint-100"}`}>
+      <div className={`rounded-3xl p-4 ${item.low ? "bg-amber-50" : "bg-iris-100"}`}>
         <p className="text-sm text-muted">{t("inStock")}</p>
-        <p key={item.stock} className={`animate-pop text-4xl font-extrabold tabular-nums ${item.low ? "text-pending" : "text-forest-900"}`}>
+        <p key={item.stock} className={`animate-pop text-4xl font-extrabold tabular-nums ${item.low ? "text-pending" : "text-ink-900"}`}>
           {item.stock} <span className="text-lg font-semibold">{item.unit}</span>
         </p>
         <div className="mt-2 h-2 overflow-hidden rounded-full bg-white/70" aria-hidden>
           <div
-            className={`h-full rounded-full transition-[width] duration-500 ${item.low ? "bg-pending" : "bg-leaf-500"}`}
+            className={`h-full rounded-full transition-[width] duration-500 ${item.low ? "bg-pending" : "bg-iris-500"}`}
             style={{ width: `${stockLevel(item) * 100}%` }}
           />
         </div>
@@ -133,21 +133,21 @@ export function StockSheet({
 
       {/* Price: starter items come in at ₹0, so make setting it obvious. */}
       <div className={`mt-4 flex items-end gap-2 rounded-2xl p-3 ${item.price === 0 ? "bg-amber-50 ring-1 ring-amber-200" : "bg-surface-2"}`}>
-        <label className="flex-1 text-sm font-semibold text-forest-950">
+        <label className="flex-1 text-sm font-semibold text-ink-950">
           {t("price")} / {item.unit}
           <input
             inputMode="numeric"
             value={price}
             onChange={(e) => setPrice(e.target.value.replace(/[^\d]/g, ""))}
             onKeyDown={(e) => e.key === "Enter" && void savePrice()}
-            className="mt-1 min-h-12 w-full rounded-xl border-2 border-line bg-surface px-3 text-xl font-bold tabular-nums focus:border-leaf-500 focus:outline-none"
+            className="mt-1 min-h-12 w-full rounded-xl border-2 border-line bg-surface px-3 text-xl font-bold tabular-nums focus:border-iris-500 focus:outline-none"
           />
         </label>
         <button
           type="button"
           onClick={() => void savePrice()}
           disabled={price === "" || Number(price) === item.price}
-          className="min-h-12 rounded-xl bg-forest-900 px-4 font-semibold text-white transition hover:bg-forest-800 active:scale-95 disabled:opacity-40"
+          className="min-h-12 rounded-xl bg-brand-600 px-4 font-semibold text-white transition hover:bg-brand-500 active:scale-95 disabled:opacity-40"
         >
           {t("setPrice")}
         </button>
@@ -155,7 +155,7 @@ export function StockSheet({
 
       {/* Cost: what one unit cost to buy (weighted average after each stock-in). */}
       <div className={`mt-2 flex items-end gap-2 rounded-2xl p-3 ${item.cost_price ? "bg-surface-2" : "bg-amber-50 ring-1 ring-amber-200"}`}>
-        <label className="flex-1 text-sm font-semibold text-forest-950">
+        <label className="flex-1 text-sm font-semibold text-ink-950">
           {t("costPrice")} / {item.unit}
           <input
             inputMode="numeric"
@@ -163,14 +163,14 @@ export function StockSheet({
             placeholder="0"
             onChange={(e) => setCost(e.target.value.replace(/[^\d]/g, ""))}
             onKeyDown={(e) => e.key === "Enter" && void saveCost()}
-            className="mt-1 min-h-12 w-full rounded-xl border-2 border-line bg-surface px-3 text-xl font-bold tabular-nums focus:border-leaf-500 focus:outline-none"
+            className="mt-1 min-h-12 w-full rounded-xl border-2 border-line bg-surface px-3 text-xl font-bold tabular-nums focus:border-iris-500 focus:outline-none"
           />
         </label>
         <button
           type="button"
           onClick={() => void saveCost()}
           disabled={cost === "" || Number(cost) === (item.cost_price ?? 0)}
-          className="min-h-12 rounded-xl bg-forest-900 px-4 font-semibold text-white transition hover:bg-forest-800 active:scale-95 disabled:opacity-40"
+          className="min-h-12 rounded-xl bg-brand-600 px-4 font-semibold text-white transition hover:bg-brand-500 active:scale-95 disabled:opacity-40"
         >
           {t("setCost")}
         </button>
@@ -181,7 +181,7 @@ export function StockSheet({
         </p>
       ) : null}
 
-      <label htmlFor="qty" className="mt-4 block font-semibold text-forest-950">
+      <label htmlFor="qty" className="mt-4 block font-semibold text-ink-950">
         {t("quantity")}
       </label>
       <input
@@ -191,7 +191,7 @@ export function StockSheet({
         value={qty}
         onChange={(e) => setQty(e.target.value.replace(/[^\d]/g, ""))}
         placeholder="0"
-        className="mt-2 min-h-14 w-full rounded-2xl border-2 border-line bg-background px-4 text-2xl font-bold tabular-nums transition focus:border-leaf-500 focus:outline-none focus:ring-4 focus:ring-leaf-500/15"
+        className="mt-2 min-h-14 w-full rounded-2xl border-2 border-line bg-background px-4 text-2xl font-bold tabular-nums transition focus:border-iris-500 focus:outline-none focus:ring-4 focus:ring-iris-500/15"
       />
       {/* Selling: how the money came, and what it adds to sales. */}
       <div className="mt-3 rounded-2xl bg-surface-2 p-3">
@@ -207,7 +207,7 @@ export function StockSheet({
               aria-checked={saleMode === m}
               onClick={() => setSaleMode(m)}
               className={`min-h-10 rounded-full px-4 text-sm font-semibold transition active:scale-95 ${
-                saleMode === m ? "bg-forest-900 text-white" : "bg-surface text-forest-900 hover:bg-mint-100"
+                saleMode === m ? "bg-brand-600 text-white" : "bg-surface text-ink-900 hover:bg-iris-100"
               }`}
             >
               {t(m === "cash" ? "mCash" : m === "upi" ? "mUpi" : "mUdhaar")}
@@ -215,7 +215,7 @@ export function StockSheet({
           ))}
         </div>
         {saleMode === "udhaar" && (
-          <label className="mt-2 block text-sm font-semibold text-forest-950">
+          <label className="mt-2 block text-sm font-semibold text-ink-950">
             {t("fWho")}
             <select
               value={buyer ?? ""}
@@ -243,14 +243,14 @@ export function StockSheet({
       </div>
 
       {Number(qty) > 0 && (
-        <label className="mt-3 block text-sm font-semibold text-forest-950">
+        <label className="mt-3 block text-sm font-semibold text-ink-950">
           {t("stockIn")} · {t("costPrice")} / {item.unit} ({t("optional")})
           <input
             inputMode="numeric"
             value={costIn}
             placeholder={item.cost_price ? String(item.cost_price) : "0"}
             onChange={(e) => setCostIn(e.target.value.replace(/[^\d]/g, ""))}
-            className="mt-1 min-h-11 w-full rounded-xl border-2 border-line bg-surface px-3 text-base tabular-nums focus:border-leaf-500 focus:outline-none"
+            className="mt-1 min-h-11 w-full rounded-xl border-2 border-line bg-surface px-3 text-base tabular-nums focus:border-iris-500 focus:outline-none"
           />
         </label>
       )}
@@ -270,7 +270,7 @@ export function StockSheet({
       </div>
       {error && <p className="mt-2 text-sm text-money-out">{error}</p>}
 
-      <h3 className="mt-5 font-bold text-forest-950">{t("history")}</h3>
+      <h3 className="mt-5 font-bold text-ink-950">{t("history")}</h3>
       {!moves ? (
         <div className="skeleton mt-2 h-24 rounded-2xl" />
       ) : (
@@ -278,7 +278,7 @@ export function StockSheet({
           {moves.map((m, i) => (
             <li key={m.id} className="animate-rise flex items-center gap-3 py-2.5" style={{ animationDelay: `${i * 30}ms` }}>
               <span className="min-w-0 flex-1">
-                <span className="block font-semibold text-forest-950">{t(REASON_KEY[m.reason])}</span>
+                <span className="block font-semibold text-ink-950">{t(REASON_KEY[m.reason])}</span>
                 <span className="text-xs text-muted">{timeAgo(m.created_at, t)}</span>
               </span>
               <span className={`font-bold tabular-nums ${m.delta >= 0 ? "text-money-in" : "text-money-out"}`}>

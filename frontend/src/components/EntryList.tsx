@@ -4,7 +4,7 @@ import { entryMeta, FLOW_SIGN, FLOW_TEXT, formatINR, timeAgo } from "@/lib/forma
 import type { EntryOut } from "@/lib/types";
 import { useLang } from "./language";
 
-const FLOW_BG = { in: "bg-mint-100", out: "bg-red-50", pending: "bg-amber-50" } as const;
+const FLOW_BG = { in: "bg-iris-100", out: "bg-red-50", pending: "bg-amber-50" } as const;
 
 export function EntryRow({
   entry,
@@ -31,7 +31,7 @@ export function EntryRow({
         {meta.icon}
       </span>
       <div className="min-w-0 flex-1">
-        <p className="truncate font-semibold text-forest-950">
+        <p className="truncate font-semibold text-ink-950">
           {entry.party_name ?? t(meta.label)}
           {entry.party_name && <span className="font-normal text-muted"> · {t(meta.label)}</span>}
         </p>
@@ -54,7 +54,7 @@ export function EntryList({ entries }: { entries: EntryOut[] }) {
     return <p className="p-6 text-center text-muted">{t("noEntries")}</p>;
   }
   return (
-    <ul className="divide-y divide-line/60">
+    <ul className="reveal-stagger divide-y divide-line/60">
       {entries.map((e, i) => (
         <EntryRow key={e.id} entry={e} index={i} />
       ))}

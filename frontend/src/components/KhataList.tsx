@@ -33,7 +33,7 @@ export function KhataList({
           onChange={(e) => setQuery(e.target.value)}
           placeholder={t("searchName")}
           aria-label={t("searchName")}
-          className="min-h-12 min-w-0 flex-1 rounded-2xl border border-line bg-background px-4 text-base transition focus:border-leaf-500 focus:outline-none focus:ring-4 focus:ring-leaf-500/15"
+          className="min-h-12 min-w-0 flex-1 rounded-2xl border border-line bg-background px-4 text-base transition focus:border-iris-500 focus:outline-none focus:ring-4 focus:ring-iris-500/15"
         />
         <div className="flex rounded-2xl bg-surface-2 p-1 text-sm font-semibold">
           {(["customer", "supplier"] as const).map((f) => (
@@ -43,7 +43,7 @@ export function KhataList({
               aria-pressed={filter === f}
               onClick={() => setFilter(f)}
               className={`rounded-xl px-3 transition ${
-                filter === f ? "bg-surface text-forest-950 shadow-sm" : "text-muted hover:text-forest-900"
+                filter === f ? "bg-surface text-ink-950 shadow-sm" : "text-muted hover:text-ink-900"
               }`}
             >
               {f === "customer" ? t("customers") : t("suppliers")}
@@ -52,7 +52,7 @@ export function KhataList({
         </div>
       </div>
 
-      <ul className="mt-3 grid gap-2">
+      <ul className="reveal-stagger mt-3 grid gap-2">
         {shown.map((p, i) => {
           const overdueDays = p.overdue_since ? daysBetween(new Date(p.overdue_since), new Date()) : 0;
           const owes = p.balance > 0;
@@ -66,11 +66,11 @@ export function KhataList({
                   p.overdue_since ? "border-amber-300" : "border-line"
                 }`}
               >
-                <span className="grid size-11 shrink-0 place-items-center rounded-full bg-forest-900 text-sm font-bold text-lime-300">
+                <span className="grid size-11 shrink-0 place-items-center rounded-full bg-brand-600 text-sm font-bold text-gold-300">
                   {initials(p.name)}
                 </span>
                 <span className="min-w-0 flex-1">
-                  <span className="block truncate font-semibold text-forest-950">{p.name}</span>
+                  <span className="block truncate font-semibold text-ink-950">{p.name}</span>
                   {p.overdue_since ? (
                     <span className="mt-0.5 inline-block rounded-full bg-amber-100 px-2 py-0.5 text-xs font-semibold text-pending">
                       {t("overdueDays", { n: overdueDays })}

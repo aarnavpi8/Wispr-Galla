@@ -23,29 +23,29 @@ export function WeekChart({ days }: { days: DayTotals[] }) {
     >
       <div className="flex items-start justify-between gap-3">
         <div>
-          <h2 className="text-lg font-bold text-forest-950">{t("weekSales")}</h2>
+          <h2 className="text-lg font-bold text-ink-950">{t("weekSales")}</h2>
           <p className="text-sm text-muted">
             {weekdayShort(d.date, t)} · {formatINR(d.sales)}
             {d.sales > 0 && (
               <>
                 {" "}
-                <span className="text-forest-700">({formatINR(d.sales_cash)} {t("cashLabel")}</span>,{" "}
-                <span className="text-leaf-500">{formatINR(d.sales_upi)} {t("upiLabel")})</span>
+                <span className="text-ink-700">({formatINR(d.sales_cash)} {t("cashLabel")}</span>,{" "}
+                <span className="text-iris-500">{formatINR(d.sales_upi)} {t("upiLabel")})</span>
               </>
             )}
           </p>
         </div>
         <div className="flex gap-3 text-xs text-muted">
           <span className="flex items-center gap-1">
-            <i className="size-2.5 rounded-sm bg-forest-800" /> {t("cashLabel")}
+            <i className="size-2.5 rounded-sm bg-brand-500" /> {t("cashLabel")}
           </span>
           <span className="flex items-center gap-1">
-            <i className="size-2.5 rounded-sm bg-leaf-300" /> {t("upiLabel")}
+            <i className="size-2.5 rounded-sm bg-iris-300" /> {t("upiLabel")}
           </span>
         </div>
       </div>
 
-      <div className="mt-4 flex h-36 items-end gap-2" onPointerLeave={() => setActive(days.length - 1)}>
+      <div className="reveal-stagger reveal-grow mt-4 flex h-36 items-end gap-2" onPointerLeave={() => setActive(days.length - 1)}>
         {days.map((day, i) => {
           const h = (day.sales / max) * 100;
           const cashShare = day.sales ? (day.sales_cash / day.sales) * 100 : 0;
@@ -63,7 +63,7 @@ export function WeekChart({ days }: { days: DayTotals[] }) {
             >
               <div
                 className={`flex w-full max-w-10 flex-col-reverse overflow-hidden rounded-xl transition-all duration-500 ease-out ${
-                  isActive ? "scale-x-110 shadow-lg shadow-forest-900/20" : "opacity-80 group-hover:opacity-100"
+                  isActive ? "scale-x-110 shadow-lg shadow-brand-600/20" : "opacity-80 group-hover:opacity-100"
                 }`}
                 style={{ height: `${Math.max(h, 4)}%` }}
               >
@@ -71,12 +71,12 @@ export function WeekChart({ days }: { days: DayTotals[] }) {
                   <div className="h-full bg-line" />
                 ) : (
                   <>
-                    <div className="bg-forest-800" style={{ height: `${cashShare}%` }} />
-                    <div className="flex-1 bg-leaf-300" />
+                    <div className="bg-brand-500" style={{ height: `${cashShare}%` }} />
+                    <div className="flex-1 bg-iris-300" />
                   </>
                 )}
               </div>
-              <span className={`text-xs ${isActive ? "font-bold text-forest-950" : "text-muted"}`}>
+              <span className={`text-xs ${isActive ? "font-bold text-ink-950" : "text-muted"}`}>
                 {i === days.length - 1 ? t("today") : weekdayShort(day.date, t)}
               </span>
             </button>

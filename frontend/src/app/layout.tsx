@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Noto_Sans, Noto_Sans_Devanagari } from "next/font/google";
 import { AuthProvider } from "@/components/auth";
 import { CursorGlow } from "@/components/interactive";
+import { ScrollMotion } from "@/components/Reveal";
 import { LanguageProvider } from "@/components/language";
 import { SplashGate } from "@/components/Splash";
 
@@ -25,7 +26,7 @@ export const metadata: Metadata = {
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
-  themeColor: "#103a29",
+  themeColor: "#faf6ee",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
@@ -36,6 +37,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
     >
       <body className="min-h-full flex flex-col">
         <CursorGlow />
+        <ScrollMotion />
         <LanguageProvider>
           <AuthProvider>
             <SplashGate />

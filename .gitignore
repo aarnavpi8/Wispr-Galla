@@ -28,3 +28,8 @@ Thumbs.db
 !*.tfvars.example
 .terraform.lock.hcl.bak
 crash.log
+
+# Built Android app (share it, don't commit it)
+*.apk
+# Firebase Android config (project-specific; each developer downloads their own)
+frontend/android/app/google-services.json

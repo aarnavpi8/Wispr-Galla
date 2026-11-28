@@ -285,3 +285,14 @@ def test_unknown_item_added_from_the_card_gets_the_purchase_stock(client):
     assert save_card(client, e).status_code == 201
     stock = next(i for i in client.get("/api/items").json() if i["id"] == item["id"])["stock"]
     assert stock == 12
+
+
+def test_a_sale_must_say_what_was_sold_and_how_much(client):
+    base = {"type": "sale", "amount": 60, "mode": "cash", "raw_text": "60 ki bikri"}
+    assert client.post("/api/entries", json=base).status_code == 422  # no item
+    unknown = {"item_id": None, "name": "Kesar", "qty": 1, "unit": "pc"}
+    assert client.post("/api/entries", json={**base, "items": [unknown]}).status_code == 422  # not in stock
+    kurkure = item_named(client, "Kurkure")
+    line = {"item_id": kurkure["id"], "name": "Kurkure", "qty": 3, "unit": "pc", "price": 20}
+    assert client.post("/api/entries", json={**base, "items": [line]}).status_code == 201
+    assert item_named(client, "Kurkure")["stock"] == kurkure["stock"] - 3

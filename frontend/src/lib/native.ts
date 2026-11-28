@@ -20,7 +20,17 @@ type ListenHandle =
   | { ok: true; stop: () => Promise<void>; done: Promise<void> }
   | { ok: false; error: "micDenied" | "micFailed" };
 
-/** Start native speech recognition; `onText` gets the running transcript. */
+/** Join what was already heard with the words of the current stretch of speech. */
+export function joinSpeech(heard: string, current: string): string {
+  return [heard, current].map((s) => s.trim()).filter(Boolean).join(" ");
+}
+
+/**
+ * Start native speech recognition; `onText` gets the running transcript.
+ * Android ends a recognition session after a short silence. We don't let that end the turn:
+ * the words so far are kept and listening starts again, until the shopkeeper taps stop
+ * (or 5 minutes pass), so someone who speaks slowly or pauses to think is never cut off.
+ */
 export async function nativeListen(lang: string, onText: (text: string) => void): Promise<ListenHandle> {
   const { SpeechRecognition } = await import("@capacitor-community/speech-recognition");
   try {
@@ -33,16 +43,47 @@ export async function nativeListen(lang: string, onText: (text: string) => void)
     await SpeechRecognition.removeAllListeners();
     let finish!: () => void;
     const done = new Promise<void>((resolve) => (finish = resolve));
+    let stopped = false;
+    let heard = ""; // words from earlier stretches of speech
+    let current = ""; // words of the stretch being heard now
+    let failures = 0;
+    const end = () => {
+      if (stopped) return;
+      stopped = true;
+      window.clearTimeout(cap);
+      finish();
+    };
+    const cap = window.setTimeout(() => void SpeechRecognition.stop().catch(() => {}).finally(end), 5 * 60 * 1000);
+    const listen = () => {
+      if (stopped) return;
+      SpeechRecognition.start({ language: lang, partialResults: true, popup: false, maxResults: 1 })
+        .then(() => (failures = 0))
+        .catch(() => {
+          // A pause with nothing said ends with "no match"; just listen again. Give up only if it
+          // keeps failing straight away (mic taken by another app).
+          if (++failures >= 5) end();
+          else window.setTimeout(listen, 300);
+        });
+    };
     await SpeechRecognition.addListener("partialResults", (d) => {
-      if (d.matches?.[0]) onText(d.matches[0]);
+      if (d.matches?.[0]) {
+        current = d.matches[0];
+        onText(joinSpeech(heard, current));
+      }
     });
     await SpeechRecognition.addListener("listeningState", (d) => {
-      if (d.status === "stopped") finish();
+      if (d.status !== "stopped" || stopped) return;
+      // The phone stopped after a pause: keep what was said and carry on listening.
+      heard = joinSpeech(heard, current);
+      current = "";
+      window.setTimeout(listen, 250);
     });
-    SpeechRecognition.start({ language: lang, partialResults: true, popup: false, maxResults: 1 }).catch(() => finish());
+    listen();
     return {
       ok: true,
       stop: async () => {
+        stopped = true;
+        window.clearTimeout(cap);
         await SpeechRecognition.stop().catch(() => {});
         finish();
       },

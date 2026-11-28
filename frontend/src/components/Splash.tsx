@@ -6,7 +6,6 @@ import { GREETINGS, greetingKey } from "@/lib/i18n";
 
 import { useAuth } from "./auth";
 import { useLang } from "./language";
-import { LogoMark } from "./Logo";
 
 const STEP_MS = 330;
 const HOLD_MS = 1000; // how long the final, personal greeting stays
@@ -70,21 +69,28 @@ export function Splash({ name }: { name?: string }) {
   const g = GREETINGS[Math.min(step, total - 1)];
   // Before a language is chosen we don't know theirs, so greet in Hinglish.
   const hello = ready ? t(greetingKey(new Date().getHours())) : "Namaste";
-  const finalText = `${hello}${name ? `, ${name}` : ""} 🙏`;
+  const finalText = `${hello}${name ? `, ${name}` : ""}`;
 
   return (
     <div
       role="presentation"
       onClick={skip}
-      className={`fixed inset-0 z-[90] flex cursor-pointer flex-col items-center justify-center overflow-hidden bg-gradient-to-br from-forest-800 via-forest-900 to-forest-950 text-white ${
+      className={`fixed inset-0 z-[90] flex cursor-pointer flex-col items-center justify-center overflow-hidden bg-gradient-to-br from-iris-100 via-background to-gold-100 text-ink-950 ${
         leaving ? "splash-out" : ""
       }`}
     >
-      <div aria-hidden className="absolute -right-24 -top-24 size-80 rounded-full border-[40px] border-white/5 lg:size-[36rem] lg:border-[64px]" />
-      <div aria-hidden className="absolute -bottom-32 -left-20 size-96 rounded-full bg-lime-300/10 blur-3xl lg:size-[40rem]" />
+      <div aria-hidden className="absolute -right-24 -top-24 size-80 rounded-full border-[40px] border-iris-300/20 lg:size-[36rem] lg:border-[64px]" />
+      <div aria-hidden className="absolute -bottom-32 -left-20 size-96 rounded-full bg-gold-300/25 blur-3xl lg:size-[40rem]" />
 
-      <span aria-hidden className="mb-8 grid size-24 place-items-center rounded-[28px] bg-white/10 ring-1 ring-white/15 backdrop-blur lg:size-28">
-        <LogoMark size={72} variant="bare" />
+      {/* A voice, softly speaking: five bars rising and falling (BolKhata = "speak the khata"). */}
+      <span aria-hidden className="mb-10 flex h-12 items-center gap-1.5">
+        {[0.45, 0.75, 1, 0.7, 0.4].map((h, i) => (
+          <span
+            key={i}
+            className={`voice-bar w-2 rounded-full ${i === 2 ? "bg-gold-300" : "bg-brand-500/70"}`}
+            style={{ height: `${h * 100}%`, animationDelay: `${i * 0.12}s` }}
+          />
+        ))}
       </span>
 
       <div className="relative flex min-h-28 items-center justify-center px-6 text-center" aria-live="polite">
@@ -97,9 +103,9 @@ export function Splash({ name }: { name?: string }) {
         </h1>
       </div>
 
-      <div aria-hidden className="absolute bottom-10 h-1 w-40 overflow-hidden rounded-full bg-white/10">
+      <div aria-hidden className="absolute bottom-10 h-1 w-40 overflow-hidden rounded-full bg-ink-950/10">
         <div
-          className="h-full origin-left rounded-full bg-lime-300"
+          className="h-full origin-left rounded-full bg-gold-300"
           style={{ animation: `grow ${(total * STEP_MS + HOLD_MS) / 1000}s linear forwards` }}
         />
       </div>

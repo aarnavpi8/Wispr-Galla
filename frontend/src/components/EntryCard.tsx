@@ -99,6 +99,8 @@ export function EntryCard({
   const amountNum = Number(amount);
   const missingAmount = !amountNum;
   const missingParty = needsParty && !partyName.trim();
+  // A sale must say what left the shelf and how much: a stock item with its quantity.
+  const missingItems = type === "sale" && (lines.length === 0 || lines.some((li) => li.item_id === null));
   const paidTooMuch = type === "purchase" && !!paidNow && Number(paidNow) > amountNum;
   const effectiveMode: Mode | null = type === "udhaar" ? "udhaar" : mode;
 
@@ -121,16 +123,22 @@ export function EntryCard({
   }, [entry.party_options, parties, partyName, partyId, type, partyUnsure, missingParty]);
 
   // One short question, spoken, when something required is missing.
-  const question = missingAmount ? t("askAmount") : missingParty ? t("askWho") : null;
+  const question = missingItems
+    ? t("askWhatSold")
+    : missingAmount
+      ? t("askAmount")
+      : missingParty
+        ? t("askWho")
+        : null;
   const asked = useRef(false);
   const spoken = useRef(0);
   useEffect(() => {
     if (question && !asked.current) {
       asked.current = true;
       spoken.current = readAloud(question, speechCode(lang));
-      if (missingAmount) amountRef.current?.focus();
+      if (missingAmount && !missingItems) amountRef.current?.focus();
     }
-  }, [question, lang, missingAmount]);
+  }, [question, lang, missingAmount, missingItems]);
   // Closing the card silences its question.
   useEffect(() => () => stopSpeaking(spoken.current), []);
 
@@ -144,7 +152,7 @@ export function EntryCard({
     .join(", ");
 
   const save = async (force = false) => {
-    if (missingAmount || missingParty || paidTooMuch) return;
+    if (missingAmount || missingParty || missingItems || paidTooMuch) return;
     setBusy(true);
     setError(null);
     try {
@@ -177,7 +185,7 @@ export function EntryCard({
 
   const chip = (on: boolean) =>
     `min-h-11 rounded-full px-4 text-sm font-semibold transition active:scale-95 ${
-      on ? "bg-forest-900 text-white shadow" : "bg-surface-2 text-forest-900 hover:bg-mint-100"
+      on ? "bg-brand-600 text-white shadow" : "bg-surface-2 text-ink-900 hover:bg-iris-100"
     }`;
 
   return (
@@ -201,12 +209,12 @@ export function EntryCard({
       {/* Amount */}
       <label
         className={`mt-4 block rounded-3xl p-4 transition ${
-          missingAmount ? "bg-amber-50 ring-2 ring-amber-300" : (entry.confidence.amount ?? 1) < LOW ? "bg-amber-50" : "bg-mint-100"
+          missingAmount ? "bg-amber-50 ring-2 ring-amber-300" : (entry.confidence.amount ?? 1) < LOW ? "bg-amber-50" : "bg-iris-100"
         }`}
       >
         <span className="text-sm font-semibold text-muted">{missingAmount ? t("askAmount") : t("fAmount")}</span>
         <span className="mt-1 flex items-center gap-1">
-          <span className="text-3xl font-extrabold text-forest-900">₹</span>
+          <span className="text-3xl font-extrabold text-ink-900">₹</span>
           <input
             ref={amountRef}
             inputMode="numeric"
@@ -217,20 +225,20 @@ export function EntryCard({
             }}
             placeholder="0"
             aria-label={t("fAmount")}
-            className="w-full bg-transparent text-4xl font-extrabold tabular-nums text-forest-950 outline-none placeholder:text-forest-900/30"
+            className="w-full bg-transparent text-4xl font-extrabold tabular-nums text-ink-950 outline-none placeholder:text-ink-900/30"
           />
         </span>
       </label>
 
       {/* Items: what left (or came onto) the shelf with this money. */}
       {(type === "sale" || type === "udhaar" || type === "purchase") && (
-        <div className="mt-3 rounded-3xl bg-surface-2 p-3">
-          <p className="text-sm font-semibold text-muted">{t("fItems")}</p>
+        <div className={`mt-3 rounded-3xl p-3 ${missingItems ? "bg-amber-50 ring-2 ring-amber-300" : "bg-surface-2"}`}>
+          <p className={`text-sm font-semibold ${missingItems ? "text-pending" : "text-muted"}`}>{missingItems ? t("askWhatSold") : t("fItems")}</p>
           {lines.length > 0 && (
             <ul className="mt-2 space-y-1.5">
               {lines.map((li, idx) => (
                 <li key={`${li.item_id}-${idx}`} className="flex items-center gap-2 rounded-2xl bg-surface px-3 py-2">
-                  <span className="min-w-0 flex-1 font-semibold text-forest-950">
+                  <span className="min-w-0 flex-1 font-semibold text-ink-950">
                     <span className="block truncate">
                       {li.name}
                       {li.price ? (
@@ -241,6 +249,33 @@ export function EntryCard({
                       ) : null}
                       {li.item_id === null && <span className="font-normal text-muted"> · {li.unit}</span>}
                     </span>
+                    {(li.options?.length ?? 0) > 1 && (
+                      <span className="mt-1 block">
+                        <span className="text-xs font-semibold text-pending">{t("whichItem")}</span>
+                        <span className="mt-1 flex flex-wrap gap-1.5">
+                          {li.options!.map((o) => (
+                            <button
+                              key={o.item_id}
+                              type="button"
+                              aria-pressed={o.item_id === li.item_id}
+                              onClick={() =>
+                                setItems(
+                                  lines.map((x, j) =>
+                                    j === idx ? { ...x, item_id: o.item_id, name: o.name, unit: o.unit, price: o.price, options: [] } : x,
+                                  ),
+                                )
+                              }
+                              className={`min-h-9 rounded-full px-3 text-xs font-semibold ring-1 transition active:scale-95 ${
+                                o.item_id === li.item_id ? "bg-brand-600 text-white ring-brand-600" : "bg-white text-ink-900 ring-amber-300 hover:bg-iris-100"
+                              }`}
+                            >
+                              {o.name}
+                              {o.price ? ` · ${formatINR(o.price)}` : ""}
+                            </button>
+                          ))}
+                        </span>
+                      </span>
+                    )}
                     {li.item_id === null && (
                       <button
                         type="button"
@@ -264,7 +299,7 @@ export function EntryCard({
                     type="button"
                     aria-label={`${li.name} +1`}
                     onClick={() => setItems(lines.map((x, j) => (j === idx ? { ...x, qty: x.qty + 1 } : x)))}
-                    className="grid size-9 place-items-center rounded-xl bg-mint-100 font-bold active:scale-90"
+                    className="grid size-9 place-items-center rounded-xl bg-iris-100 font-bold active:scale-90"
                   >
                     +
                   </button>
@@ -301,7 +336,7 @@ export function EntryCard({
                     },
                   ]);
               }}
-              className="mt-2 min-h-11 w-full rounded-xl border-2 border-dashed border-line bg-surface px-3 text-sm font-semibold text-forest-800"
+              className="mt-2 min-h-11 w-full rounded-xl border-2 border-dashed border-line bg-surface px-3 text-sm font-semibold text-ink-800"
             >
               <option value="">{t("attachItem")}</option>
               {stock.map((it) => (
@@ -315,7 +350,7 @@ export function EntryCard({
           <button
             type="button"
             onClick={() => setAddingItem("new")}
-            className="mt-2 min-h-11 w-full rounded-xl bg-surface px-3 text-sm font-semibold text-forest-800 ring-1 ring-line transition hover:bg-mint-100 active:scale-[0.99]"
+            className="mt-2 min-h-11 w-full rounded-xl bg-surface px-3 text-sm font-semibold text-ink-800 ring-1 ring-line transition hover:bg-iris-100 active:scale-[0.99]"
           >
             {t("newItem")}
           </button>
@@ -355,11 +390,11 @@ export function EntryCard({
                 setPartyId(null);
               }}
               aria-label={t("fWho")}
-              className="mt-1 w-full bg-transparent text-2xl font-bold text-forest-950 outline-none"
+              className="mt-1 w-full bg-transparent text-2xl font-bold text-ink-950 outline-none"
             />
           </label>
           {partyName.trim() && partyId === null && (
-            <span className="mt-1 inline-block rounded-full bg-white px-2 py-0.5 text-xs font-semibold text-leaf-500">
+            <span className="mt-1 inline-block rounded-full bg-white px-2 py-0.5 text-xs font-semibold text-iris-500">
               {t("newPerson", { name: partyName.trim() })}
             </span>
           )}
@@ -377,7 +412,7 @@ export function EntryCard({
                       setPartyName(c.name);
                       setPartyKind(c.kind);
                     }}
-                    className="min-h-10 rounded-full bg-white px-3 text-sm font-semibold text-forest-900 ring-1 ring-amber-300 transition hover:bg-mint-100 active:scale-95"
+                    className="min-h-10 rounded-full bg-white px-3 text-sm font-semibold text-ink-900 ring-1 ring-amber-300 transition hover:bg-iris-100 active:scale-95"
                   >
                     {c.name}
                   </button>
@@ -418,7 +453,7 @@ export function EntryCard({
             onChange={(e) => change(setPaidNow)(e.target.value.replace(/[^\d]/g, ""))}
             placeholder={mode === "udhaar" ? "0" : amount || "0"}
             aria-invalid={paidTooMuch}
-            className={`mt-1 min-h-12 w-full rounded-2xl border-2 ${paidTooMuch ? "border-money-out" : "border-line"} bg-surface px-4 text-xl font-bold tabular-nums focus:border-leaf-500 focus:outline-none`}
+            className={`mt-1 min-h-12 w-full rounded-2xl border-2 ${paidTooMuch ? "border-money-out" : "border-line"} bg-surface px-4 text-xl font-bold tabular-nums focus:border-iris-500 focus:outline-none`}
           />
         </label>
       )}
@@ -430,7 +465,7 @@ export function EntryCard({
             type="date"
             value={due}
             onChange={(e) => change(setDue)(e.target.value)}
-            className="mt-1 min-h-12 w-full rounded-2xl border-2 border-line bg-surface px-4 text-lg focus:border-leaf-500 focus:outline-none"
+            className="mt-1 min-h-12 w-full rounded-2xl border-2 border-line bg-surface px-4 text-lg focus:border-iris-500 focus:outline-none"
           />
         </label>
       )}
@@ -441,14 +476,14 @@ export function EntryCard({
         <div role="alertdialog" className="animate-pop mt-4 rounded-3xl bg-amber-50 p-4 ring-1 ring-amber-300">
           <p className="font-semibold text-pending">{t("dupAsk")}</p>
           <div className="mt-3 flex gap-2">
-            <button type="button" onClick={onClose} className="min-h-12 flex-1 rounded-2xl bg-surface-2 font-semibold text-forest-900">
+            <button type="button" onClick={onClose} className="min-h-12 flex-1 rounded-2xl bg-surface-2 font-semibold text-ink-900">
               {t("cancel")}
             </button>
             <button
               type="button"
               disabled={busy}
               onClick={() => void save(true)}
-              className="min-h-12 flex-1 rounded-2xl bg-forest-900 font-semibold text-white disabled:opacity-60"
+              className="min-h-12 flex-1 rounded-2xl bg-brand-600 font-semibold text-white disabled:opacity-60"
             >
               {t("saveAgain")}
             </button>
@@ -460,15 +495,15 @@ export function EntryCard({
           <button
             type="button"
             onClick={onClose}
-            className="min-h-14 rounded-2xl bg-surface-2 px-4 font-semibold text-forest-900 transition hover:bg-line"
+            className="min-h-14 rounded-2xl bg-surface-2 px-4 font-semibold text-ink-900 transition hover:bg-line"
           >
             {t("cancel")}
           </button>
           <button
             type="button"
-            disabled={busy || missingAmount || missingParty || paidTooMuch}
+            disabled={busy || missingAmount || missingParty || missingItems || paidTooMuch}
             onClick={() => void save()}
-            className="min-h-14 flex-1 rounded-2xl bg-forest-900 text-lg font-semibold text-white shadow-lg shadow-forest-900/20 transition hover:bg-forest-800 active:scale-[0.98] disabled:bg-line disabled:text-muted disabled:shadow-none"
+            className="min-h-14 flex-1 rounded-2xl bg-brand-600 text-lg font-semibold text-white shadow-lg shadow-brand-600/20 transition hover:bg-brand-500 active:scale-[0.98] disabled:bg-line disabled:text-muted disabled:shadow-none"
           >
             {t("saveEntry")} ✓
           </button>
